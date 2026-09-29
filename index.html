@@ -129,10 +129,12 @@
     .tablewrap{display:none;}
     #cards{display:block;}
     .mrow{padding:6px 2px; border-bottom:1px solid var(--line);}
-    .mline1{display:flex; align-items:baseline; gap:7px;}
+    .mline1{display:grid; grid-template-columns:1fr auto 1fr; align-items:baseline; gap:7px;}
+    .mleft{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+    .mright{min-width:0; text-align:right; white-space:nowrap;}
     .mflight{font-weight:700; font-size:14px; white-space:nowrap; font-variant-numeric:tabular-nums;}
-    .mdest{font-size:12px; color:var(--dim); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-    .mstandwrap{flex:1; text-align:center; white-space:nowrap; min-width:0;}
+    .mdest{font-size:12px; color:var(--dim); white-space:nowrap;}
+    .mstandwrap{text-align:center; white-space:nowrap;}
     .mtime{font-weight:700; font-size:15px; color:var(--accent2); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-ata{font-weight:700; font-size:15px; color:#ef5350; white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-est{font-weight:700; font-size:15px; color:#9ccc65; white-space:nowrap; font-variant-numeric:tabular-nums;}
@@ -382,8 +384,8 @@
       timeHtml += "<span class='mtime-ata'>"+esc(f.ata)+"</span>";
     }
     var standMid = mstandHtml(f);
-    return "<div class='mrow'><div class='mline1'><span class='mflight'>"+esc(opId(f))+"</span>"+badge(f)+
-      "<span class='mdest'>"+esc(f.via)+"</span>"+standMid+timeHtml+"</div></div>";
+    return "<div class='mrow'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span> "+badge(f)+
+      " <span class='mdest'>"+esc(f.via)+"</span></span>"+standMid+"<span class='mright'>"+timeHtml+"</span></div></div>";
   }
 
   function render(){
