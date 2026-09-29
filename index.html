@@ -138,6 +138,7 @@
     .mtime{font-weight:700; font-size:15px; color:var(--accent2); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-ata{font-weight:700; font-size:15px; color:#ef5350; white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-est{font-weight:700; font-size:15px; color:#9ccc65; white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .msep{color:var(--dim); font-size:13px; margin:0 2px;}
     .mstand{font-size:14px; font-weight:700; color:var(--text);}
     .mstandchg{font-size:14px; font-weight:700; color:#ef5350;}
     .mstandold{font-size:11px; color:var(--dim);}
@@ -377,11 +378,11 @@
     var timeHtml = "<span class='mtime'>"+esc(f.eta||"—")+"</span>";
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
     if(estShown){
-      timeHtml += "<span class='mtime-est'>"+esc(f.est)+"</span>";
+      timeHtml += "<span class='msep'>/</span><span class='mtime-est'>"+esc(f.est)+"</span>";
     }
     /* actual time (At gate / Landed / Dep) always on the right, arrival + departure */
     if(f.ata && f.ata !== "—" && f.ata !== f.eta && (!estShown || f.ata !== f.est)){
-      timeHtml += "<span class='mtime-ata'>"+esc(f.ata)+"</span>";
+      timeHtml += "<span class='msep'>/</span><span class='mtime-ata'>"+esc(f.ata)+"</span>";
     }
     var standMid = mstandHtml(f);
     return "<div class='mrow'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span> "+badge(f)+
