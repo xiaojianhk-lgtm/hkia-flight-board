@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1c2c">
+<title>航班資訊 · 香港國際機場</title>
+<style>
+  :root{
+    --bg:#0b1c2c; --bg2:#10263c; --card:#132c44; --line:#1f3a55;
+    --text:#e8f1f8; --muted:#8fa8bd; --accent:#ffb300; --accent2:#4fc3f7;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","PingFang TC","Microsoft JhengHei",sans-serif;
+    font-size:14px; line-height:1.45;
+  }
+  /* ---------- splash ---------- */
+  #splash{
+    position:fixed; inset:0; z-index:50; background:radial-gradient(120% 100% at 50% 0%, var(--bg2), var(--bg));
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    transition:opacity .45s ease; padding:24px; text-align:center;
+  }
+  #splash.hide{opacity:0; pointer-events:none;}
+  #splash .plane{width:64px; height:64px; color:var(--accent2);}
+  #splash h1{font-size:44px; margin:6px 0 0; letter-spacing:12px; text-indent:12px; font-weight:700;}
+  #splash .sub{font-size:18px; color:var(--muted); letter-spacing:6px; text-indent:6px;}
+  #splash .caps{font-size:11px; letter-spacing:4px; color:var(--muted); opacity:.8;}
+  #splash .ts{font-size:12px; color:var(--muted); margin-top:8px;}
+  #splash .bar{width:min(280px,70vw); height:3px; background:var(--line); border-radius:2px; overflow:hidden; margin-top:14px;}
+  #splash .bar i{display:block; height:100%; width:0; background:var(--accent2); border-radius:2px; animation:load 1.4s ease forwards;}
+  @keyframes load{to{width:100%;}}
+  /* ---------- header ---------- */
+  header{
+    position:sticky; top:0; z-index:10;
+    background:rgba(11,28,44,.96); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    padding:10px 16px; padding-right:60px;
+  }
+  header .row1{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  header h2{font-size:19px; margin:0; letter-spacing:4px;}
+  header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
+  header .ts{font-size:12px; color:var(--muted); margin-top:2px;}
+  header .ts b{color:var(--accent); font-weight:600;}
+  #refreshBtn{
+    position:fixed; top:10px; right:12px; z-index:20;
+    width:38px; height:38px; border-radius:50%;
+    border:1px solid var(--line); background:var(--card); color:var(--text);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.35);
+  }
+  #refreshBtn:active{transform:scale(.92);}
+  #refreshBtn svg{width:18px; height:18px;}
+  /* ---------- table ---------- */
+  main{padding:8px 8px 32px; max-width:1100px; margin:0 auto;}
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:8px; background:var(--bg2);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  thead th{
+    position:sticky; top:0; background:var(--card);
+    padding:7px 6px; text-align:left; font-size:11px; letter-spacing:1px; color:var(--muted);
+    border-bottom:1px solid var(--line); white-space:nowrap;
+  }
+  thead th .lbl{display:block; margin-bottom:4px;}
+  #q{
+    width:100%; min-width:110px; max-width:190px;
+    background:#0a1928; border:1px solid var(--line); border-radius:6px; color:var(--text);
+    font-size:13px; padding:5px 8px; outline:none;
+  }
+  #q:focus{border-color:var(--accent2);}
+  #q::placeholder{color:#5b748c;}
+  tbody td{padding:6px; border-bottom:1px solid rgba(31,58,85,.55); white-space:nowrap;}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.018);}
+  td.fid{font-weight:600; color:#fff;}
+  td.eta{color:var(--accent2);} td.ata{color:#9ccc65;}
+  td.dim{color:var(--muted);}
+  .expandbar{padding:10px; text-align:center;}
+  .expandbar button{
+    background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
+    padding:8px 18px; font-size:13px; cursor:pointer; letter-spacing:1px;
+  }
+  .expandbar button:active{transform:scale(.96);}
+  .count{font-size:12px; color:var(--muted); padding:8px 4px;}
+  .error{padding:24px; text-align:center; color:#ef9a9a;}
+  /* ---------- mobile cards ---------- */
+  #cards{display:none;}
+  @media (max-width:719px){
+    .tablewrap{display:none;}
+    #cards{display:block;}
+    .card{
+      background:var(--bg2); border:1px solid var(--line); border-radius:10px;
+      padding:10px 12px; margin-bottom:8px;
+    }
+    .card .fid{font-size:16px; font-weight:700; margin-bottom:6px;}
+    .card .grid{display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; font-size:12.5px;}
+    .card .grid .k{color:var(--muted); font-size:11px;}
+    .card .grid .v{font-variant-numeric:tabular-nums;}
+    .card .v.eta{color:var(--accent2);} .card .v.ata{color:#9ccc65;}
+    #q{max-width:none;}
+    .searchrow{padding:10px 2px;}
+  }
+  @media (min-width:720px){ .searchrow{display:none;} }
+  .searchrow input{
+    width:100%; background:#0a1928; border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-size:15px; padding:9px 12px; outline:none;
+  }
+</style>
+</head>
+<body>
+
+<div id="splash" aria-hidden="true">
+  <svg class="plane" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M21.5 15.5v-2l-8.5-5v-5.6c0-.8-.7-1.4-1.5-1.4s-1.5.6-1.5 1.4v5.6l-8.5 5v2l8.5-2.6v5.3l-2.4 1.7v1.6l3.9-1 3.9 1v-1.6l-2.4-1.7v-5.3l8.5 2.6z"/>
+  </svg>
+  <h1>航班資訊</h1>
+  <div class="sub">香港國際機場</div>
+  <div class="caps">FLIGHT BOARD · HKG</div>
+  <div class="ts" id="splashTs">資料擷取時間：—</div>
+  <div class="bar"><i></i></div>
+</div>
+
+<button id="refreshBtn" title="更新" aria-label="更新資料">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>
+  </svg>
+</button>
+
+<header>
+  <div class="row1">
+    <h2>航班資訊</h2>
+    <span class="caps">FLIGHT BOARD · HKG · 到港 ARRIVALS</span>
+  </div>
+  <div class="ts">資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</div>
+</header>
+
+<main>
+  <div class="searchrow">
+    <input id="qm" type="search" placeholder="輸入 Flight ID 關鍵字篩選…" autocomplete="off">
+  </div>
+  <div class="count" id="countLine"></div>
+  <div class="tablewrap">
+    <table aria-label="到港航班">
+      <thead>
+        <tr>
+          <th>NO</th>
+          <th><span class="lbl">Flight ID</span><input id="q" type="search" placeholder="關鍵字篩選…" autocomplete="off"></th>
+          <th>REG</th><th>SUBTYPE</th><th>STAND</th><th>ETA</th><th>ATA</th><th>CHOCKS</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div id="cards"></div>
+  <div class="expandbar" id="expandBar" style="display:none">
+    <button id="expandBtn"></button>
+  </div>
+  <div class="error" id="errBox" style="display:none"></div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var PAGE = 12;
+  var all = [], filtered = [], expanded = false, query = "";
+  var rowsEl = document.getElementById("rows");
+  var cardsEl = document.getElementById("cards");
+  var expandBar = document.getElementById("expandBar");
+  var expandBtn = document.getElementById("expandBtn");
+  var countLine = document.getElementById("countLine");
+  var q = document.getElementById("q"), qm = document.getElementById("qm");
+  var isMobile = function(){ return window.matchMedia("(max-width:719px)").matches; };
+
+  function norm(s){ return (s||"").replace(/\s+/g,"").toUpperCase(); }
+
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function applyFilter(){
+    var nq = norm(query);
+    filtered = nq ? all.filter(function(f){ return norm(f.flight_id).indexOf(nq) !== -1; }) : all.slice();
+    expanded = false;
+    render();
+  }
+
+  function rowHtml(f){
+    return "<tr><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(f.flight_id)+"</td>"+
+      "<td class='dim'>"+esc(f.reg)+"</td><td class='dim'>"+esc(f.subtype)+"</td>"+
+      "<td>"+esc(f.stand)+"</td><td class='eta'>"+esc(f.eta)+"</td>"+
+      "<td class='ata'>"+esc(f.ata)+"</td><td class='dim'>—</td></tr>";
+  }
+
+  function cardHtml(f){
+    function kv(k,v,cls){ return "<div><div class='k'>"+k+"</div><div class='v"+(cls?" "+cls:"")+"'>"+esc(v)+"</div></div>"; }
+    return "<div class='card'><div class='fid'>"+esc(f.flight_id)+"</div><div class='grid'>"+
+      kv("NO",f.no)+kv("REG",f.reg)+kv("SUBTYPE",f.subtype)+kv("STAND",f.stand)+
+      kv("ETA",f.eta,"eta")+kv("ATA",f.ata,"ata")+kv("CHOCKS","—")+
+      "</div></div>";
+  }
+
+  function render(){
+    var list = expanded ? filtered : filtered.slice(0, PAGE);
+    if(isMobile()){
+      cardsEl.innerHTML = list.map(cardHtml).join("");
+      rowsEl.innerHTML = "";
+    }else{
+      rowsEl.innerHTML = list.map(rowHtml).join("");
+      cardsEl.innerHTML = "";
+    }
+    var total = filtered.length;
+    countLine.textContent = query
+      ? "「"+query+"」找到 "+total+" 班"
+      : "今日到港共 "+all.length+" 班（預設顯示 "+Math.min(PAGE,total)+" 班）";
+    if(total > PAGE && !expanded){
+      expandBar.style.display = "";
+      expandBtn.textContent = "仲有 "+(total-PAGE)+" 班，撳嚟展開";
+    }else if(total > PAGE && expanded){
+      expandBar.style.display = "";
+      expandBtn.textContent = "收起";
+    }else{
+      expandBar.style.display = "none";
+    }
+  }
+
+  expandBtn.addEventListener("click", function(){
+    expanded = !expanded;
+    render();
+    if(!expanded) window.scrollTo({top:0, behavior:"smooth"});
+  });
+
+  function onType(v){ query = v; applyFilter(); }
+  q.addEventListener("input", function(){ qm.value = q.value; onType(q.value); });
+  qm.addEventListener("input", function(){ q.value = qm.value; onType(qm.value); });
+
+  var rsz;
+  window.addEventListener("resize", function(){ clearTimeout(rsz); rsz = setTimeout(render, 150); });
+
+  document.getElementById("refreshBtn").addEventListener("click", function(){
+    location.href = location.pathname + "?t=" + Date.now();
+  });
+
+  var t0 = Date.now();
+  fetch("data.json?_="+Date.now(), {cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(d){
+      all = d.flights || [];
+      document.getElementById("headTs").textContent = d.generated_at || "—";
+      document.getElementById("headCount").textContent = d.count!=null ? d.count : all.length;
+      document.getElementById("splashTs").textContent = "資料擷取時間："+(d.generated_at||"—");
+      applyFilter();
+    })
+    .catch(function(e){
+      var eb = document.getElementById("errBox");
+      eb.style.display = "";
+      eb.textContent = "載入航班資料失敗，請稍後再試。（"+e.message+"）";
+    })
+    .then(function(){
+      var wait = Math.max(0, 1200 - (Date.now()-t0));
+      setTimeout(function(){ document.getElementById("splash").classList.add("hide"); }, wait);
+    });
+})();
+</script>
+</body>
+</html>
