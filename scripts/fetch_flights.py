@@ -186,8 +186,9 @@ def main() -> int:
                     cur = fl["stand"]
                     if prev and cur and prev != "—" and cur != "—" and prev != cur:
                         fl["stand_old"] = prev
-                # Sort by effective time: estimated (EST) if available, else scheduled.
-                flights.sort(key=lambda fl: fl["est"] if fl["est"] != "—" else fl["eta"])
+                # Sort by most relevant time: actual (ATA/ATD) if landed/departed,
+                # else estimated (EST), else scheduled (STA/STD).
+                flights.sort(key=lambda fl: fl["ata"] if fl["ata"] != "—" else (fl["est"] if fl["est"] != "—" else fl["eta"]))
                 for i, fl in enumerate(flights, start=1):
                     fl["no"] = i
                 day[key] = flights
