@@ -347,16 +347,30 @@
   /* effective time: estimated if available, else scheduled — matches server sort */
   function effTime(f){ return (f.est && f.est !== "—") ? f.est : (f.eta || "—"); }
 
+  /* status text without the time (time moves to the right side) */
+  function statusText(f){
+    var s = f.status_raw || "";
+    [f.ata, f.est].forEach(function(t){
+      if(t && t !== "—" && s.indexOf(t) >= 0){ s = s.replace(t, ""); }
+    });
+    s = s.replace(/\s{2,}/g, " ").trim();
+    if(s === "Est at"){ s = "Est"; }
+    return s;
+  }
+
   function mrowHtml(f){
     var timeHtml = "<span class='mtime'>"+esc(f.eta||"—")+"</span>";
-    if(f.est && f.est !== "—" && f.est !== f.eta){
+    var estShown = f.est && f.est !== "—" && f.est !== f.eta;
+    if(estShown){
       timeHtml += "<span class='mtime-est'>"+esc(f.est)+"</span>";
     }
-    if(tab === "departure" && f.ata && f.ata !== "—" && f.ata !== f.eta){
+    /* actual time (At gate / Landed / Dep) always on the right, arrival + departure */
+    if(f.ata && f.ata !== "—" && f.ata !== f.eta && (!estShown || f.ata !== f.est)){
       timeHtml += "<span class='mtime-changed'>"+esc(f.ata)+"</span>";
     }
     var l2 = mstandHtml(f);
-    if(f.status_raw) l2 += " · "+esc(f.status_raw);
+    var st = statusText(f);
+    if(st) l2 += " · "+esc(st);
     return "<div class='mrow'><div class='mline1'><span class='mflight'>"+esc(f.flight_id)+"</span>"+badge(f)+
       "<span class='mdest'>"+esc(f.via)+"</span>"+timeHtml+"</div>"+
       "<div class='mline2'>"+l2+"</div></div>";
