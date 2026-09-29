@@ -191,7 +191,7 @@
       <li>資料來源：香港國際機場官方網站，每 15 分鐘自動更新。</li>
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
       <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
-      <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」過濾。</li>
+      <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾。</li>
       <li>右上角按鈕可手動重新載入最新資料。</li>
       <li>時間顏色：<span style="color:#4fc3f7">藍色</span>為原定時間，<span style="color:#9ccc65">綠色</span>為預計時間，<span style="color:#ef5350">紅色</span>為實際時間。</li>
     </ul>
@@ -231,6 +231,7 @@
 <main>
   <div class="countrow">
     <span class="count" id="countLine"></span>
+    <label class="hidecargo"><input type="checkbox" id="hidePax"> 隱藏客機</label>
     <label class="hidecargo"><input type="checkbox" id="hideCargo"> 隱藏貨機</label>
   </div>
   <div class="tablewrap">
@@ -257,7 +258,7 @@
   "use strict";
   var PAGE = 12;
   var DB = null;
-  var tab = "arrival", dateIdx = 1, hideCargo = false, query = "";
+  var tab = "arrival", dateIdx = 1, hideCargo = false, hidePax = false, query = "";
   var filtered = [], expanded = false;
 
   var L = {
@@ -310,6 +311,7 @@
     var d = DB.dates[dateIdx];
     var list = (d && DB.days[d] && DB.days[d][tab]) || [];
     if(hideCargo) list = list.filter(function(f){ return !f.cargo; });
+    if(hidePax) list = list.filter(function(f){ return f.cargo; });
     return list;
   }
 
@@ -460,6 +462,11 @@
       });
     })(tabBtns[ti]);
   }
+
+  document.getElementById("hidePax").addEventListener("change", function(e){
+    hidePax = !!e.target.checked;
+    applyFilter();
+  });
 
   document.getElementById("hideCargo").addEventListener("change", function(e){
     hideCargo = !!e.target.checked;
