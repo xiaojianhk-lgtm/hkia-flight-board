@@ -304,6 +304,9 @@
     return list;
   }
 
+  // 只顯示營運航班編號（第一個），codeshare 保留作搜尋用。
+  function opId(f){ return (f.flight_id || "").split(" / ")[0]; }
+
   function applyFilter(){
     var all = currentFlights();
     var nq = norm(query);
@@ -339,7 +342,7 @@
   }
 
   function rowHtml(f){
-    return "<tr><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(f.flight_id)+badge(f)+"</td>"+
+    return "<tr><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
       "<td>"+esc(f.via)+"</td>"+
       "<td>"+dstandHtml(f)+"</td><td class='eta'>"+etaCell(f)+"</td>"+
       "<td class='ata'>"+esc(f.ata)+"</td></tr>";
@@ -372,7 +375,7 @@
     var l2 = mstandHtml(f);
     var st = statusText(f);
     if(st) l2 += " · "+esc(st);
-    return "<div class='mrow'><div class='mline1'><span class='mflight'>"+esc(f.flight_id)+"</span>"+badge(f)+
+    return "<div class='mrow'><div class='mline1'><span class='mflight'>"+esc(opId(f))+"</span>"+badge(f)+
       "<span class='mdest'>"+esc(f.via)+"</span>"+timeHtml+"</div>"+
       "<div class='mline2'>"+l2+"</div></div>";
   }
