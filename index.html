@@ -127,6 +127,9 @@
     .mtime{font-weight:700; font-size:15px; color:var(--accent2); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-changed{font-weight:700; font-size:15px; color:#ef5350; white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mstand{font-size:14px; font-weight:700; color:var(--text);}
+    .mstandchg{font-size:14px; font-weight:700; color:#ef5350;}
+    .mstandold{font-size:11px; color:var(--dim);}
+    .standchg{color:#ef5350; font-weight:700;}
     .mline2{font-size:11px; color:var(--dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
     #q{max-width:none;}
     .searchrow{padding:10px 2px; position:sticky; top:var(--stickyTop,0px); z-index:5; background:var(--bg);}
@@ -224,7 +227,7 @@
         <tr>
           <th>NO</th>
           <th><span class="lbl">Flight ID</span><input id="q" type="search" placeholder="關鍵字篩選…" autocomplete="off"></th>
-          <th id="thVia">來自</th><th>REG</th><th>SUBTYPE</th><th id="thStand">STAND</th><th id="thEta">ETA</th><th id="thAta">ATA</th><th>CHOCKS</th>
+          <th id="thVia">來自</th><th id="thStand">STAND</th><th id="thEta">ETA</th><th id="thAta">ATA</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -269,6 +272,21 @@
   function norm(s){ return (s||"").replace(/\s+/g,"").toUpperCase(); }
   function md(iso){ var p = String(iso).split("-"); return (+p[1]) + "/" + (+p[2]); }
 
+  /* current time in HKT as "HH:MM", for centering today's list */
+  function nowHHMM(){
+    var d = new Date();
+    var hkt = new Date(d.getTime() + (d.getTimezoneOffset() + 480) * 60000);
+    return ("0"+hkt.getHours()).slice(-2) + ":" + ("0"+hkt.getMinutes()).slice(-2);
+  }
+  function timeAnchorIndex(list){
+    var now = nowHHMM();
+    for(var i=0;i<list.length;i++){
+      var t = list[i].eta || "";
+      if(t && t >= now) return i;
+    }
+    return list.length;
+  }
+
   function esc(s){
     return String(s==null?"":s).replace(/[&<>"']/g, function(c){
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
@@ -295,11 +313,25 @@
 
   function badge(f){ return f.cargo ? '<span class="cbadge">貨</span>' : ""; }
 
+  function dstandHtml(f){
+    if(f.stand_old && f.stand_old !== f.stand){
+      return "<span class='standchg'>"+esc(f.stand)+"</span> <span class='dim'>("+esc(f.stand_old)+")</span>";
+    }
+    return esc(f.stand);
+  }
+
+  function mstandHtml(f){
+    if(f.stand_old && f.stand_old !== f.stand){
+      return "<span class='mstandchg'>"+esc(f.stand)+"</span> <span class='mstandold'>("+esc(f.stand_old)+")</span>";
+    }
+    return "<span class='mstand'>"+esc(f.stand||"—")+"</span>";
+  }
+
   function rowHtml(f){
     return "<tr><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(f.flight_id)+badge(f)+"</td>"+
-      "<td>"+esc(f.via)+"</td><td class='dim'>"+esc(f.reg)+"</td><td class='dim'>"+esc(f.subtype)+"</td>"+
-      "<td>"+esc(f.stand)+"</td><td class='eta'>"+esc(f.eta)+"</td>"+
-      "<td class='ata'>"+esc(f.ata)+"</td><td class='dim'>—</td></tr>";
+      "<td>"+esc(f.via)+"</td>"+
+      "<td>"+dstandHtml(f)+"</td><td class='eta'>"+esc(f.eta)+"</td>"+
+      "<td class='ata'>"+esc(f.ata)+"</td></tr>";
   }
 
   function mrowHtml(f){
@@ -307,7 +339,7 @@
     if(tab === "departure" && f.ata && f.ata !== "—" && f.ata !== f.eta){
       timeHtml += "<span class='mtime-changed'>"+esc(f.ata)+"</span>";
     }
-    var l2 = "<span class='mstand'>"+esc(f.stand||"—")+"</span>";
+    var l2 = mstandHtml(f);
     if(f.status_raw) l2 += " · "+esc(f.status_raw);
     return "<div class='mrow'><div class='mline1'><span class='mflight'>"+esc(f.flight_id)+"</span>"+badge(f)+
       "<span class='mdest'>"+esc(f.via)+"</span>"+timeHtml+"</div>"+
@@ -324,7 +356,15 @@
     document.getElementById("flightTable").setAttribute("aria-label", l.name+"航班");
 
     var ps = isMobile() ? 20 : PAGE;
-    var list = expanded ? filtered : filtered.slice(0, ps);
+    /* 今天：以現時為中心，顯示前後約 10 班；昨天/明天/搜尋維持由頭顯示 */
+    var start = 0, showN = ps, centered = false;
+    if(!expanded && !query && dateIdx === 1 && filtered.length){
+      var w = 20, ai = timeAnchorIndex(filtered);
+      start = Math.max(0, Math.min(ai - 10, filtered.length - w));
+      showN = Math.min(w, filtered.length);
+      centered = true;
+    }
+    var list = expanded ? filtered : filtered.slice(start, start + showN);
     if(isMobile()){
       cardsEl.innerHTML = list.map(mrowHtml).join("");
       rowsEl.innerHTML = "";
@@ -336,12 +376,12 @@
     var dlabel = DB ? md(DB.dates[dateIdx]) + " " + l.name : l.name;
     countLine.textContent = query
       ? "「"+query+"」找到 "+total+" 班"
-      : dlabel+"共 "+total+" 班（預設顯示 "+Math.min(ps,total)+" 班）";
+      : dlabel+"共 "+total+" 班（"+(centered ? "顯示現時前後約 "+showN+" 班" : "預設顯示 "+Math.min(ps,total)+" 班")+"）";
     headCount.textContent = currentFlights().length;
-    if(total > ps && !expanded){
+    if(total > showN && !expanded){
       expandBar.style.display = "";
-      expandBtn.textContent = "仲有 "+(total-ps)+" 班，撳嚟展開";
-    }else if(total > ps && expanded){
+      expandBtn.textContent = "仲有 "+(total-showN)+" 班，撳嚟展開";
+    }else if(total > showN && expanded){
       expandBar.style.display = "";
       expandBtn.textContent = "收起";
     }else{

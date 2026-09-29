@@ -68,6 +68,21 @@ def main() -> int:
     project_root = os.path.dirname(script_dir)
     out_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(project_root, "data.json")
 
+    # Previous stands, keyed by (date, tab, flight_id), for stand-change detection.
+    old_payload = None
+    old_stands = {}
+    if os.path.exists(out_path):
+        try:
+            with open(out_path, encoding="utf-8") as fh:
+                old_payload = json.load(fh)
+            for d, day in (old_payload.get("days") or {}).items():
+                for tk in ("arrival", "departure"):
+                    for f in day.get(tk, []):
+                        old_stands[(d, tk, f.get("flight_id"))] = f.get("stand")
+        except (json.JSONDecodeError, OSError) as exc:
+            print(f"WARN: existing data.json unreadable ({exc}), rewriting", file=sys.stderr)
+            old_payload = None
+
     days = {}
     try:
         for date in dates:
@@ -88,6 +103,11 @@ def main() -> int:
                         continue
                     for f in grp.get("list", []):
                         flights.append(parse_flight(f, arrival, cargo))
+                for fl in flights:
+                    prev = old_stands.get((date, key, fl["flight_id"]))
+                    cur = fl["stand"]
+                    if prev and cur and prev != "—" and cur != "—" and prev != cur:
+                        fl["stand_old"] = prev
                 for i, fl in enumerate(flights, start=1):
                     fl["no"] = i
                 day[key] = flights
@@ -106,16 +126,13 @@ def main() -> int:
 
     # Idempotent: only rewrite when the data actually changed, so the CI
     # `git diff` check correctly reports "no change" and skips the commit.
-    if os.path.exists(out_path):
-        try:
-            with open(out_path, encoding="utf-8") as fh:
-                old = json.load(fh)
-            if old.get("dates") == dates and old.get("days") == days:
-                total = sum(len(v) for d in days.values() for v in d.values())
-                print(f"OK: no change ({total} flights), kept {out_path}")
-                return 0
-        except (json.JSONDecodeError, OSError) as exc:
-            print(f"WARN: existing data.json unreadable ({exc}), rewriting", file=sys.stderr)
+    # (stand_old is part of days, so a newly detected / cleared stand change
+    # counts as a change.)
+    if old_payload is not None:
+        if old_payload.get("dates") == dates and old_payload.get("days") == days:
+            total = sum(len(v) for d in days.values() for v in d.values())
+            print(f"OK: no change ({total} flights), kept {out_path}")
+            return 0
 
     tmp_path = out_path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as fh:
