@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 HKT = ZoneInfo("Asia/Hong_Kong")
 API_URL = (
     "https://www.hongkongairport.com/flightinfo-rest/rest/flights"
-    "/past?date={date}&lan=tc&cargo={cargo}&arrival={arrival}"
+    "?date={date}&lan=tc&cargo={cargo}&arrival={arrival}"
 )
 # Menzies CNAC flight info (cargo handler). Arrival pages carry the STAND (ST)
 # field, which the official API does not publish for cargo flights.
