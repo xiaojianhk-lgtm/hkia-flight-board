@@ -115,20 +115,17 @@
   }
   .expandbar button:active{transform:scale(.96);}
   .error{padding:24px; text-align:center; color:#ef9a9a;}
-  /* ---------- mobile cards ---------- */
+  /* ---------- mobile compact rows ---------- */
   #cards{display:none;}
   @media (max-width:719px){
     .tablewrap{display:none;}
     #cards{display:block;}
-    .card{
-      background:var(--bg2); border:1px solid var(--line); border-radius:10px;
-      padding:10px 12px; margin-bottom:8px;
-    }
-    .card .fid{font-size:16px; font-weight:700; margin-bottom:6px;}
-    .card .grid{display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; font-size:12.5px;}
-    .card .grid .k{color:var(--muted); font-size:11px;}
-    .card .grid .v{font-variant-numeric:tabular-nums;}
-    .card .v.eta{color:var(--accent2);} .card .v.ata{color:#9ccc65;}
+    .mrow{padding:6px 2px; border-bottom:1px solid var(--line);}
+    .mline1{display:flex; align-items:baseline; gap:7px;}
+    .mflight{font-weight:700; font-size:14px; white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mdest{font-size:12px; color:var(--dim); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+    .mtime{font-weight:700; font-size:15px; color:var(--accent2); white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mline2{font-size:11px; color:var(--dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
     #q{max-width:none;}
     .searchrow{padding:10px 2px; position:sticky; top:var(--stickyTop,0px); z-index:5; background:var(--bg);}
   }
@@ -303,15 +300,12 @@
       "<td class='ata'>"+esc(f.ata)+"</td><td class='dim'>—</td></tr>";
   }
 
-  function cardHtml(f){
-    var l = L[tab];
-    function kv(k,v,cls){
-      return "<div><div class='k'>"+esc(k)+"</div><div class='v"+(cls?" "+cls:"")+"'>"+esc(v)+"</div></div>";
-    }
-    return "<div class='card'><div class='fid'>"+esc(f.flight_id)+badge(f)+"</div><div class='grid'>"+
-      kv("NO",f.no)+kv(l.via,f.via)+kv("REG",f.reg)+kv("SUBTYPE",f.subtype)+
-      kv(l.stand,f.stand)+kv(l.eta,f.eta,"eta")+kv(l.ata,f.ata,"ata")+kv("CHOCKS","—")+
-      "</div></div>";
+  function mrowHtml(f){
+    var l2 = (f.stand && f.stand !== "—" ? f.stand + " · " : "") + (f.status_raw || "");
+    return "<div class='mrow'><div class='mline1'><span class='mflight'>"+esc(f.flight_id)+"</span>"+badge(f)+
+      "<span class='mdest'>"+esc(f.via)+"</span>"+
+      "<span class='mtime'>"+esc(f.eta||"—")+"</span></div>"+
+      "<div class='mline2'>"+esc(l2||"—")+"</div></div>";
   }
 
   function render(){
@@ -323,9 +317,10 @@
     document.getElementById("capsLine").textContent = l.caps;
     document.getElementById("flightTable").setAttribute("aria-label", l.name+"航班");
 
-    var list = expanded ? filtered : filtered.slice(0, PAGE);
+    var ps = isMobile() ? 20 : PAGE;
+    var list = expanded ? filtered : filtered.slice(0, ps);
     if(isMobile()){
-      cardsEl.innerHTML = list.map(cardHtml).join("");
+      cardsEl.innerHTML = list.map(mrowHtml).join("");
       rowsEl.innerHTML = "";
     }else{
       rowsEl.innerHTML = list.map(rowHtml).join("");
@@ -335,12 +330,12 @@
     var dlabel = DB ? md(DB.dates[dateIdx]) + " " + l.name : l.name;
     countLine.textContent = query
       ? "「"+query+"」找到 "+total+" 班"
-      : dlabel+"共 "+total+" 班（預設顯示 "+Math.min(PAGE,total)+" 班）";
+      : dlabel+"共 "+total+" 班（預設顯示 "+Math.min(ps,total)+" 班）";
     headCount.textContent = currentFlights().length;
-    if(total > PAGE && !expanded){
+    if(total > ps && !expanded){
       expandBar.style.display = "";
-      expandBtn.textContent = "仲有 "+(total-PAGE)+" 班，撳嚟展開";
-    }else if(total > PAGE && expanded){
+      expandBtn.textContent = "仲有 "+(total-ps)+" 班，撳嚟展開";
+    }else if(total > ps && expanded){
       expandBar.style.display = "";
       expandBtn.textContent = "收起";
     }else{
