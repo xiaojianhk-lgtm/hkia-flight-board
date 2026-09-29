@@ -1,7 +1,7 @@
-# 香港機場到港航班板 · HKIA Arrival Flight Board
+# 香港機場航班板 · HKIA Flight Board
 
-免費 GitHub Pages 託管嘅香港國際機場到港航班資訊板（繁體中文）。
-Free static arrival flight board for Hong Kong International Airport, hosted on GitHub Pages.
+免費 GitHub Pages 託管嘅香港國際機場航班資訊板（繁體中文）：**到港／離港**、**昨天／今天／明天**、**客機／貨機**。
+Free static flight board for Hong Kong International Airport, hosted on GitHub Pages: arrivals/departures, yesterday/today/tomorrow, passenger/cargo.
 
 ## 部署步驟 Deployment
 
@@ -26,8 +26,9 @@ Free static arrival flight board for Hong Kong International Airport, hosted on 
 
 ## 自動更新 Auto refresh
 
-`.github/workflows/refresh.yml` 每 15 分鐘跑一次：問香港機場官方 API 攞最新到港資料，
-重寫 `data.json`，有變先 commit。網頁每次開啟都會載入最新嘅 `data.json`。
+`.github/workflows/refresh.yml` 每 15 分鐘跑一次：問香港機場官方 API 攞最新資料
+（昨天／今天／明天 × 到港／離港 × 客機／貨機），重寫 `data.json`，有變先 commit。
+網頁每次開啟都會載入最新嘅 `data.json`。
 
 右上角圓形按鈕 = 重新載入頁面（帶 cache-busting），即刻攞最新資料。
 

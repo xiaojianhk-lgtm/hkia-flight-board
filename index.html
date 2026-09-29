@@ -34,6 +34,7 @@
   #splash .bar{width:min(280px,70vw); height:3px; background:var(--line); border-radius:2px; overflow:hidden; margin-top:14px;}
   #splash .bar i{display:block; height:100%; width:0; background:var(--accent2); border-radius:2px; animation:load 1.4s ease forwards;}
   @keyframes load{to{width:100%;}}
+  #splashAbout{margin-top:10px;}
   /* ---------- header ---------- */
   header{
     position:sticky; top:0; z-index:10;
@@ -46,6 +47,7 @@
   header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
   header .ts{font-size:12px; color:var(--muted); margin-top:2px;}
   header .ts b{color:var(--accent); font-weight:600;}
+  #headAbout{margin-left:auto;}
   #refreshBtn{
     position:fixed; top:10px; right:12px; z-index:20;
     width:38px; height:38px; border-radius:50%;
@@ -55,8 +57,37 @@
   }
   #refreshBtn:active{transform:scale(.92);}
   #refreshBtn svg{width:18px; height:18px;}
-  /* ---------- table ---------- */
+  .linkbtn{
+    background:none; border:1px solid var(--line); border-radius:14px;
+    color:var(--accent2); font-size:12px; cursor:pointer; padding:5px 12px; letter-spacing:2px;
+  }
+  .linkbtn:active{transform:scale(.95);}
+  /* ---------- controls ---------- */
   main{padding:8px 8px 32px; max-width:1100px; margin:0 auto;}
+  .controls{padding:10px 2px 0; display:flex; flex-direction:column; gap:8px;}
+  .tabs{display:flex; background:#0a1928; border:1px solid var(--line); border-radius:10px; padding:3px;}
+  .tabs button{
+    flex:1; border:0; background:transparent; color:var(--muted);
+    font-size:14px; padding:8px; border-radius:7px; cursor:pointer; letter-spacing:3px;
+  }
+  .tabs button.on{background:var(--accent2); color:#06283d; font-weight:700;}
+  .dates{display:flex; gap:8px;}
+  .dates button{
+    flex:1; background:#0a1928; border:1px solid var(--line); color:var(--muted);
+    border-radius:10px; padding:7px 4px; font-size:13px; cursor:pointer; line-height:1.35; letter-spacing:1px;
+  }
+  .dates button small{font-size:11px; opacity:.8;}
+  .dates button.on{border-color:var(--accent2); color:#fff; font-weight:600;}
+  .countrow{display:flex; justify-content:space-between; align-items:center; padding:8px 4px; gap:8px;}
+  .count{font-size:12px; color:var(--muted);}
+  .hidecargo{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;}
+  .hidecargo input{accent-color:var(--accent2);}
+  .cbadge{
+    display:inline-block; font-size:10px; background:#5d4300; color:#ffd54f;
+    border:1px solid #8d6a00; border-radius:4px; padding:0 4px; margin-left:5px;
+    vertical-align:1px; font-weight:400; letter-spacing:1px;
+  }
+  /* ---------- table ---------- */
   .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:8px; background:var(--bg2);}
   table{width:100%; border-collapse:collapse; font-size:12.5px;}
   thead th{
@@ -83,7 +114,6 @@
     padding:8px 18px; font-size:13px; cursor:pointer; letter-spacing:1px;
   }
   .expandbar button:active{transform:scale(.96);}
-  .count{font-size:12px; color:var(--muted); padding:8px 4px;}
   .error{padding:24px; text-align:center; color:#ef9a9a;}
   /* ---------- mobile cards ---------- */
   #cards{display:none;}
@@ -100,13 +130,34 @@
     .card .grid .v{font-variant-numeric:tabular-nums;}
     .card .v.eta{color:var(--accent2);} .card .v.ata{color:#9ccc65;}
     #q{max-width:none;}
-    .searchrow{padding:10px 2px;}
+    .searchrow{padding:10px 2px; position:sticky; top:var(--stickyTop,0px); z-index:5; background:var(--bg);}
   }
   @media (min-width:720px){ .searchrow{display:none;} }
   .searchrow input{
     width:100%; background:#0a1928; border:1px solid var(--line); border-radius:8px;
     color:var(--text); font-size:15px; padding:9px 12px; outline:none;
   }
+  .searchrow input::placeholder{color:#5b748c;}
+  /* ---------- about overlay ---------- */
+  #aboutOverlay{
+    position:fixed; inset:0; z-index:60; background:rgba(4,12,20,.72);
+    display:none; align-items:center; justify-content:center; padding:22px;
+  }
+  #aboutOverlay.open{display:flex;}
+  .about-card{
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px;
+    max-width:430px; width:100%; padding:20px 20px 16px;
+    box-shadow:0 8px 32px rgba(0,0,0,.5); max-height:84vh; overflow-y:auto;
+  }
+  .about-card h3{margin:0 0 10px; font-size:17px; letter-spacing:3px;}
+  .about-card ul{margin:0 0 10px; padding-left:20px; font-size:13px; color:var(--text);}
+  .about-card li{margin-bottom:7px;}
+  .about-card .fine{font-size:11.5px; color:var(--muted); margin:0 0 14px;}
+  .about-card button{
+    width:100%; background:var(--accent2); border:0; border-radius:8px;
+    color:#06283d; font-size:14px; font-weight:700; padding:10px; cursor:pointer; letter-spacing:2px;
+  }
+  .about-card button:active{transform:scale(.97);}
 </style>
 </head>
 <body>
@@ -120,6 +171,22 @@
   <div class="caps">FLIGHT BOARD · HKG</div>
   <div class="ts" id="splashTs">資料擷取時間：—</div>
   <div class="bar"><i></i></div>
+  <button id="splashAbout" class="linkbtn">關於</button>
+</div>
+
+<div id="aboutOverlay" role="dialog" aria-modal="true" aria-label="關於">
+  <div class="about-card">
+    <h3>關於航班資訊</h3>
+    <ul>
+      <li>資料來源：香港國際機場官方網站，每 15 分鐘自動更新。</li>
+      <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
+      <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
+      <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」過濾。</li>
+      <li>右上角按鈕可手動重新載入最新資料。</li>
+    </ul>
+    <p class="fine">時間為香港時間 (HKT)。航班資料僅供參考，請以機場官方公布為準。</p>
+    <button id="aboutClose">關閉</button>
+  </div>
 </div>
 
 <button id="refreshBtn" title="更新" aria-label="更新資料">
@@ -131,23 +198,34 @@
 <header>
   <div class="row1">
     <h2>航班資訊</h2>
-    <span class="caps">FLIGHT BOARD · HKG · 到港 ARRIVALS</span>
+    <span class="caps" id="capsLine">FLIGHT BOARD · HKG</span>
+    <button id="headAbout" class="linkbtn">關於</button>
   </div>
   <div class="ts">資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</div>
 </header>
 
 <main>
-  <div class="searchrow">
-    <input id="qm" type="search" placeholder="輸入 Flight ID 關鍵字篩選…" autocomplete="off">
+  <div class="controls">
+    <div class="tabs" role="tablist" aria-label="到港或離港">
+      <button data-tab="arrival" class="on" role="tab">到港</button>
+      <button data-tab="departure" role="tab">離港</button>
+    </div>
+    <div class="dates" id="datePills" aria-label="選擇日期"></div>
   </div>
-  <div class="count" id="countLine"></div>
+  <div class="searchrow">
+    <input id="qm" type="search" placeholder="搜尋 Flight ID／來往地…" autocomplete="off">
+  </div>
+  <div class="countrow">
+    <span class="count" id="countLine"></span>
+    <label class="hidecargo"><input type="checkbox" id="hideCargo"> 隱藏貨機</label>
+  </div>
   <div class="tablewrap">
-    <table aria-label="到港航班">
+    <table id="flightTable" aria-label="航班">
       <thead>
         <tr>
           <th>NO</th>
           <th><span class="lbl">Flight ID</span><input id="q" type="search" placeholder="關鍵字篩選…" autocomplete="off"></th>
-          <th>REG</th><th>SUBTYPE</th><th>STAND</th><th>ETA</th><th>ATA</th><th>CHOCKS</th>
+          <th id="thVia">來自</th><th>REG</th><th>SUBTYPE</th><th id="thStand">STAND</th><th id="thEta">ETA</th><th id="thAta">ATA</th><th>CHOCKS</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -164,16 +242,33 @@
 (function(){
   "use strict";
   var PAGE = 12;
-  var all = [], filtered = [], expanded = false, query = "";
+  var DB = null;
+  var tab = "arrival", dateIdx = 1, hideCargo = false, query = "";
+  var filtered = [], expanded = false;
+
+  var L = {
+    arrival:   {name:"到港", caps:"FLIGHT BOARD · HKG · 到港 ARRIVALS", via:"來自", stand:"STAND", eta:"ETA", ata:"ATA"},
+    departure: {name:"離港", caps:"FLIGHT BOARD · HKG · 離港 DEPARTURES", via:"前往", stand:"GATE", eta:"ETD", ata:"ATD"}
+  };
+  var DATE_NAMES = ["昨天","今天","明天"];
+
   var rowsEl = document.getElementById("rows");
   var cardsEl = document.getElementById("cards");
   var expandBar = document.getElementById("expandBar");
   var expandBtn = document.getElementById("expandBtn");
   var countLine = document.getElementById("countLine");
+  var headCount = document.getElementById("headCount");
   var q = document.getElementById("q"), qm = document.getElementById("qm");
   var isMobile = function(){ return window.matchMedia("(max-width:719px)").matches; };
 
+  /* keep the mobile search bar pinned under the sticky header while scrolling */
+  function setStickyTop(){
+    var h = document.querySelector("header");
+    if(h) document.documentElement.style.setProperty("--stickyTop", h.offsetHeight + "px");
+  }
+
   function norm(s){ return (s||"").replace(/\s+/g,"").toUpperCase(); }
+  function md(iso){ var p = String(iso).split("-"); return (+p[1]) + "/" + (+p[2]); }
 
   function esc(s){
     return String(s==null?"":s).replace(/[&<>"']/g, function(c){
@@ -181,29 +276,53 @@
     });
   }
 
+  function currentFlights(){
+    if(!DB || !DB.dates || !DB.days) return [];
+    var d = DB.dates[dateIdx];
+    var list = (d && DB.days[d] && DB.days[d][tab]) || [];
+    if(hideCargo) list = list.filter(function(f){ return !f.cargo; });
+    return list;
+  }
+
   function applyFilter(){
+    var all = currentFlights();
     var nq = norm(query);
-    filtered = nq ? all.filter(function(f){ return norm(f.flight_id).indexOf(nq) !== -1; }) : all.slice();
+    filtered = nq ? all.filter(function(f){
+      return norm(f.flight_id).indexOf(nq) !== -1 || norm(f.via).indexOf(nq) !== -1;
+    }) : all.slice();
     expanded = false;
     render();
   }
 
+  function badge(f){ return f.cargo ? '<span class="cbadge">貨</span>' : ""; }
+
   function rowHtml(f){
-    return "<tr><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(f.flight_id)+"</td>"+
-      "<td class='dim'>"+esc(f.reg)+"</td><td class='dim'>"+esc(f.subtype)+"</td>"+
+    return "<tr><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(f.flight_id)+badge(f)+"</td>"+
+      "<td>"+esc(f.via)+"</td><td class='dim'>"+esc(f.reg)+"</td><td class='dim'>"+esc(f.subtype)+"</td>"+
       "<td>"+esc(f.stand)+"</td><td class='eta'>"+esc(f.eta)+"</td>"+
       "<td class='ata'>"+esc(f.ata)+"</td><td class='dim'>—</td></tr>";
   }
 
   function cardHtml(f){
-    function kv(k,v,cls){ return "<div><div class='k'>"+k+"</div><div class='v"+(cls?" "+cls:"")+"'>"+esc(v)+"</div></div>"; }
-    return "<div class='card'><div class='fid'>"+esc(f.flight_id)+"</div><div class='grid'>"+
-      kv("NO",f.no)+kv("REG",f.reg)+kv("SUBTYPE",f.subtype)+kv("STAND",f.stand)+
-      kv("ETA",f.eta,"eta")+kv("ATA",f.ata,"ata")+kv("CHOCKS","—")+
+    var l = L[tab];
+    function kv(k,v,cls){
+      return "<div><div class='k'>"+esc(k)+"</div><div class='v"+(cls?" "+cls:"")+"'>"+esc(v)+"</div></div>";
+    }
+    return "<div class='card'><div class='fid'>"+esc(f.flight_id)+badge(f)+"</div><div class='grid'>"+
+      kv("NO",f.no)+kv(l.via,f.via)+kv("REG",f.reg)+kv("SUBTYPE",f.subtype)+
+      kv(l.stand,f.stand)+kv(l.eta,f.eta,"eta")+kv(l.ata,f.ata,"ata")+kv("CHOCKS","—")+
       "</div></div>";
   }
 
   function render(){
+    var l = L[tab];
+    document.getElementById("thVia").textContent = l.via;
+    document.getElementById("thStand").textContent = l.stand;
+    document.getElementById("thEta").textContent = l.eta;
+    document.getElementById("thAta").textContent = l.ata;
+    document.getElementById("capsLine").textContent = l.caps;
+    document.getElementById("flightTable").setAttribute("aria-label", l.name+"航班");
+
     var list = expanded ? filtered : filtered.slice(0, PAGE);
     if(isMobile()){
       cardsEl.innerHTML = list.map(cardHtml).join("");
@@ -213,9 +332,11 @@
       cardsEl.innerHTML = "";
     }
     var total = filtered.length;
+    var dlabel = DB ? md(DB.dates[dateIdx]) + " " + l.name : l.name;
     countLine.textContent = query
       ? "「"+query+"」找到 "+total+" 班"
-      : "今日到港共 "+all.length+" 班（預設顯示 "+Math.min(PAGE,total)+" 班）";
+      : dlabel+"共 "+total+" 班（預設顯示 "+Math.min(PAGE,total)+" 班）";
+    headCount.textContent = currentFlights().length;
     if(total > PAGE && !expanded){
       expandBar.style.display = "";
       expandBtn.textContent = "仲有 "+(total-PAGE)+" 班，撳嚟展開";
@@ -225,7 +346,41 @@
     }else{
       expandBar.style.display = "none";
     }
+    setStickyTop();
   }
+
+  function buildDates(){
+    var wrap = document.getElementById("datePills");
+    wrap.innerHTML = "";
+    DB.dates.forEach(function(d, i){
+      var b = document.createElement("button");
+      b.innerHTML = esc(DATE_NAMES[i]||d) + "<br><small>" + esc(md(d)) + "</small>";
+      if(i===dateIdx) b.classList.add("on");
+      b.addEventListener("click", function(){
+        dateIdx = i;
+        var btns = wrap.querySelectorAll("button");
+        for(var k=0;k<btns.length;k++) btns[k].classList.toggle("on", k===i);
+        applyFilter();
+      });
+      wrap.appendChild(b);
+    });
+  }
+
+  var tabBtns = document.querySelectorAll(".tabs button");
+  for(var ti=0; ti<tabBtns.length; ti++){
+    (function(b){
+      b.addEventListener("click", function(){
+        tab = b.getAttribute("data-tab");
+        for(var k=0;k<tabBtns.length;k++) tabBtns[k].classList.toggle("on", tabBtns[k]===b);
+        applyFilter();
+      });
+    })(tabBtns[ti]);
+  }
+
+  document.getElementById("hideCargo").addEventListener("change", function(e){
+    hideCargo = !!e.target.checked;
+    applyFilter();
+  });
 
   expandBtn.addEventListener("click", function(){
     expanded = !expanded;
@@ -238,20 +393,31 @@
   qm.addEventListener("input", function(){ q.value = qm.value; onType(qm.value); });
 
   var rsz;
-  window.addEventListener("resize", function(){ clearTimeout(rsz); rsz = setTimeout(render, 150); });
+  window.addEventListener("resize", function(){ clearTimeout(rsz); rsz = setTimeout(function(){ setStickyTop(); render(); }, 150); });
+  setStickyTop();
 
   document.getElementById("refreshBtn").addEventListener("click", function(){
     location.href = location.pathname + "?t=" + Date.now();
   });
 
+  var overlay = document.getElementById("aboutOverlay");
+  function openAbout(){ overlay.classList.add("open"); }
+  function closeAbout(){ overlay.classList.remove("open"); }
+  document.getElementById("splashAbout").addEventListener("click", function(e){ e.stopPropagation(); openAbout(); });
+  document.getElementById("headAbout").addEventListener("click", openAbout);
+  document.getElementById("aboutClose").addEventListener("click", closeAbout);
+  overlay.addEventListener("click", function(e){ if(e.target===overlay) closeAbout(); });
+
   var t0 = Date.now();
   fetch("data.json?_="+Date.now(), {cache:"no-store"})
     .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
     .then(function(d){
-      all = d.flights || [];
+      DB = d;
+      if(!DB.dates || !DB.days) throw new Error("bad data");
+      dateIdx = 1;
       document.getElementById("headTs").textContent = d.generated_at || "—";
-      document.getElementById("headCount").textContent = d.count!=null ? d.count : all.length;
       document.getElementById("splashTs").textContent = "資料擷取時間："+(d.generated_at||"—");
+      buildDates();
       applyFilter();
     })
     .catch(function(e){
