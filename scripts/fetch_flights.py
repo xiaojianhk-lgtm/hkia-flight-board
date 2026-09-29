@@ -21,7 +21,15 @@ API_URL = (
     "https://www.hongkongairport.com/flightinfo-rest/rest/flights"
     "/past?date={date}&lan=tc&cargo={cargo}&arrival={arrival}"
 )
+# Menzies CNAC flight info (cargo handler). Arrival pages carry the STAND (ST)
+# field, which the official API does not publish for cargo flights.
+# Best-effort secondary source: only fills stands the official API leaves as "—".
+MENZIES_URL = (
+    "https://fv.menziescnac.com/data2"
+    "?page={page}&ha_filter=mcs&flight_id=&date_filter={date_filter}&arr_dep=A"
+)
 TIMEOUT_SECS = 30
+MENZIES_TIMEOUT_SECS = 20
 
 ATA_RE = re.compile(r"(?:At gate|Landed)\s+(\d{1,2}:\d{2})")
 ATD_RE = re.compile(r"Dep\s+(\d{1,2}:\d{2})")
@@ -50,6 +58,38 @@ def fetch(url: str):
         if resp.status != 200:
             raise RuntimeError(f"API returned HTTP {resp.status}")
         return json.load(resp)
+
+
+def flight_codes(s: str) -> set:
+    """Normalize 'CX 501 / QR 3458' or 'AY5099[CX165]' -> {'CX501','QR3458'}."""
+    return {p for p in re.split(r"[\/\[\]\(\)]+", (s or "").upper().replace(" ", "")) if p}
+
+
+def fetch_menzies_stands(date_filter: str) -> dict:
+    """Best-effort: {flight_code: stand} from Menzies arrival pages.
+
+    Never raises: on any failure returns {} and the caller skips enrichment.
+    """
+    code_to_stand: dict = {}
+    try:
+        page, total_pages = 1, 1
+        while page <= total_pages:
+            url = MENZIES_URL.format(page=page, date_filter=date_filter)
+            req = urllib.request.Request(url, headers={"User-Agent": "hkia-flight-board/1.0"})
+            with urllib.request.urlopen(req, timeout=MENZIES_TIMEOUT_SECS) as resp:
+                data = json.load(resp)
+            total_pages = int(data.get("total_pages") or 1)
+            for row in data.get("rows") or []:
+                st = (row.get("ST") or "").strip()
+                if not st or st == "-":
+                    continue
+                for c in flight_codes(row.get("Flight") or ""):
+                    code_to_stand.setdefault(c, st)
+            page += 1
+    except Exception as exc:
+        print(f"WARN: menzies stand fetch ({date_filter}) failed: {exc}, skipping", file=sys.stderr)
+        return {}
+    return code_to_stand
 
 
 def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
@@ -94,6 +134,15 @@ def main() -> int:
             old_payload = None
 
     days = {}
+    # Menzies stand enrichment (arrival only, best-effort). Their API only
+    # serves today/tomorrow (yesterday -> HTTP 500).
+    menzies = {}
+    df_for_date = {dates[1]: "today", dates[2]: "tomorrow"}
+    for df in ("today", "tomorrow"):
+        m = fetch_menzies_stands(df)
+        if m:
+            menzies[df] = m
+            print(f"  menzies {df}: {len(m)} flight codes with stands")
     try:
         for date in dates:
             day = {}
@@ -113,6 +162,20 @@ def main() -> int:
                         continue
                     for f in grp.get("list", []):
                         flights.append(parse_flight(f, arrival, cargo))
+                # Fill cargo stands missing from the official API.
+                if arrival and df_for_date.get(date) in menzies:
+                    code_to_stand = menzies[df_for_date[date]]
+                    n_fill = 0
+                    for fl in flights:
+                        if fl["stand"] != "—":
+                            continue
+                        for c in flight_codes(fl["flight_id"]):
+                            if c in code_to_stand:
+                                fl["stand"] = code_to_stand[c]
+                                n_fill += 1
+                                break
+                    if n_fill:
+                        print(f"  {date} arrival: +{n_fill} stands from menzies")
                 for fl in flights:
                     prev = old_stands.get((date, key, fl["flight_id"]))
                     cur = fl["stand"]
