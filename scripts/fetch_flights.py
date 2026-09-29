@@ -26,7 +26,7 @@ API_URL = (
 # Best-effort secondary source: only fills stands the official API leaves as "—".
 MENZIES_URL = (
     "https://fv.menziescnac.com/data2"
-    "?page={page}&ha_filter=mcs&flight_id=&date_filter={date_filter}&arr_dep=A"
+    "?page={page}&ha_filter=mcs&flight_id=&date_filter={date_filter}&arr_dep={arr_dep}"
 )
 TIMEOUT_SECS = 30
 MENZIES_TIMEOUT_SECS = 20
@@ -65,16 +65,17 @@ def flight_codes(s: str) -> set:
     return {p for p in re.split(r"[\/\[\]\(\)]+", (s or "").upper().replace(" ", "")) if p}
 
 
-def fetch_menzies_stands(date_filter: str) -> dict:
-    """Best-effort: {flight_code: stand} from Menzies arrival pages.
+def fetch_menzies_stands(date_filter: str, arr_dep: str) -> dict:
+    """Best-effort: {flight_code: stand} from Menzies pages.
 
+    arr_dep: "A" for arrival, "D" for departure.
     Never raises: on any failure returns {} and the caller skips enrichment.
     """
     code_to_stand: dict = {}
     try:
         page, total_pages = 1, 1
         while page <= total_pages:
-            url = MENZIES_URL.format(page=page, date_filter=date_filter)
+            url = MENZIES_URL.format(page=page, date_filter=date_filter, arr_dep=arr_dep)
             req = urllib.request.Request(url, headers={"User-Agent": "hkia-flight-board/1.0"})
             with urllib.request.urlopen(req, timeout=MENZIES_TIMEOUT_SECS) as resp:
                 data = json.load(resp)
@@ -134,15 +135,17 @@ def main() -> int:
             old_payload = None
 
     days = {}
-    # Menzies stand enrichment (arrival only, best-effort). Their API only
-    # serves today/tomorrow (yesterday -> HTTP 500).
-    menzies = {}
+    # Menzies stand enrichment (arrival + departure, best-effort).
+    # 官方優先；Menzies 只補官方留空（"—"）嘅。
+    # Their API only serves today/tomorrow (yesterday -> HTTP 500).
+    menzies = {}  # (date_filter, arr_dep) -> {code: stand}
     df_for_date = {dates[1]: "today", dates[2]: "tomorrow"}
     for df in ("today", "tomorrow"):
-        m = fetch_menzies_stands(df)
-        if m:
-            menzies[df] = m
-            print(f"  menzies {df}: {len(m)} flight codes with stands")
+        for ad in ("A", "D"):
+            m = fetch_menzies_stands(df, ad)
+            if m:
+                menzies[(df, ad)] = m
+                print(f"  menzies {df} {ad}: {len(m)} flight codes with stands")
     try:
         for date in dates:
             day = {}
@@ -162,9 +165,11 @@ def main() -> int:
                         continue
                     for f in grp.get("list", []):
                         flights.append(parse_flight(f, arrival, cargo))
-                # Fill cargo stands missing from the official API.
-                if arrival and df_for_date.get(date) in menzies:
-                    code_to_stand = menzies[df_for_date[date]]
+                # Fill stands missing from the official API (official first, menzies backup).
+                df = df_for_date.get(date)
+                ad = "A" if arrival else "D"
+                code_to_stand = menzies.get((df, ad), {})
+                if code_to_stand:
                     n_fill = 0
                     for fl in flights:
                         if fl["stand"] != "—":
@@ -175,7 +180,7 @@ def main() -> int:
                                 n_fill += 1
                                 break
                     if n_fill:
-                        print(f"  {date} arrival: +{n_fill} stands from menzies")
+                        print(f"  {date} {key}: +{n_fill} stands from menzies")
                 for fl in flights:
                     prev = old_stands.get((date, key, fl["flight_id"]))
                     cur = fl["stand"]
