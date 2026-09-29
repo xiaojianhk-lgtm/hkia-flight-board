@@ -35,13 +35,19 @@
   #splash .bar i{display:block; height:100%; width:0; background:var(--accent2); border-radius:2px; animation:load 1.4s ease forwards;}
   @keyframes load{to{width:100%;}}
   #splashAbout{margin-top:10px;}
-  /* ---------- header ---------- */
+  /* ---------- header（碌走唔固定） ---------- */
   header{
-    position:sticky; top:0; z-index:10;
-    background:rgba(11,28,44,.96); backdrop-filter:blur(6px);
+    background:rgba(11,28,44,.96);
     border-bottom:1px solid var(--line);
     padding:10px 16px; padding-right:60px;
   }
+  /* ---------- sticky 控制列：tab＋日期＋搜尋固定頂部 ---------- */
+  .stickybar{
+    position:sticky; top:0; z-index:10;
+    background:rgba(11,28,44,.96); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  .stickyinner{max-width:1100px; margin:0 auto; padding:0 8px;}
   header .row1{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
   header h2{font-size:19px; margin:0; letter-spacing:4px;}
   header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
@@ -91,7 +97,7 @@
   .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:8px; background:var(--bg2);}
   table{width:100%; border-collapse:collapse; font-size:12.5px;}
   thead th{
-    position:sticky; top:0; background:var(--card);
+    position:sticky; top:var(--barH,0px); background:var(--card);
     padding:7px 6px; text-align:left; font-size:11px; letter-spacing:1px; color:var(--muted);
     border-bottom:1px solid var(--line); white-space:nowrap;
   }
@@ -134,7 +140,7 @@
     .mstandold{font-size:11px; color:var(--dim);}
     .mline2{font-size:11px; color:var(--dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
     #q{max-width:none;}
-    .searchrow{padding:10px 2px; position:sticky; top:var(--stickyTop,0px); z-index:5; background:var(--bg);}
+    .searchrow{padding:8px 2px 10px;}
   }
   @media (min-width:720px){ .searchrow{display:none;} }
   .searchrow input{
@@ -209,7 +215,7 @@
   <div class="ts">資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</div>
 </header>
 
-<main>
+<div class="stickybar"><div class="stickyinner">
   <div class="controls">
     <div class="tabs" role="tablist" aria-label="到港或離港">
       <button data-tab="arrival" class="on" role="tab">到港</button>
@@ -220,6 +226,9 @@
   <div class="searchrow">
     <input id="qm" type="search" placeholder="搜尋 Flight ID／來往地…" autocomplete="off">
   </div>
+</div></div>
+
+<main>
   <div class="countrow">
     <span class="count" id="countLine"></span>
     <label class="hidecargo"><input type="checkbox" id="hideCargo"> 隱藏貨機</label>
@@ -266,10 +275,10 @@
   var q = document.getElementById("q"), qm = document.getElementById("qm");
   var isMobile = function(){ return window.matchMedia("(max-width:719px)").matches; };
 
-  /* keep the mobile search bar pinned under the sticky header while scrolling */
-  function setStickyTop(){
-    var h = document.querySelector("header");
-    if(h) document.documentElement.style.setProperty("--stickyTop", h.offsetHeight + "px");
+  /* sticky 表頭（桌面版 thead）要留返 stickybar 高度 */
+  function setBarH(){
+    var b = document.querySelector(".stickybar");
+    if(b) document.documentElement.style.setProperty("--barH", b.offsetHeight + "px");
   }
 
   function norm(s){ return (s||"").replace(/\s+/g,"").toUpperCase(); }
@@ -421,7 +430,7 @@
     }else{
       expandBar.style.display = "none";
     }
-    setStickyTop();
+    setBarH();
   }
 
   function buildDates(){
@@ -468,8 +477,8 @@
   qm.addEventListener("input", function(){ q.value = qm.value; onType(qm.value); });
 
   var rsz;
-  window.addEventListener("resize", function(){ clearTimeout(rsz); rsz = setTimeout(function(){ setStickyTop(); render(); }, 150); });
-  setStickyTop();
+  window.addEventListener("resize", function(){ clearTimeout(rsz); rsz = setTimeout(function(){ setBarH(); render(); }, 150); });
+  setBarH();
 
   document.getElementById("refreshBtn").addEventListener("click", function(){
     location.href = location.pathname + "?t=" + Date.now();
