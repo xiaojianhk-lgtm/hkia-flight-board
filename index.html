@@ -106,7 +106,9 @@
   tbody td{padding:6px; border-bottom:1px solid rgba(31,58,85,.55); white-space:nowrap;}
   tbody tr:nth-child(even){background:rgba(255,255,255,.018);}
   td.fid{font-weight:600; color:#fff;}
-  td.eta{color:var(--accent2);} td.ata{color:#9ccc65;}
+  td.eta{color:var(--accent2);} td.ata{color:#ef5350;}
+  .estchg{color:#9ccc65; font-weight:700;}
+  .standchg{color:#ef5350; font-weight:700;}
   td.dim{color:var(--muted);}
   .expandbar{padding:10px; text-align:center;}
   .expandbar button{
@@ -125,13 +127,11 @@
     .mflight{font-weight:700; font-size:14px; white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mdest{font-size:12px; color:var(--dim); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
     .mtime{font-weight:700; font-size:15px; color:var(--accent2); white-space:nowrap; font-variant-numeric:tabular-nums;}
-    .mtime-ata{font-weight:700; font-size:15px; color:#9ccc65; white-space:nowrap; font-variant-numeric:tabular-nums;}
-    .mtime-est{font-weight:700; font-size:15px; color:#ef5350; white-space:nowrap; font-variant-numeric:tabular-nums;}
-    .estchg{color:#ef5350; font-weight:700;}
+    .mtime-ata{font-weight:700; font-size:15px; color:#ef5350; white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mtime-est{font-weight:700; font-size:15px; color:#9ccc65; white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mstand{font-size:14px; font-weight:700; color:var(--text);}
     .mstandchg{font-size:14px; font-weight:700; color:#ef5350;}
     .mstandold{font-size:11px; color:var(--dim);}
-    .standchg{color:#ef5350; font-weight:700;}
     .mline2{font-size:11px; color:var(--dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
     #q{max-width:none;}
     .searchrow{padding:10px 2px; position:sticky; top:var(--stickyTop,0px); z-index:5; background:var(--bg);}
@@ -187,7 +187,7 @@
       <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」過濾。</li>
       <li>右上角按鈕可手動重新載入最新資料。</li>
-      <li>時間顏色：<span style="color:#4fc3f7">藍色</span>為原定時間，<span style="color:#ef5350">紅色</span>為預計時間，<span style="color:#9ccc65">綠色</span>為實際時間。</li>
+      <li>時間顏色：<span style="color:#4fc3f7">藍色</span>為原定時間，<span style="color:#9ccc65">綠色</span>為預計時間，<span style="color:#ef5350">紅色</span>為實際時間。</li>
     </ul>
     <p class="fine">時間為香港時間 (HKT)。航班資料僅供參考，請以機場官方公布為準。</p>
     <button id="aboutClose">關閉</button>
