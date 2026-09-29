@@ -25,6 +25,7 @@ TIMEOUT_SECS = 30
 
 ATA_RE = re.compile(r"(?:At gate|Landed)\s+(\d{1,2}:\d{2})")
 ATD_RE = re.compile(r"Dep\s+(\d{1,2}:\d{2})")
+EST_RE = re.compile(r"Est at\s+(\d{1,2}:\d{2})")
 
 
 def parse_actual(status: str, arrival: bool) -> str:
@@ -32,6 +33,14 @@ def parse_actual(status: str, arrival: bool) -> str:
     if not status:
         return "—"
     m = (ATA_RE if arrival else ATD_RE).search(status)
+    return m.group(1) if m else "—"
+
+
+def parse_est(status: str) -> str:
+    """Estimated time (ETA/ETD) from a status like 'Est at 03:50 (30/09/2026)'."""
+    if not status:
+        return "—"
+    m = EST_RE.search(status)
     return m.group(1) if m else "—"
 
 
@@ -54,6 +63,7 @@ def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
         "subtype": "—",
         "stand": stand.strip() or "—",
         "eta": (f.get("time") or "").strip(),
+        "est": parse_est(status),
         "ata": parse_actual(status, arrival),
         "cargo": cargo,
         "status_raw": status,
@@ -108,6 +118,8 @@ def main() -> int:
                     cur = fl["stand"]
                     if prev and cur and prev != "—" and cur != "—" and prev != cur:
                         fl["stand_old"] = prev
+                # Sort by effective time: estimated (EST) if available, else scheduled.
+                flights.sort(key=lambda fl: fl["est"] if fl["est"] != "—" else fl["eta"])
                 for i, fl in enumerate(flights, start=1):
                     fl["no"] = i
                 day[key] = flights

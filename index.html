@@ -126,6 +126,8 @@
     .mdest{font-size:12px; color:var(--dim); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
     .mtime{font-weight:700; font-size:15px; color:var(--accent2); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-changed{font-weight:700; font-size:15px; color:#ef5350; white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mtime-est{font-weight:700; font-size:15px; color:#ef5350; white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .estchg{color:#ef5350; font-weight:700;}
     .mstand{font-size:14px; font-weight:700; color:var(--text);}
     .mstandchg{font-size:14px; font-weight:700; color:#ef5350;}
     .mstandold{font-size:11px; color:var(--dim);}
@@ -249,8 +251,8 @@
   var filtered = [], expanded = false;
 
   var L = {
-    arrival:   {name:"到港", caps:"Flight information · HKG · 到港 ARRIVALS", via:"來自", stand:"STAND", eta:"ETA", ata:"ATA"},
-    departure: {name:"離港", caps:"Flight information · HKG · 離港 DEPARTURES", via:"前往", stand:"GATE", eta:"ETD", ata:"ATD"}
+    arrival:   {name:"到港", caps:"Flight information · HKG · 到港 ARRIVALS", via:"來自", stand:"STAND", eta:"STA", ata:"ATA"},
+    departure: {name:"離港", caps:"Flight information · HKG · 離港 DEPARTURES", via:"前往", stand:"GATE", eta:"STD", ata:"ATD"}
   };
   var DATE_NAMES = ["昨天","今天","明天"];
 
@@ -281,8 +283,8 @@
   function timeAnchorIndex(list){
     var now = nowHHMM();
     for(var i=0;i<list.length;i++){
-      var t = list[i].eta || "";
-      if(t && t >= now) return i;
+      var t = effTime(list[i]);
+      if(t && t !== "—" && t >= now) return i;
     }
     return list.length;
   }
@@ -327,15 +329,29 @@
     return "<span class='mstand'>"+esc(f.stand||"—")+"</span>";
   }
 
+  function etaCell(f){
+    var h = esc(f.eta);
+    if(f.est && f.est !== "—" && f.est !== f.eta){
+      h += " <span class='estchg'>"+esc(f.est)+"</span>";
+    }
+    return h;
+  }
+
   function rowHtml(f){
     return "<tr><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(f.flight_id)+badge(f)+"</td>"+
       "<td>"+esc(f.via)+"</td>"+
-      "<td>"+dstandHtml(f)+"</td><td class='eta'>"+esc(f.eta)+"</td>"+
+      "<td>"+dstandHtml(f)+"</td><td class='eta'>"+etaCell(f)+"</td>"+
       "<td class='ata'>"+esc(f.ata)+"</td></tr>";
   }
 
+  /* effective time: estimated if available, else scheduled — matches server sort */
+  function effTime(f){ return (f.est && f.est !== "—") ? f.est : (f.eta || "—"); }
+
   function mrowHtml(f){
     var timeHtml = "<span class='mtime'>"+esc(f.eta||"—")+"</span>";
+    if(f.est && f.est !== "—" && f.est !== f.eta){
+      timeHtml += "<span class='mtime-est'>"+esc(f.est)+"</span>";
+    }
     if(tab === "departure" && f.ata && f.ata !== "—" && f.ata !== f.eta){
       timeHtml += "<span class='mtime-changed'>"+esc(f.ata)+"</span>";
     }
