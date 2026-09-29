@@ -486,6 +486,14 @@
     location.href = location.pathname + "?t=" + Date.now();
   });
 
+  /* 上滑時隱藏更新掣（唔好遮住 stickybar 嘅離港），返到頂先出返 */
+  var refreshBtn = document.getElementById("refreshBtn");
+  function onScrollHideRefresh(){
+    refreshBtn.style.display = (window.scrollY > 60) ? "none" : "";
+  }
+  window.addEventListener("scroll", onScrollHideRefresh, {passive:true});
+  onScrollHideRefresh();
+
   var overlay = document.getElementById("aboutOverlay");
   function openAbout(){ overlay.classList.add("open"); }
   function closeAbout(){ overlay.classList.remove("open"); }
