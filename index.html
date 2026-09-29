@@ -363,16 +363,6 @@
   function effTime(f){ return (f.est && f.est !== "—") ? f.est : (f.eta || "—"); }
 
   /* status text without the time (time moves to the right side) */
-  function statusText(f){
-    var s = f.status_raw || "";
-    [f.ata, f.est].forEach(function(t){
-      if(t && t !== "—" && s.indexOf(t) >= 0){ s = s.replace(t, ""); }
-    });
-    s = s.replace(/\s{2,}/g, " ").trim();
-    if(s === "Est at"){ s = "Est"; }
-    return s;
-  }
-
   function mrowHtml(f){
     var timeHtml = "<span class='mtime'>"+esc(f.eta||"—")+"</span>";
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
@@ -383,11 +373,9 @@
     if(f.ata && f.ata !== "—" && f.ata !== f.eta && (!estShown || f.ata !== f.est)){
       timeHtml += "<span class='mtime-ata'>"+esc(f.ata)+"</span>";
     }
-    var l2 = statusText(f);
     var standMid = mstandHtml(f);
     return "<div class='mrow'><div class='mline1'><span class='mflight'>"+esc(opId(f))+"</span>"+badge(f)+
-      "<span class='mdest'>"+esc(f.via)+"</span>"+standMid+timeHtml+"</div>"+
-      (l2 ? "<div class='mline2'>"+esc(l2)+"</div>" : "")+"</div>";
+      "<span class='mdest'>"+esc(f.via)+"</span>"+standMid+timeHtml+"</div></div>";
   }
 
   function render(){
