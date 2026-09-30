@@ -253,7 +253,7 @@ try{
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
       <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「HAS代理」開咗只顯示 HAS 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
-      <li>撳航班列可展開詳情（狀態全文、泊位變動）。</li>
+      <li>撳航班列可展開詳情（狀態全文、延誤時間、行李帶／大堂、聯營航班、泊位變動）。</li>
       <li>右上角按鈕可手動重新載入最新資料；太陽／月亮按鈕可切換日間／夜間模式。</li>
       <li>時間顏色：<span class="c-blue">藍色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。</li>
     </ul>
@@ -470,10 +470,30 @@ try{
   }
 
   /* ---------- 撳入詳情 ---------- */
+  function toMin(t){ var m = /^(\d{1,2}):(\d{2})/.exec(t || ""); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+  function delayText(f){
+    if(!f.est || f.est === "—" || !f.eta || f.eta === "—" || f.est === f.eta) return "";
+    var m1 = toMin(f.eta), m2 = toMin(f.est);
+    if(m1 === null || m2 === null) return "";
+    var d = m2 - m1;
+    if(d > 720) d -= 1440; else if(d < -720) d += 1440;
+    if(d === 0) return "";
+    return d > 0 ? "延誤 " + d + " 分鐘" : "提早 " + (-d) + " 分鐘";
+  }
   function detailInner(f){
     var h = "<div><span>狀態：</span>"+esc(f.status_raw || "—")+"</div>";
+    var dt = delayText(f);
+    if(dt) h += "<div><span>時間：</span>"+esc(dt)+"</div>";
+    if(tab === "arrival"){
+      if(f.baggage && f.baggage !== "—") h += "<div><span>行李帶：</span>"+esc(f.baggage)+"</div>";
+    }else{
+      if(f.hall && f.hall !== "—") h += "<div><span>大堂：</span>"+esc(f.hall)+"</div>";
+    }
+    var codes = (f.flight_id || "").split(" / ").slice(1).filter(Boolean);
+    if(codes.length) h += "<div><span>聯營：</span>"+esc(codes.join(" / "))+"</div>";
     if(f.stand_old && f.stand_old !== f.stand){
-      h += "<div><span>泊位變動：</span>"+esc(f.stand_old)+" → "+esc(f.stand)+"</div>";
+      var lbl = (tab === "arrival") ? "泊位變動：" : "閘口變動：";
+      h += "<div><span>"+lbl+"</span>"+esc(f.stand_old)+" → "+esc(f.stand)+"</div>";
     }
     return h;
   }

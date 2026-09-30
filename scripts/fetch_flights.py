@@ -62,6 +62,8 @@ def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
         "reg": "—",
         "subtype": "—",
         "stand": stand.strip() or "—",
+        "baggage": (f.get("baggage") or "").strip() or "—",
+        "hall": (f.get("hall") or "").strip() or "—",
         "eta": (f.get("time") or "").strip(),
         "est": parse_est(status),
         "ata": parse_actual(status, arrival),
