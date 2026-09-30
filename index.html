@@ -399,11 +399,11 @@
     document.getElementById("flightTable").setAttribute("aria-label", l.name+"航班");
 
     var ps = isMobile() ? 50 : PAGE;
-    /* 今天：以現時為中心，顯示前後約 50 班；昨天/明天/搜尋維持由頭顯示 */
+    /* 今天：由現時之前 8 班（已完成）開始，顯示 50 班；昨天/明天/搜尋維持由頭顯示 */
     var start = 0, showN = ps, centered = false;
     if(!expanded && !query && dateIdx === 1 && filtered.length){
       var w = 50, ai = timeAnchorIndex(filtered);
-      start = Math.max(0, Math.min(ai - 25, filtered.length - w));
+      start = Math.max(0, Math.min(ai - 8, filtered.length - w));
       showN = Math.min(w, filtered.length);
       centered = true;
     }
@@ -423,7 +423,7 @@
     headCount.textContent = currentFlights().length;
     if(total > showN && !expanded){
       expandBar.style.display = "";
-      expandBtn.textContent = "仲有 "+(total-showN)+" 班，撳嚟展開";
+      expandBtn.textContent = "展開全部 "+total+" 班航班";
     }else if(total > showN && expanded){
       expandBar.style.display = "";
       expandBtn.textContent = "收起";
