@@ -197,7 +197,7 @@
       <li>資料來源：香港國際機場官方網站，每 15 分鐘自動更新。</li>
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
       <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
-      <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾。</li>
+      <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「HAS代理」開咗只顯示 HAS 地勤代理嘅航空公司（根據公開名單＋Menzies 資料）。</li>
       <li>右上角按鈕可手動重新載入最新資料。</li>
       <li>時間顏色：<span style="color:#4fc3f7">藍色</span>為原定時間，<span style="color:#9ccc65">綠色</span>為預計時間，<span style="color:#ef5350">紅色</span>為實際時間。</li>
     </ul>
@@ -239,6 +239,7 @@
     <span class="count" id="countLine"></span>
     <label class="hidecargo"><input type="checkbox" id="hidePax"> 隱藏客機</label>
     <label class="hidecargo"><input type="checkbox" id="hideCargo" checked> 隱藏貨機</label>
+    <label class="hidecargo"><input type="checkbox" id="showHas" checked> HAS代理</label>
   </div>
   <div class="tablewrap">
     <table id="flightTable" aria-label="航班">
@@ -264,7 +265,7 @@
   "use strict";
   var PAGE = 12;
   var DB = null;
-  var tab = "arrival", dateIdx = 1, hideCargo = true, hidePax = false, query = "";
+  var tab = "arrival", dateIdx = 1, hideCargo = true, hidePax = false, onlyHas = true, query = "";
   var filtered = [], expanded = false, lastStart = 0;
 
   var L = {
@@ -318,11 +319,20 @@
     var list = (d && DB.days[d] && DB.days[d][tab]) || [];
     if(hideCargo) list = list.filter(function(f){ return !f.cargo; });
     if(hidePax) list = list.filter(function(f){ return f.cargo; });
+    if(onlyHas) list = list.filter(isHasFlight);
     return list;
   }
 
   // 只顯示營運航班編號（第一個），codeshare 保留作搜尋用。
   function opId(f){ return (f.flight_id || "").split(" / ")[0]; }
+
+  // HAS 地勤代理嘅航空公司（用戶提供，2026-09-30；Menzies HA 欄會補充）
+  var HAS_CODES = ["CX","PX","JX","KE","JL","QR","FJ","BI","LH","LX","DL","UO","AK","FD","Z2","QZ","GK","9G","LD","QY","3V","C6","D4","MS","CK"];
+  function isHasFlight(f){
+    if(f.ha === "HAS") return true;
+    var code = opId(f).replace(/\s/g,"").substring(0,2).toUpperCase();
+    return HAS_CODES.indexOf(code) !== -1;
+  }
 
   function applyFilter(){
     var all = currentFlights();
@@ -471,6 +481,11 @@
 
   document.getElementById("hideCargo").addEventListener("change", function(e){
     hideCargo = !!e.target.checked;
+    applyFilter();
+  });
+
+  document.getElementById("showHas").addEventListener("change", function(e){
+    onlyHas = !!e.target.checked;
     applyFilter();
   });
 
