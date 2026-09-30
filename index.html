@@ -48,6 +48,7 @@
     border-bottom:1px solid var(--line);
   }
   .stickyinner{max-width:1100px; margin:0 auto; padding:0 8px;}
+  #stickyTs{padding:6px 0 4px; font-size:11px;}
   header .row1{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
   header h2{font-size:19px; margin:0; letter-spacing:4px;}
   header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
@@ -217,10 +218,10 @@
     <span class="caps" id="capsLine">FLIGHT INFORMATION · HKG</span>
     <button id="headAbout" class="linkbtn">關於</button>
   </div>
-  <div class="ts">資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</div>
 </header>
 
 <div class="stickybar"><div class="stickyinner">
+  <div class="ts" id="stickyTs">資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</div>
   <div class="controls">
     <div class="tabs" role="tablist" aria-label="到港或離港">
       <button data-tab="arrival" class="on" role="tab">到港</button>
