@@ -181,6 +181,19 @@ def main() -> int:
                                 break
                     if n_fill:
                         print(f"  {date} {key}: +{n_fill} stands from menzies")
+                else:
+                    # Menzies fetch failed: preserve stands from previous run
+                    # instead of dropping them all back to "—".
+                    n_keep = 0
+                    for fl in flights:
+                        if fl["stand"] != "—":
+                            continue
+                        prev = old_stands.get((date, key, fl["flight_id"]))
+                        if prev and prev != "—":
+                            fl["stand"] = prev
+                            n_keep += 1
+                    if n_keep:
+                        print(f"  {date} {key}: kept {n_keep} stands from previous run (menzies failed)")
                 for fl in flights:
                     prev = old_stands.get((date, key, fl["flight_id"]))
                     cur = fl["stand"]
