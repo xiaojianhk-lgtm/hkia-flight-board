@@ -236,7 +236,7 @@
   <div class="countrow">
     <span class="count" id="countLine"></span>
     <label class="hidecargo"><input type="checkbox" id="hidePax"> 隱藏客機</label>
-    <label class="hidecargo"><input type="checkbox" id="hideCargo"> 隱藏貨機</label>
+    <label class="hidecargo"><input type="checkbox" id="hideCargo" checked> 隱藏貨機</label>
   </div>
   <div class="tablewrap">
     <table id="flightTable" aria-label="航班">
@@ -262,7 +262,7 @@
   "use strict";
   var PAGE = 12;
   var DB = null;
-  var tab = "arrival", dateIdx = 1, hideCargo = false, hidePax = false, query = "";
+  var tab = "arrival", dateIdx = 1, hideCargo = true, hidePax = false, query = "";
   var filtered = [], expanded = false;
 
   var L = {
