@@ -7,10 +7,39 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b1c2c">
 <title>航班資訊 · 香港國際機場</title>
+<script>
+/* 日／夜模式：盡早套用，避免閃爍（localStorage > 系統偏好 > 預設夜晚） */
+try{
+  var _t = localStorage.getItem("hkia-theme");
+  if(_t !== "light" && _t !== "dark"){
+    _t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+  }
+  document.documentElement.setAttribute("data-theme", _t);
+}catch(e){ document.documentElement.setAttribute("data-theme", "dark"); }
+</script>
 <style>
   :root{
     --bg:#0b1c2c; --bg2:#10263c; --card:#132c44; --line:#1f3a55;
-    --text:#e8f1f8; --muted:#8fa8bd; --accent:#ffb300; --accent2:#4fc3f7;
+    --text:#e8f1f8; --muted:#8fa8bd; --dim:#8fa8bd; --strong:#ffffff;
+    --accent:#ffb300; --accent2:#4fc3f7;
+    --input-bg:#0a1928; --placeholder:#5b748c;
+    --header-bg:rgba(11,28,44,.96); --header-bg-solid:rgb(11,28,44);
+    --row-line:rgba(31,58,85,.55); --row-alt:rgba(255,255,255,.018);
+    --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
+    --red:#ef5350; --green:#9ccc65; --blue:#4fc3f7;
+    --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72); --error-fg:#ef9a9a;
+  }
+  /* 白天模式 */
+  [data-theme="light"]{
+    --bg:#eef2f6; --bg2:#ffffff; --card:#ffffff; --line:#d8e2ec;
+    --text:#16283a; --muted:#5f7a93; --dim:#5f7a93; --strong:#0f1e2e;
+    --accent:#b97a00; --accent2:#0288d1;
+    --input-bg:#e6edf4; --placeholder:#8fa0b3;
+    --header-bg:rgba(255,255,255,.96); --header-bg-solid:#ffffff;
+    --row-line:#e3eaf1; --row-alt:rgba(0,0,0,.028);
+    --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
+    --red:#d32f2f; --green:#558b2f; --blue:#0288d1;
+    --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45); --error-fg:#c62828;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
@@ -37,14 +66,14 @@
   #splashAbout{margin-top:10px;}
   /* ---------- header（碌走唔固定） ---------- */
   header{
-    background:rgba(11,28,44,.96);
+    background:var(--header-bg);
     border-bottom:1px solid var(--line);
-    padding:10px 16px; padding-right:60px;
+    padding:10px 16px; padding-right:104px;
   }
   /* ---------- sticky 控制列：tab＋日期＋搜尋固定頂部 ---------- */
   .stickybar{
     position:-webkit-sticky; position:sticky; top:0; z-index:10;
-    background:rgb(11,28,44);
+    background:var(--header-bg-solid);
     border-bottom:1px solid var(--line);
   }
   .stickyinner{max-width:1100px; margin:0 auto; padding:0 8px;}
@@ -64,6 +93,15 @@
   }
   #refreshBtn:active{transform:scale(.92);}
   #refreshBtn svg{width:18px; height:18px;}
+  #themeBtn{
+    position:fixed; top:10px; right:56px; z-index:20;
+    width:38px; height:38px; border-radius:50%;
+    border:1px solid var(--line); background:var(--card); color:var(--text);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.35);
+  }
+  #themeBtn:active{transform:scale(.92);}
+  #themeBtn svg{width:18px; height:18px;}
   .linkbtn{
     background:none; border:1px solid var(--line); border-radius:14px;
     color:var(--accent2); font-size:12px; cursor:pointer; padding:5px 12px; letter-spacing:2px;
@@ -72,26 +110,26 @@
   /* ---------- controls ---------- */
   main{padding:8px 8px 32px; max-width:1100px; margin:0 auto;}
   .controls{padding:10px 2px 0; display:flex; flex-direction:column; gap:8px;}
-  .tabs{display:flex; background:#0a1928; border:1px solid var(--line); border-radius:10px; padding:3px;}
+  .tabs{display:flex; background:var(--input-bg); border:1px solid var(--line); border-radius:10px; padding:3px;}
   .tabs button{
     flex:1; border:0; background:transparent; color:var(--muted);
     font-size:14px; padding:8px; border-radius:7px; cursor:pointer; letter-spacing:3px;
   }
-  .tabs button.on{background:var(--accent2); color:#06283d; font-weight:700;}
+  .tabs button.on{background:var(--accent2); color:var(--tab-on-fg); font-weight:700;}
   .dates{display:flex; gap:8px;}
   .dates button{
-    flex:1; background:#0a1928; border:1px solid var(--line); color:var(--muted);
+    flex:1; background:var(--input-bg); border:1px solid var(--line); color:var(--muted);
     border-radius:10px; padding:7px 4px; font-size:13px; cursor:pointer; line-height:1.35; letter-spacing:1px;
   }
   .dates button small{font-size:11px; opacity:.8;}
-  .dates button.on{border-color:var(--accent2); color:#fff; font-weight:600;}
+  .dates button.on{border-color:var(--accent2); color:var(--strong); font-weight:600;}
   .countrow{display:flex; justify-content:space-between; align-items:center; padding:8px 4px; gap:8px;}
   .count{font-size:12px; color:var(--muted);}
   .hidecargo{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;}
   .hidecargo input{accent-color:var(--accent2);}
   .cbadge{
-    display:inline-block; font-size:10px; background:#5d4300; color:#ffd54f;
-    border:1px solid #8d6a00; border-radius:4px; padding:0 4px; margin-left:5px;
+    display:inline-block; font-size:10px; background:var(--badge-bg); color:var(--badge-fg);
+    border:1px solid var(--badge-bd); border-radius:4px; padding:0 4px; margin-left:5px;
     vertical-align:1px; font-weight:400; letter-spacing:1px;
   }
   /* ---------- table ---------- */
@@ -105,25 +143,26 @@
   thead th .lbl{display:block; margin-bottom:4px;}
   #q{
     width:100%; min-width:110px; max-width:190px;
-    background:#0a1928; border:1px solid var(--line); border-radius:6px; color:var(--text);
+    background:var(--input-bg); border:1px solid var(--line); border-radius:6px; color:var(--text);
     font-size:13px; padding:5px 8px; outline:none;
   }
   #q:focus{border-color:var(--accent2);}
-  #q::placeholder{color:#5b748c;}
-  tbody td{padding:6px; border-bottom:1px solid rgba(31,58,85,.55); white-space:nowrap;}
-  tbody tr:nth-child(even){background:rgba(255,255,255,.018);}
-  td.fid{font-weight:600; color:#fff;}
-  td.eta{color:var(--accent2);} td.ata{color:#ef5350;}
-  .estchg{color:#9ccc65; font-weight:700;}
-  .standchg{color:#ef5350; font-weight:700;}
+  #q::placeholder{color:var(--placeholder);}
+  tbody td{padding:6px; border-bottom:1px solid var(--row-line); white-space:nowrap;}
+  tbody tr:nth-child(even){background:var(--row-alt);}
+  td.fid{font-weight:600; color:var(--strong);}
+  td.eta{color:var(--blue);} td.ata{color:var(--red);}
+  .estchg{color:var(--green); font-weight:700;}
+  .standchg{color:var(--red); font-weight:700;}
   td.dim{color:var(--muted);}
+  .c-blue{color:var(--blue);} .c-green{color:var(--green);} .c-red{color:var(--red);}
   .expandbar{padding:10px; text-align:center;}
   .expandbar button{
     background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
     padding:8px 18px; font-size:13px; cursor:pointer; letter-spacing:1px;
   }
   .expandbar button:active{transform:scale(.96);}
-  .error{padding:24px; text-align:center; color:#ef9a9a;}
+  .error{padding:24px; text-align:center; color:var(--error-fg);}
   /* ---------- mobile compact rows ---------- */
   #cards{display:none;}
   @media (max-width:719px), (orientation:landscape) and (max-height:500px){
@@ -136,12 +175,12 @@
     .mflight{font-weight:700; font-size:14px; white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mdest{font-size:10px; color:var(--dim); white-space:nowrap; opacity:.75;}
     .mstandwrap{text-align:center; white-space:nowrap;}
-    .mtime{font-weight:700; font-size:15px; color:var(--accent2); white-space:nowrap; font-variant-numeric:tabular-nums;}
-    .mtime-ata{font-weight:700; font-size:15px; color:#ef5350; white-space:nowrap; font-variant-numeric:tabular-nums;}
-    .mtime-est{font-weight:700; font-size:15px; color:#9ccc65; white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mtime{font-weight:700; font-size:15px; color:var(--blue); white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mtime-ata{font-weight:700; font-size:15px; color:var(--red); white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mtime-est{font-weight:700; font-size:15px; color:var(--green); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .msep{color:var(--dim); font-size:13px; margin:0 2px;}
     .mstand{font-size:14px; font-weight:700; color:var(--text);}
-    .mstandchg{font-size:14px; font-weight:700; color:#ef5350;}
+    .mstandchg{font-size:14px; font-weight:700; color:var(--red);}
     .mstandold{font-size:11px; color:var(--dim);}
     .mline2{font-size:11px; color:var(--dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
     #q{max-width:none;}
@@ -150,13 +189,13 @@
   @media (min-width:720px){ .searchrow{display:none;} }
   @media (orientation:landscape) and (max-height:500px){ .searchrow{display:block !important;} }
   .searchrow input{
-    width:100%; background:#0a1928; border:1px solid var(--line); border-radius:8px;
+    width:100%; background:var(--input-bg); border:1px solid var(--line); border-radius:8px;
     color:var(--text); font-size:16px; padding:9px 12px; outline:none;
   }
-  .searchrow input::placeholder{color:#5b748c;}
+  .searchrow input::placeholder{color:var(--placeholder);}
   /* ---------- about overlay ---------- */
   #aboutOverlay{
-    position:fixed; inset:0; z-index:60; background:rgba(4,12,20,.72);
+    position:fixed; inset:0; z-index:60; background:var(--overlay-bg);
     display:none; align-items:center; justify-content:center; padding:22px;
   }
   #aboutOverlay.open{display:flex;}
@@ -171,7 +210,7 @@
   .about-card .fine{font-size:11.5px; color:var(--muted); margin:0 0 14px;}
   .about-card button{
     width:100%; background:var(--accent2); border:0; border-radius:8px;
-    color:#06283d; font-size:14px; font-weight:700; padding:10px; cursor:pointer; letter-spacing:2px;
+    color:var(--tab-on-fg); font-size:14px; font-weight:700; padding:10px; cursor:pointer; letter-spacing:2px;
   }
   .about-card button:active{transform:scale(.97);}
 </style>
@@ -198,13 +237,22 @@
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
       <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「HAS代理」開咗只顯示 HAS 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
-      <li>右上角按鈕可手動重新載入最新資料。</li>
-      <li>時間顏色：<span style="color:#4fc3f7">藍色</span>為原定時間，<span style="color:#9ccc65">綠色</span>為預計時間，<span style="color:#ef5350">紅色</span>為實際時間。</li>
+      <li>右上角按鈕可手動重新載入最新資料；太陽／月亮按鈕可切換日間／夜間模式。</li>
+      <li>時間顏色：<span class="c-blue">藍色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。</li>
     </ul>
     <p class="fine">時間為香港時間 (HKT)。航班資料僅供參考，請以機場官方公布為準。</p>
     <button id="aboutClose">關閉</button>
   </div>
 </div>
+
+<button id="themeBtn" title="日／夜模式" aria-label="切換日夜模式">
+  <svg id="icoSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/>
+  </svg>
+  <svg id="icoMoon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none">
+    <path d="M20.6 14.5A8.8 8.8 0 0 1 9.5 3.4a.7.7 0 0 0-.9-.9 10.2 10.2 0 1 0 12.9 12.9.7.7 0 0 0-.9-.9z"/>
+  </svg>
+</button>
 
 <button id="refreshBtn" title="更新" aria-label="更新資料">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -522,10 +570,32 @@
     location.href = location.pathname + "?t=" + Date.now();
   });
 
-  /* 上滑時隱藏更新掣（唔好遮住 stickybar 嘅離港），返到頂先出返 */
+  /* 日／夜模式切換：圖示＋theme-color 跟住主題，偏好存 localStorage */
+  var themeBtn = document.getElementById("themeBtn");
+  var icoSun = document.getElementById("icoSun"), icoMoon = document.getElementById("icoMoon");
+  function syncThemeUI(){
+    var t = document.documentElement.getAttribute("data-theme") || "dark";
+    var isLight = (t === "light");
+    icoSun.style.display = isLight ? "none" : "";
+    icoMoon.style.display = isLight ? "" : "none";
+    var mc = document.querySelector('meta[name="theme-color"]');
+    if(mc) mc.setAttribute("content", isLight ? "#eef2f6" : "#0b1c2c");
+  }
+  syncThemeUI();
+  themeBtn.addEventListener("click", function(){
+    var cur = document.documentElement.getAttribute("data-theme");
+    var next = (cur === "light") ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    try{ localStorage.setItem("hkia-theme", next); }catch(e){}
+    syncThemeUI();
+  });
+
+  /* 上滑時隱藏右上角按鈕（唔好遮住 stickybar 嘅離港），返到頂先出返 */
   var refreshBtn = document.getElementById("refreshBtn");
   function onScrollHideRefresh(){
-    refreshBtn.style.display = (window.scrollY > 60) ? "none" : "";
+    var hide = (window.scrollY > 60);
+    refreshBtn.style.display = hide ? "none" : "";
+    themeBtn.style.display = hide ? "none" : "";
   }
   window.addEventListener("scroll", onScrollHideRefresh, {passive:true});
   onScrollHideRefresh();
