@@ -26,7 +26,7 @@ API_URL = (
 # Best-effort secondary source: only fills stands the official API leaves as "—".
 MENZIES_URL = (
     "https://fv.menziescnac.com/data2"
-    "?page={page}&ha_filter=mcs&flight_id=&date_filter={date_filter}&arr_dep={arr_dep}"
+    "?page={page}&ha_filter=all&flight_id=&date_filter={date_filter}&arr_dep={arr_dep}"
 )
 TIMEOUT_SECS = 30
 MENZIES_TIMEOUT_SECS = 20
