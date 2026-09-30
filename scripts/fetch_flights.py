@@ -34,8 +34,8 @@ MENZIES_URL = (
     "?page={page}&ha_filter=all&flight_id=&date_filter={date_filter}&arr_dep={arr_dep}"
 )
 MENZIES_TIMEOUT_SECS = 30
-MENZIES_MAX_PAGES = 2
-MENZIES_DELAY_SECS = 3
+MENZIES_MAX_PAGES = 4
+MENZIES_DELAY_SECS = 4
 
 ATA_RE = re.compile(r"(?:At gate|Landed)\s+(\d{1,2}:\d{2})")
 ATD_RE = re.compile(r"Dep\s+(\d{1,2}:\d{2})")
