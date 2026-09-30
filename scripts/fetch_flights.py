@@ -23,20 +23,6 @@ API_URL = (
 )
 TIMEOUT_SECS = 30
 
-# Menzies CNAC flight info (cargo handler). Arrival/departure pages carry the
-# STAND (ST) field, which the official API does not publish for cargo flights.
-# GENTLE mode: today only, first 2 pages per direction (most imminent flights),
-# 3s delay between requests, 30s timeout (their API is slow, ~20s/response),
-# and only runs ~every 45 min (not every workflow run).
-# Best-effort secondary source: only fills stands the official API leaves as "—".
-MENZIES_URL = (
-    "https://fv.menziescnac.com/data2"
-    "?page={page}&ha_filter=all&flight_id=&date_filter={date_filter}&arr_dep={arr_dep}"
-)
-MENZIES_TIMEOUT_SECS = 30
-MENZIES_MAX_PAGES = 4
-MENZIES_DELAY_SECS = 4
-
 ATA_RE = re.compile(r"(?:At gate|Landed)\s+(\d{1,2}:\d{2})")
 ATD_RE = re.compile(r"Dep\s+(\d{1,2}:\d{2})")
 EST_RE = re.compile(r"Est at\s+(\d{1,2}:\d{2})")
@@ -66,50 +52,6 @@ def fetch(url: str):
         return json.load(resp)
 
 
-def should_fetch_menzies(now) -> bool:
-    """Only fetch Menzies ~every 45 min (workflow runs every 15 min at
-    :00/:15/:30/:45, so this fires at :00 and :45). Keeps request volume low."""
-    return (now.minute % 45) < 15
-
-
-def fetch_menzies_info(date_filter: str, arr_dep: str) -> dict:
-    """Gentle best-effort: {flight_code: (stand, ha)} from Menzies.
-
-    Only first MENZIES_MAX_PAGES pages, MENZIES_DELAY_SECS pause between
-    requests, short timeout. Never raises: on any failure returns {} and
-    the caller skips enrichment (old stands/ha are preserved).
-    ha = handling agent code from the HA column (e.g. "HAS", "MCS").
-    """
-    import time
-    code_to_info: dict = {}
-    try:
-        for page in range(1, MENZIES_MAX_PAGES + 1):
-            url = MENZIES_URL.format(page=page, date_filter=date_filter, arr_dep=arr_dep)
-            req = urllib.request.Request(url, headers={"User-Agent": "hkia-flight-board/1.0"})
-            with urllib.request.urlopen(req, timeout=MENZIES_TIMEOUT_SECS) as resp:
-                data = json.load(resp)
-            for row in data.get("rows") or []:
-                st = (row.get("ST") or "").strip()
-                ha = (row.get("HA") or "").strip().upper()
-                for c in flight_codes(row.get("Flight") or ""):
-                    if c not in code_to_info:
-                        code_to_info[c] = (st if st and st != "-" else "", ha)
-            # Stop early if we've seen all pages.
-            total = int(data.get("total_pages") or 1)
-            if page >= total:
-                break
-            time.sleep(MENZIES_DELAY_SECS)
-    except Exception as exc:
-        print(f"WARN: menzies info fetch ({date_filter}/{arr_dep}) failed: {exc}, skipping", file=sys.stderr)
-        return {}
-    return code_to_info
-
-
-def flight_codes(s: str) -> set:
-    """Normalize 'CX 501 / QR 3458' or 'AY5099[CX165]' -> {'CX501','QR3458'}."""
-    return {p for p in re.split(r"[\/\[\]\(\)]+", (s or "").upper().replace(" ", "")) if p}
-
-
 def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
     status = (f.get("status") or "").strip()
     via_list = f.get("origin" if arrival else "destination") or []
@@ -136,11 +78,9 @@ def main() -> int:
     project_root = os.path.dirname(script_dir)
     out_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(project_root, "data.json")
 
-    # Previous stands/ha, keyed by (date, tab, flight_id), for stand-change detection
-    # and preserving Menzies data across skipped/failed gentle runs.
+    # Previous stands, keyed by (date, tab, flight_id), for stand-change detection.
     old_payload = None
     old_stands = {}
-    old_ha = {}
     if os.path.exists(out_path):
         try:
             with open(out_path, encoding="utf-8") as fh:
@@ -149,31 +89,11 @@ def main() -> int:
                 for tk in ("arrival", "departure"):
                     for f in day.get(tk, []):
                         old_stands[(d, tk, f.get("flight_id"))] = f.get("stand")
-                        if f.get("ha"):
-                            old_ha[(d, tk, f.get("flight_id"))] = f.get("ha")
         except (json.JSONDecodeError, OSError) as exc:
             print(f"WARN: existing data.json unreadable ({exc}), rewriting", file=sys.stderr)
             old_payload = None
 
     days = {}
-    # Menzies info enrichment (gentle: ~every 45 min, first pages only).
-    # Official first; Menzies only fills stands the official API leaves as "—",
-    # and records the handling agent (ha) where available.
-    # Their API only serves today/tomorrow (yesterday -> HTTP 500).
-    # On failure returns {}, old stands/ha are preserved (never wiped).
-    menzies = {}  # (date_filter, arr_dep) -> {code: (stand, ha)}
-    if should_fetch_menzies(now):
-        df_for_date = {dates[1]: "today"}
-        for df in ("today",):
-            for ad in ("A", "D"):
-                m = fetch_menzies_info(df, ad)
-                if m:
-                    menzies[(df, ad)] = m
-                    n_ha = sum(1 for _, ha in m.values() if ha)
-                    print(f"  menzies {df} {ad}: {len(m)} flight codes ({n_ha} with ha)")
-    else:
-        print("  menzies: skipped (gentle interval, next ~45min run)")
-    df_for_date = {dates[1]: "today"}
     try:
         for date in dates:
             day = {}
@@ -193,49 +113,7 @@ def main() -> int:
                         continue
                     for f in grp.get("list", []):
                         flights.append(parse_flight(f, arrival, cargo))
-                # Fill stands missing from the official API, and record handling agent.
-                # Priority: 1) fresh Menzies (if fetched this run),
-                #           2) preserved from previous run (don't wipe on skip/fail).
-                # Official non-"—" stands are never overwritten.
-                df = df_for_date.get(date)
-                ad = "A" if arrival else "D"
-                code_to_info = menzies.get((df, ad), {})
-                n_fill, n_keep, n_ha = 0, 0, 0
-                for fl in flights:
-                    fkey = (date, key, fl["flight_id"])
-                    codes = flight_codes(fl["flight_id"])
-                    # handling agent: fresh Menzies first, else previous run
-                    ha = ""
-                    for c in codes:
-                        if c in code_to_info and code_to_info[c][1]:
-                            ha = code_to_info[c][1]
-                            break
-                    if not ha:
-                        ha = old_ha.get(fkey, "")
-                    if ha:
-                        fl["ha"] = ha
-                        n_ha += 1
-                    # stand fill
-                    if fl["stand"] != "—":
-                        continue
-                    filled = False
-                    for c in codes:
-                        if c in code_to_info and code_to_info[c][0]:
-                            fl["stand"] = code_to_info[c][0]
-                            n_fill += 1
-                            filled = True
-                            break
-                    if not filled:
-                        prev = old_stands.get(fkey)
-                        if prev and prev != "—":
-                            fl["stand"] = prev
-                            n_keep += 1
-                if n_fill:
-                    print(f"  {date} {key}: menzies filled {n_fill} stands")
-                if n_keep:
-                    print(f"  {date} {key}: kept {n_keep} stands from previous run")
-                if n_ha:
-                    print(f"  {date} {key}: {n_ha} flights with ha")
+                # Stand-change detection: compare with previous run's stand.
                 for fl in flights:
                     prev = old_stands.get((date, key, fl["flight_id"]))
                     cur = fl["stand"]

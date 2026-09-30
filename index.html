@@ -326,14 +326,13 @@
   // 只顯示營運航班編號（第一個），codeshare 保留作搜尋用。
   function opId(f){ return (f.flight_id || "").split(" / ")[0]; }
 
-  // HAS 地勤代理嘅航空公司（用戶提供，2026-09-30；Menzies HA 欄會補充）
+  // HAS 地勤代理嘅航空公司（用戶提供，2026-09-30）
   var HAS_CODES = ["CX","PX","JX","KE","JL","QR","FJ","BI","LH","LX","DL","UO","AK","FD","Z2","QZ","GK","9G","LD","QY","3V","C6","D4","MS","CK"];
   // 呢幾間雖係 HAS 代理，但 HAS 過濾開嗰陣默認隱藏
   var LCC_HIDE = ["UO","Z2","QZ","AK","FD"];
   function isHasFlight(f){
     var code = opId(f).replace(/\s/g,"").substring(0,2).toUpperCase();
     if(LCC_HIDE.indexOf(code) !== -1) return false;
-    if(f.ha === "HAS") return true;
     return HAS_CODES.indexOf(code) !== -1;
   }
 
