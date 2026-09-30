@@ -197,7 +197,7 @@
       <li>資料來源：香港國際機場官方網站，每 15 分鐘自動更新。</li>
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
       <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
-      <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「HAS代理」開咗只顯示 HAS 地勤代理嘅航空公司（根據公開名單＋Menzies 資料）。</li>
+      <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「HAS代理」開咗只顯示 HAS 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
       <li>右上角按鈕可手動重新載入最新資料。</li>
       <li>時間顏色：<span style="color:#4fc3f7">藍色</span>為原定時間，<span style="color:#9ccc65">綠色</span>為預計時間，<span style="color:#ef5350">紅色</span>為實際時間。</li>
     </ul>
@@ -328,9 +328,12 @@
 
   // HAS 地勤代理嘅航空公司（用戶提供，2026-09-30；Menzies HA 欄會補充）
   var HAS_CODES = ["CX","PX","JX","KE","JL","QR","FJ","BI","LH","LX","DL","UO","AK","FD","Z2","QZ","GK","9G","LD","QY","3V","C6","D4","MS","CK"];
+  // 呢幾間雖係 HAS 代理，但 HAS 過濾開嗰陣默認隱藏
+  var LCC_HIDE = ["UO","Z2","QZ","AK","FD"];
   function isHasFlight(f){
-    if(f.ha === "HAS") return true;
     var code = opId(f).replace(/\s/g,"").substring(0,2).toUpperCase();
+    if(LCC_HIDE.indexOf(code) !== -1) return false;
+    if(f.ha === "HAS") return true;
     return HAS_CODES.indexOf(code) !== -1;
   }
 
