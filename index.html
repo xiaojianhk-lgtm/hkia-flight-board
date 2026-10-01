@@ -264,6 +264,7 @@ try{
       <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「HAS代理」開咗只顯示 HAS 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
       <li>長按航班加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
+      <li>貨機長按可手動輸入泊位（同備註一樣存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。清空泊位欄再按保存即清除；刪除掣淨係清備註。</li>
       <li>右上角按鈕可手動重新載入最新資料；太陽／月亮按鈕可切換日間／夜間模式。</li>
       <li>時間顏色：<span class="c-blue">藍色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。</li>
     </ul>
@@ -343,11 +344,11 @@ try{
   var tab = "arrival", dateIdx = 1, hideCargo = true, hidePax = false, onlyHas = true, query = "";
   var filtered = [], expanded = false, lastStart = 0;
   var detailFlight = null, lastList = [];
-  /* 備註：存瀏覽器 localStorage，同 data.json 分開，15 分鐘更新唔會覆蓋 */
+  /* 備註＋手動泊位：存瀏覽器 localStorage，同 data.json 分開，15 分鐘更新唔會覆蓋 */
   var WATCH = (function(){
     try{
       var w = JSON.parse(localStorage.getItem("hkia-watch-v1")) || {};
-      Object.keys(w).forEach(function(k){ if(!w[k] || !w[k].note) delete w[k]; });
+      Object.keys(w).forEach(function(k){ if(!w[k] || (!w[k].note && !w[k].stand)) delete w[k]; });
       return w;
     }catch(e){ return {}; }
   })();
@@ -359,14 +360,23 @@ try{
     return d + "|" + tab + "|" + opId(f);
   }
   function hasNote(f){ var w = WATCH[watchKey(f)]; return !!(w && w.note); }
+  function manualStand(f){ var w = WATCH[watchKey(f)]; return (w && w.stand) || ""; }
   function commitNote(){
     var ni = document.getElementById("noteInput");
+    var si = document.getElementById("standInput");
     var k = noteEditingKey;
     noteEditingKey = null;
     if(k){
-      var v = ni ? ni.value.trim() : "";
-      if(v){ WATCH[k] = WATCH[k] || {t:Date.now()}; WATCH[k].note = v; }
-      else delete WATCH[k];
+      WATCH[k] = WATCH[k] || {t:Date.now()};
+      if(ni){
+        var v = ni.value.trim();
+        if(v) WATCH[k].note = v; else delete WATCH[k].note;
+      }
+      if(si){
+        var s = si.value.trim().toUpperCase();
+        if(s) WATCH[k].stand = s; else delete WATCH[k].stand;
+      }
+      if(!WATCH[k].note && !WATCH[k].stand) delete WATCH[k];
       saveWatch();
       if(!WATCH[k]) detailFlight = null;
     }
@@ -376,10 +386,11 @@ try{
     var k = noteEditingKey;
     noteEditingKey = null;
     if(k && WATCH[k]){
-      delete WATCH[k];
+      delete WATCH[k].note;  /* 刪除淨係清備註，手動泊位保留（清泊位：清空泊位欄再按保存） */
+      if(!WATCH[k].note && !WATCH[k].stand) delete WATCH[k];
       saveWatch();
     }
-    detailFlight = null;  /* 刪咗備註就唔再展開 */
+    detailFlight = null;
     render();
   }
 
@@ -469,6 +480,8 @@ try{
   function badge(f){ return f.cargo ? '<span class="cbadge">貨</span>' : ""; }
 
   function dstandHtml(f){
+    var ms = manualStand(f);
+    if(ms) return esc(ms);  /* 手動泊位優先 */
     if(f.stand_old && f.stand_old !== f.stand){
       return "<span class='standchg'>"+esc(f.stand)+"</span> <span class='dim'>("+esc(f.stand_old)+")</span>";
     }
@@ -477,7 +490,10 @@ try{
 
   function mstandHtml(f){
     var inner;
-    if(f.stand_old && f.stand_old !== f.stand){
+    var ms = manualStand(f);
+    if(ms){
+      inner = "<span class='mstand'>"+esc(ms)+"</span>";
+    }else if(f.stand_old && f.stand_old !== f.stand){
       inner = "<span class='mstandchg'>"+esc(f.stand)+"</span> <span class='mstandold'>("+esc(f.stand_old)+")</span>";
     }else{
       inner = "<span class='mstand'>"+esc(f.stand||"—")+"</span>";
@@ -540,6 +556,9 @@ try{
     if(noteEditingKey === wk){
       h += "<div class='notewrap'><span>備註：</span><input id='noteInput' class='noteinput' maxlength='140' value='"+esc(note).replace(/"/g,"&quot;")+"'>"+
            "<button class='nbtn' data-act='note-save'>保存</button><button class='nbtn' data-act='note-cancel'>刪除</button></div>";
+      if(f.cargo){
+        h += "<div class='notewrap'><span>泊位：</span><input id='standInput' class='noteinput' maxlength='10' value='"+esc(manualStand(f)).replace(/"/g,"&quot;")+"' placeholder='手動輸入'></div>";
+      }
     }else if(note){
       h += "<div><span>備註：</span>"+esc(note)+"</div>";
     }
