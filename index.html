@@ -359,9 +359,26 @@ try{
   var pressTimer = null, pressFlight = null, pressWatchKey = null, suppressClick = false;
   function saveWatch(){ try{ localStorage.setItem("hkia-watch-v1", JSON.stringify(WATCH)); }catch(e){} }
   function watchKey(f){
-    var d = (DB[dateIdx] && DB[dateIdx][tab] && DB[dateIdx][tab].date) ? DB[dateIdx][tab].date : ("d"+dateIdx);
+    var d = (DB && DB.dates && DB.dates[dateIdx]) ? DB.dates[dateIdx] : ("d"+dateIdx);
     return d + "|" + tab + "|" + opId(f);
   }
+  /* 舊 key 用 tab 位（d0/d1/d2＝昨天／今天／明天）記，換日就對唔返；用建立時間推算真正日期 (HKT) 遷移到新 key */
+  (function migrateWatchKeys(){
+    var moved = false;
+    Object.keys(WATCH).forEach(function(k){
+      var m = /^d([012])\|(arrival|departure)\|(.+)$/.exec(k), w = WATCH[k];
+      if(!m || !w || !w.t) return;
+      var hk = new Date(w.t + 8*3600*1000);
+      hk.setUTCDate(hk.getUTCDate() + (+m[1]) - 1);
+      var ds = hk.getUTCFullYear() + "-" + ("0"+(hk.getUTCMonth()+1)).slice(-2) + "-" + ("0"+hk.getUTCDate()).slice(-2);
+      var nk = ds + "|" + m[2] + "|" + m[3];
+      if(nk === k) return;
+      if(WATCH[nk]){ if(w.note && !WATCH[nk].note) WATCH[nk].note = w.note; if(w.stand && !WATCH[nk].stand) WATCH[nk].stand = w.stand; }
+      else WATCH[nk] = w;
+      delete WATCH[k]; moved = true;
+    });
+    if(moved) saveWatch();
+  })();
   function hasNote(f){
     var k = watchKey(f), w = WATCH[k];
     if(f.cargo){  /* 貨機唔用備註：舊有備註靜靜清走 */
