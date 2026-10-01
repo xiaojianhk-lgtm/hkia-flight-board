@@ -528,7 +528,7 @@ try{
         h += "<div class='notewrap'><span>備註：</span><input id='noteInput' class='noteinput' maxlength='140' value='"+esc(w.note||"").replace(/"/g,"&quot;")+"'>"+
              "<button class='nbtn' data-act='note-save'>存</button><button class='nbtn' data-act='note-cancel'>取消</button></div>";
       }else if(w.note){
-        h += "<div><span>備註：</span>"+esc(w.note)+" <button class='nbtn' data-act='note-edit'>改</button></div>";
+        h += "<div><span>備註：</span>"+esc(w.note)+" <button class='nbtn' data-act='note-edit' title='改備註'>📝</button></div>";
       }else{
         h += "<div><button class='nbtn' data-act='note-edit'>＋加備註</button></div>";
       }
