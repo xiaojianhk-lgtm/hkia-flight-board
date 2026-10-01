@@ -26,6 +26,7 @@ TIMEOUT_SECS = 30
 ATA_RE = re.compile(r"(?:At gate|Landed)\s+(\d{1,2}:\d{2})")
 ATD_RE = re.compile(r"Dep\s+(\d{1,2}:\d{2})")
 EST_RE = re.compile(r"Est at\s+(\d{1,2}:\d{2})")
+STAND_PREFIX_RE = re.compile(r"^([A-Za-z]+)(\d+.*)$")
 
 
 def parse_actual(status: str, arrival: bool) -> str:
@@ -50,6 +51,20 @@ def fetch(url: str):
         if resp.status != 200:
             raise RuntimeError(f"API returned HTTP {resp.status}")
         return json.load(resp)
+
+
+def prefix_gate(gate: str, prefix_map: dict) -> str:
+    """Add the apron letter to a bare departure gate number when known.
+
+    The departure API only reports bare numbers (e.g. "70"); the letter
+    (e.g. "W") is learned from arrival stands. Never guess: unknown numbers
+    are returned unchanged.
+    """
+    g = (gate or "").strip()
+    if not g or g == "—" or g[0].isalpha():
+        return gate
+    letter = prefix_map.get(g)
+    return (letter + g) if letter else gate
 
 
 def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
@@ -95,6 +110,20 @@ def main() -> int:
             print(f"WARN: existing data.json unreadable ({exc}), rewriting", file=sys.stderr)
             old_payload = None
 
+    # Stand letter-prefix map (number -> letter, e.g. "70" -> "W"), learned
+    # from arrival stands which carry the prefix; applied to departure gates
+    # which the API only reports as bare numbers. Add-only: an existing
+    # mapping is never overwritten, and unknown numbers are never guessed.
+    prefix_path = os.path.join(project_root, "stand_prefix.json")
+    prefix_map = {}
+    if os.path.exists(prefix_path):
+        try:
+            with open(prefix_path, encoding="utf-8") as fh:
+                prefix_map = json.load(fh) or {}
+        except (json.JSONDecodeError, OSError) as exc:
+            print(f"WARN: stand_prefix.json unreadable ({exc}), starting empty", file=sys.stderr)
+    map_changed = False
+
     days = {}
     try:
         for date in dates:
@@ -114,13 +143,22 @@ def main() -> int:
                         print(f"WARN: no group for {date} in {url}", file=sys.stderr)
                         continue
                     for f in grp.get("list", []):
-                        flights.append(parse_flight(f, arrival, cargo))
-                # Stand-change detection: compare with previous run's stand.
-                for fl in flights:
-                    prev = old_stands.get((date, key, fl["flight_id"]))
-                    cur = fl["stand"]
-                    if prev and cur and prev != "—" and cur != "—" and prev != cur:
-                        fl["stand_old"] = prev
+                        fl = parse_flight(f, arrival, cargo)
+                        if arrival:
+                            # Learn number -> letter from arrival stands.
+                            pm = STAND_PREFIX_RE.match(fl["stand"])
+                            if pm:
+                                num, letter = pm.group(2), pm.group(1)
+                                if num in prefix_map:
+                                    if prefix_map[num] != letter:
+                                        print(f"WARN: stand {num} maps to both {prefix_map[num]} and {letter}; keeping {prefix_map[num]}", file=sys.stderr)
+                                else:
+                                    prefix_map[num] = letter
+                                    map_changed = True
+                        else:
+                            # Departure API only gives bare gate numbers.
+                            fl["stand"] = prefix_gate(fl["stand"], prefix_map)
+                        flights.append(fl)
                 # Sort by most relevant time: actual (ATA/ATD) if landed/departed,
                 # else estimated (EST), else scheduled (STA/STD).
                 flights.sort(key=lambda fl: fl["ata"] if fl["ata"] != "—" else (fl["est"] if fl["est"] != "—" else fl["eta"]))
@@ -133,6 +171,31 @@ def main() -> int:
     except Exception as exc:  # timeout, HTTP error, bad JSON...
         print(f"ERROR: failed to fetch flight data: {exc}", file=sys.stderr)
         return 1
+
+    # Stand-change detection (second pass, so departure gates are already
+    # prefixed with the final map; old bare numbers are normalized the same
+    # way to avoid false "changed" flags on the migration run).
+    for date in dates:
+        day = days.get(date)
+        if not day:
+            continue
+        for key in ("arrival", "departure"):
+            for fl in day.get(key, []):
+                prev = old_stands.get((date, key, fl["flight_id"]))
+                cur = fl["stand"]
+                if not prev or prev == "—" or not cur or cur == "—":
+                    continue
+                prev_norm = prefix_gate(prev, prefix_map) if key == "departure" else prev
+                if prev_norm != cur:
+                    fl["stand_old"] = prev
+
+    if map_changed:
+        tmp_map = prefix_path + ".tmp"
+        with open(tmp_map, "w", encoding="utf-8") as fh:
+            json.dump(prefix_map, fh, ensure_ascii=False, indent=2, sort_keys=True)
+            fh.write("\n")
+        os.replace(tmp_map, prefix_path)
+        print(f"OK: stand_prefix.json updated ({len(prefix_map)} mappings)")
 
     payload = {
         "generated_at": now.strftime("%Y-%m-%d %H:%M") + " HKT",
