@@ -17,6 +17,8 @@ try{
     _t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
   }
   document.documentElement.setAttribute("data-theme", _t);
+  var _mc = document.querySelector('meta[name="theme-color"]');
+  if(_mc) _mc.setAttribute("content", _t === "light" ? "#eef2f6" : "#0b1c2c");
 }catch(e){ document.documentElement.setAttribute("data-theme", "dark"); }
 </script>
 <style>
