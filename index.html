@@ -373,14 +373,14 @@ try{
     }
     render();
   }
-  function cancelNote(){
+  function deleteNote(){
     var k = noteEditingKey;
     noteEditingKey = null;
-    if(k && WATCH[k] && !WATCH[k].note){
+    if(k && WATCH[k]){
       delete WATCH[k];
       saveWatch();
-      detailFlight = null;
     }
+    detailFlight = null;  /* 刪咗備註就唔再展開 */
     render();
   }
 
@@ -539,7 +539,7 @@ try{
     var note = w ? (w.note || "") : "";
     if(noteEditingKey === wk){
       h += "<div class='notewrap'><span>備註：</span><input id='noteInput' class='noteinput' maxlength='140' value='"+esc(note).replace(/"/g,"&quot;")+"'>"+
-           "<button class='nbtn' data-act='note-save'>存</button><button class='nbtn' data-act='note-cancel'>取消</button></div>";
+           "<button class='nbtn' data-act='note-save'>保存</button><button class='nbtn' data-act='note-cancel'>刪除</button></div>";
     }else if(note){
       h += "<div><span>備註：</span>"+esc(note)+"</div>";
     }
@@ -734,7 +734,7 @@ try{
       var act = actEl.getAttribute("data-act");
       detailFlight = f;
       if(act === "note-save"){ commitNote(); }
-      else if(act === "note-cancel"){ cancelNote(); }
+      else if(act === "note-cancel"){ deleteNote(); }
       return;
     }
     if(t.closest("tr.drow") || t.closest(".mdetail")) return;  /* 詳情區其他位置唔收起 */
