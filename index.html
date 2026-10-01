@@ -172,6 +172,17 @@ try{
   .ddetail span{color:var(--muted);}
   .mrow{cursor:pointer;}
   .mdetail{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 4px;}
+  /* ---------- 追蹤航班 ---------- */
+  .star{cursor:pointer; color:var(--muted); font-size:13px; margin-right:3px; -webkit-user-select:none; user-select:none;}
+  .star.on{color:#f5b301;}
+  tr.rw.watched td{background:rgba(245,179,1,.10);}
+  tbody tr.rw.watched:hover td{background:rgba(245,179,1,.18);}
+  [data-theme="light"] tr.rw.watched td{background:rgba(245,179,1,.16);}
+  .mrow.watched{background:rgba(245,179,1,.10); border-left:3px solid #f5b301; padding-left:5px;}
+  .rw.watched,.mrow.watched{-webkit-touch-callout:none;}
+  .noteinput{background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:4px 6px; font-size:12px; width:55%;}
+  .nbtn{background:var(--input-bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:3px 8px; font-size:12px; cursor:pointer; margin-left:4px;}
+  .notewrap{display:flex; align-items:center; flex-wrap:wrap; gap:4px;}
   .expandbar{padding:10px; text-align:center;}
   .expandbar button{
     background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
@@ -253,6 +264,7 @@ try{
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
       <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「HAS代理」開咗只顯示 HAS 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
+      <li>撳星星追蹤重要航班（★＋整行高亮）；長按已追蹤航班可加備註。名單同備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
       <li>撳航班列可展開詳情（狀態全文、延誤時間、行李帶／大堂、聯營航班、泊位變動）。</li>
       <li>右上角按鈕可手動重新載入最新資料；太陽／月亮按鈕可切換日間／夜間模式。</li>
       <li>時間顏色：<span class="c-blue">藍色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。</li>
@@ -333,6 +345,29 @@ try{
   var tab = "arrival", dateIdx = 1, hideCargo = true, hidePax = false, onlyHas = true, query = "";
   var filtered = [], expanded = false, lastStart = 0;
   var detailFlight = null, lastList = [];
+  /* 追蹤名單＋備註：存瀏覽器 localStorage，同 data.json 分開，15 分鐘更新唔會覆蓋 */
+  var WATCH = (function(){ try{ return JSON.parse(localStorage.getItem("hkia-watch-v1")) || {}; }catch(e){ return {}; } })();
+  var noteEditingKey = null, noteFocus = false;
+  var pressTimer = null, pressFlight = null, pressWatchKey = null, suppressClick = false;
+  function saveWatch(){ try{ localStorage.setItem("hkia-watch-v1", JSON.stringify(WATCH)); }catch(e){} }
+  function watchKey(f){
+    var d = (DB[dateIdx] && DB[dateIdx][tab] && DB[dateIdx][tab].date) ? DB[dateIdx][tab].date : ("d"+dateIdx);
+    return d + "|" + tab + "|" + opId(f);
+  }
+  function isWatched(f){ return !!WATCH[watchKey(f)]; }
+  function toggleWatch(f){
+    var k = watchKey(f);
+    if(WATCH[k]){ delete WATCH[k]; if(noteEditingKey === k) noteEditingKey = null; }
+    else WATCH[k] = {note:"", t:Date.now()};
+    saveWatch();
+    render();
+  }
+  function commitNote(){
+    var ni = document.getElementById("noteInput");
+    if(ni && noteEditingKey && WATCH[noteEditingKey]){ WATCH[noteEditingKey].note = ni.value.trim(); saveWatch(); }
+    noteEditingKey = null;
+    render();
+  }
 
   var L = {
     arrival:   {name:"到港", caps:"FLIGHT INFORMATION · HKG · 到港 ARRIVALS", via:"來自", stand:"STAND", eta:"STA", ata:"ATA"},
@@ -443,8 +478,12 @@ try{
     return h;
   }
 
+  function starHtml(f){
+    var on = isWatched(f);
+    return "<span class='star"+(on?" on":"")+"' title='追蹤航班'>"+(on?"★":"☆")+"</span>";
+  }
   function rowHtml(f, i){
-    return "<tr class='rw' data-i='"+i+"'><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
+    return "<tr class='rw"+(isWatched(f)?" watched":"")+"' data-i='"+i+"'><td class='dim'>"+f.no+"</td><td class='fid'>"+starHtml(f)+esc(opId(f))+badge(f)+"</td>"+
       "<td>"+esc(f.via)+"</td>"+
       "<td>"+dstandHtml(f)+"</td><td class='eta'>"+etaCell(f)+"</td>"+
       "<td class='ata'>"+esc(f.ata)+"</td></tr>";
@@ -465,7 +504,7 @@ try{
       timeHtml += "<span class='msep'>/</span><span class='mtime-ata'>"+esc(f.ata)+"</span>";
     }
     var standMid = mstandHtml(f);
-    return "<div class='mrow' data-i='"+i+"'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span> "+badge(f)+
+    return "<div class='mrow"+(isWatched(f)?" watched":"")+"' data-i='"+i+"'><div class='mline1'><span class='mleft'>"+starHtml(f)+"<span class='mflight'>"+esc(opId(f))+"</span> "+badge(f)+
       " <span class='mdest'>"+esc(f.via)+"</span></span>"+standMid+"<span class='mright'>"+timeHtml+"</span></div></div>";
   }
 
@@ -481,7 +520,20 @@ try{
     return d > 0 ? "延誤 " + d + " 分鐘" : "提早 " + (-d) + " 分鐘";
   }
   function detailInner(f){
-    var h = "<div><span>狀態：</span>"+esc(f.status_raw || "—")+"</div>";
+    var h = "";
+    /* 追蹤備註（只限已追蹤航班） */
+    var wk = watchKey(f), w = WATCH[wk];
+    if(w){
+      if(noteEditingKey === wk){
+        h += "<div class='notewrap'><span>備註：</span><input id='noteInput' class='noteinput' maxlength='140' value='"+esc(w.note||"").replace(/"/g,"&quot;")+"'>"+
+             "<button class='nbtn' data-act='note-save'>存</button><button class='nbtn' data-act='note-cancel'>取消</button></div>";
+      }else if(w.note){
+        h += "<div><span>備註：</span>"+esc(w.note)+" <button class='nbtn' data-act='note-edit'>改</button></div>";
+      }else{
+        h += "<div><button class='nbtn' data-act='note-edit'>＋加備註</button></div>";
+      }
+    }
+    h += "<div><span>狀態：</span>"+esc(f.status_raw || "—")+"</div>";
     var dt = delayText(f);
     if(dt) h += "<div><span>時間：</span>"+esc(dt)+"</div>";
     if(tab === "arrival"){
@@ -497,11 +549,11 @@ try{
     }
     return h;
   }
-  function dDetailHtml(f){
-    return "<tr class='drow'><td colspan='6'><div class='ddetail'>"+detailInner(f)+"</div></td></tr>";
+  function dDetailHtml(f, i){
+    return "<tr class='drow' data-i='"+i+"'><td colspan='6'><div class='ddetail'>"+detailInner(f)+"</div></td></tr>";
   }
-  function mDetailHtml(f){
-    return "<div class='mdetail'><div class='ddetail'>"+detailInner(f)+"</div></div>";
+  function mDetailHtml(f, i){
+    return "<div class='mdetail' data-i='"+i+"'><div class='ddetail'>"+detailInner(f)+"</div></div>";
   }
   function toggleDetail(f){
     detailFlight = (detailFlight === f) ? null : f;
@@ -537,7 +589,7 @@ try{
     lastStart = start;
     lastList = list;
     /* 已展開詳情嘅航班若唔喺而家個 list，收返埋 */
-    if(detailFlight && list.indexOf(detailFlight) === -1) detailFlight = null;
+    if(detailFlight && list.indexOf(detailFlight) === -1){ detailFlight = null; noteEditingKey = null; }
 
     /* 「而家」分隔線：只限今天 */
     var showNow = (dateIdx === 1 && filtered.length > 0);
@@ -556,10 +608,10 @@ try{
       var f = list[i];
       if(mobile){
         htmlArr.push(mrowHtml(f, i));
-        if(f === detailFlight) htmlArr.push(mDetailHtml(f));
+        if(f === detailFlight) htmlArr.push(mDetailHtml(f, i));
       }else{
         htmlArr.push(rowHtml(f, i));
-        if(f === detailFlight) htmlArr.push(dDetailHtml(f));
+        if(f === detailFlight) htmlArr.push(dDetailHtml(f, i));
       }
     }
     if(showNow && divPos >= list.length) htmlArr.push(nowHtml(nowLabel, mobile));
@@ -570,6 +622,12 @@ try{
     }else{
       rowsEl.innerHTML = html;
       cardsEl.innerHTML = "";
+    }
+    /* 備註輸入框：Enter 存檔，剛進入編輯時自動聚焦 */
+    var ni = document.getElementById("noteInput");
+    if(ni){
+      ni.addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); commitNote(); } });
+      if(noteFocus){ noteFocus = false; try{ ni.focus(); }catch(e){} }
     }
     var total = filtered.length;
     var dlabel = DB ? md(DB.dates[dateIdx]) + " " + l.name : l.name;
@@ -656,17 +714,73 @@ try{
   qm.addEventListener("input", function(){ q.value = qm.value; onType(qm.value); });
 
   /* 撳航班列展開／收起詳情（揀緊文字唔觸發，方便 copy） */
-  function rowClick(e, rowSel){
-    if(window.getSelection && window.getSelection().toString()) return;
+  function onRowAreaClick(e){
     var t = e.target;
-    var row = (t && t.closest) ? t.closest(rowSel) : null;
+    if(!t || !t.closest) return;
+    if(suppressClick){ suppressClick = false; return; }  /* 長按之後嗰下 click 唔要 */
+    var row = t.closest("tr.rw") || t.closest("tr.drow") || t.closest(".mrow") || t.closest(".mdetail");
     if(!row) return;
-    if(rowSel === ".mrow" && t.closest(".mdetail")) return;
     var f = lastList[+row.getAttribute("data-i")];
-    if(f) toggleDetail(f);
+    if(!f) return;
+    if(t.closest(".star")){ toggleWatch(f); return; }  /* 星星：追蹤／取消追蹤 */
+    var actEl = t.closest("[data-act]");
+    if(actEl){
+      var act = actEl.getAttribute("data-act");
+      detailFlight = f;
+      if(act === "note-edit"){ noteEditingKey = watchKey(f); noteFocus = true; render(); }
+      else if(act === "note-save"){ commitNote(); }
+      else if(act === "note-cancel"){ noteEditingKey = null; render(); }
+      return;
+    }
+    if(t.closest("tr.drow") || t.closest(".mdetail")) return;  /* 詳情區其他位置唔收起 */
+    if(window.getSelection && window.getSelection().toString()) return;
+    toggleDetail(f);
   }
-  rowsEl.addEventListener("click", function(e){ rowClick(e, "tr.rw"); });
-  cardsEl.addEventListener("click", function(e){ rowClick(e, ".mrow"); });
+  rowsEl.addEventListener("click", onRowAreaClick);
+  cardsEl.addEventListener("click", onRowAreaClick);
+
+  /* 長按已追蹤航班 → 開備註編輯（未追蹤嘅照舊可以長按揀文字） */
+  function pressRow(e){
+    var t = e.target;
+    return (t && t.closest) ? (t.closest("tr.rw") || t.closest(".mrow")) : null;
+  }
+  function pressStart(e){
+    pressCancel();
+    var row = pressRow(e);
+    if(!row) return;
+    var t = e.target;
+    if(t.closest(".star") || t.closest("[data-act]")) return;
+    var f = lastList[+row.getAttribute("data-i")];
+    if(!f || !isWatched(f)) return;
+    pressFlight = f;
+    pressWatchKey = watchKey(f);
+    pressTimer = setTimeout(function(){
+      pressTimer = null;
+      suppressClick = true;
+      setTimeout(function(){ suppressClick = false; }, 800);  /* 長按後 800ms 內嘅 click 先唔要，之後恢復正常 */
+      detailFlight = pressFlight;
+      noteEditingKey = pressWatchKey;
+      noteFocus = true;
+      render();
+    }, 550);
+  }
+  function pressCancel(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; } pressFlight = null; }
+  [rowsEl, cardsEl].forEach(function(el){
+    el.addEventListener("touchstart", pressStart, {passive:true});
+    el.addEventListener("touchend", pressCancel);
+    el.addEventListener("touchcancel", pressCancel);
+    el.addEventListener("touchmove", pressCancel);
+    el.addEventListener("mousedown", function(e){ if(e.button === 0) pressStart(e); });
+    el.addEventListener("mouseup", pressCancel);
+    el.addEventListener("mousemove", pressCancel);
+    el.addEventListener("contextmenu", function(e){
+      var row = pressRow(e);
+      if(row){
+        var f = lastList[+row.getAttribute("data-i")];
+        if(f && isWatched(f)) e.preventDefault();
+      }
+    });
+  });
 
   var rsz;
   window.addEventListener("resize", function(){ clearTimeout(rsz); rsz = setTimeout(function(){ setBarH(); render(); }, 150); });
