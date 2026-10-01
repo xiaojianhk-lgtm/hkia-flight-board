@@ -201,6 +201,8 @@ try{
     .mflight{font-weight:700; font-size:14px; white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mdest{font-size:10px; color:var(--dim); white-space:nowrap; opacity:.75;}
     .mstandwrap{text-align:center; white-space:nowrap;}
+    .mstandwrap-r{text-align:right; white-space:nowrap;}
+    .mtimewrap{white-space:nowrap;}
     .mtime{font-weight:700; font-size:15px; color:var(--blue); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-ata{font-weight:700; font-size:15px; color:var(--red); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-est{font-weight:700; font-size:15px; color:var(--green); white-space:nowrap; font-variant-numeric:tabular-nums;}
@@ -335,7 +337,7 @@ try{
         <tr>
           <th>NO</th>
           <th><span class="lbl">Flight ID</span><input id="q" type="search" placeholder="關鍵字篩選…" autocomplete="off"></th>
-          <th id="thVia">來自</th><th id="thStand">STAND</th><th id="thEta">ETA</th><th id="thAta">ATA</th>
+          <th id="thVia">來自</th><th id="thEta">ETA</th><th id="thAta">ATA</th><th id="thStand">STAND</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -508,7 +510,7 @@ try{
     return esc(f.stand);
   }
 
-  function mstandHtml(f){
+  function mstandHtml(f, wrap){
     var inner;
     var ms = manualStand(f);
     if(ms){
@@ -518,7 +520,7 @@ try{
     }else{
       inner = "<span class='mstand'>"+esc(f.stand||"—")+"</span>";
     }
-    return "<span class='mstandwrap'>"+inner+"</span>";
+    return "<span class='"+(wrap||"mstandwrap")+"'>"+inner+"</span>";
   }
 
   function etaCell(f){
@@ -533,8 +535,8 @@ try{
     var hn = hasNote(f);
     return "<tr class='rw"+(hn?" noted":"")+"' data-i='"+i+"'><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
       "<td>"+esc(f.via)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>"+
-      "<td>"+dstandHtml(f)+"</td><td class='eta'>"+etaCell(f)+"</td>"+
-      "<td class='ata'>"+esc(f.ata)+"</td></tr>";
+      "<td class='eta'>"+etaCell(f)+"</td>"+
+      "<td class='ata'>"+esc(f.ata)+"</td><td>"+dstandHtml(f)+"</td></tr>";
   }
 
   /* effective time: estimated if available, else scheduled — matches server sort */
@@ -551,10 +553,10 @@ try{
     if(f.ata && f.ata !== "—" && f.ata !== f.eta && (!estShown || f.ata !== f.est)){
       timeHtml += "<span class='msep'>/</span><span class='mtime-ata'>"+esc(f.ata)+"</span>";
     }
-    var standMid = mstandHtml(f);
+    var standRight = mstandHtml(f, "mstandwrap-r");
     var hn = hasNote(f);
     return "<div class='mrow"+(hn?" noted":"")+"' data-i='"+i+"'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span> "+badge(f)+
-      " <span class='mdest'>"+esc(f.via)+"</span>"+(hn?"<span class='nst'>⭐️</span>":"")+"</span>"+standMid+"<span class='mright'>"+timeHtml+"</span></div></div>";
+      " <span class='mdest'>"+esc(f.via)+"</span>"+(hn?"<span class='nst'>⭐️</span>":"")+"</span><span class='mtimewrap'>"+timeHtml+"</span><span class='mright'>"+standRight+"</span></div></div>";
   }
 
   /* ---------- 撳入詳情 ---------- */
