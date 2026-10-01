@@ -219,6 +219,15 @@ try{
     color:var(--text); font-size:16px; padding:9px 12px; outline:none;
   }
   .searchrow input::placeholder{color:var(--placeholder);}
+  .swrap{position:relative;}
+  .swrap input{padding-right:40px;}
+  .swrap input::-webkit-search-cancel-button{-webkit-appearance:none; appearance:none;}
+  .qclear{
+    display:none; position:absolute; right:4px; top:50%; transform:translateY(-50%);
+    width:32px; height:32px; border:0; background:transparent; color:var(--dim);
+    font-size:15px; line-height:1; padding:0; cursor:pointer;
+  }
+  .swrap.hasq .qclear{display:block;}
   /* ---------- about overlay ---------- */
   #aboutOverlay{
     position:fixed; inset:0; z-index:60; background:var(--overlay-bg);
@@ -263,8 +272,8 @@ try{
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
       <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「HAS代理」開咗只顯示 HAS 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
-      <li>長按航班加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
-      <li>貨機長按可手動輸入泊位（同備註一樣存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。清空泊位欄再按保存即清除；刪除掣淨係清備註。</li>
+      <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
+      <li>長按貨機手動輸入泊位（存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。保存後自動收起；清空泊位欄再按保存、或按刪除掣即清除。</li>
       <li>右上角按鈕可手動重新載入最新資料；太陽／月亮按鈕可切換日間／夜間模式。</li>
       <li>時間顏色：<span class="c-blue">藍色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。</li>
     </ul>
@@ -312,7 +321,10 @@ try{
     <label class="hidecargo"><input type="checkbox" id="showHas" checked> HAS代理</label>
   </div>
   <div class="searchrow">
-    <input id="qm" type="search" placeholder="搜尋 Flight ID／來往地…" autocomplete="off">
+    <div class="swrap">
+      <input id="qm" type="search" placeholder="搜尋 Flight ID／來往地…" autocomplete="off">
+      <button id="qclear" class="qclear" aria-label="清除搜尋">✕</button>
+    </div>
   </div>
 </div></div>
 
@@ -359,7 +371,14 @@ try{
     var d = (DB[dateIdx] && DB[dateIdx][tab] && DB[dateIdx][tab].date) ? DB[dateIdx][tab].date : ("d"+dateIdx);
     return d + "|" + tab + "|" + opId(f);
   }
-  function hasNote(f){ var w = WATCH[watchKey(f)]; return !!(w && w.note); }
+  function hasNote(f){
+    var k = watchKey(f), w = WATCH[k];
+    if(f.cargo){  /* 貨機唔用備註：舊有備註靜靜清走 */
+      if(w && w.note){ delete w.note; if(!w.stand) delete WATCH[k]; saveWatch(); }
+      return false;
+    }
+    return !!(w && w.note);
+  }
   function manualStand(f){ var w = WATCH[watchKey(f)]; return (w && w.stand) || ""; }
   function commitNote(){
     var ni = document.getElementById("noteInput");
@@ -378,15 +397,16 @@ try{
       }
       if(!WATCH[k].note && !WATCH[k].stand) delete WATCH[k];
       saveWatch();
-      if(!WATCH[k]) detailFlight = null;
+      if(!(WATCH[k] && WATCH[k].note)) detailFlight = null;  /* 無備註就收起，唔留空白 */
     }
     render();
   }
-  function deleteNote(){
+  function deleteNote(f){
     var k = noteEditingKey;
     noteEditingKey = null;
     if(k && WATCH[k]){
-      delete WATCH[k].note;  /* 刪除淨係清備註，手動泊位保留（清泊位：清空泊位欄再按保存） */
+      if(f && f.cargo) delete WATCH[k].stand;  /* 貨機：刪除手動泊位 */
+      else delete WATCH[k].note;              /* 客機：刪除備註 */
       if(!WATCH[k].note && !WATCH[k].stand) delete WATCH[k];
       saveWatch();
     }
@@ -554,10 +574,13 @@ try{
     var wk = watchKey(f), w = WATCH[wk];
     var note = w ? (w.note || "") : "";
     if(noteEditingKey === wk){
-      h += "<div class='notewrap'><span>備註：</span><input id='noteInput' class='noteinput' maxlength='140' value='"+esc(note).replace(/"/g,"&quot;")+"'>"+
-           "<button class='nbtn' data-act='note-save'>保存</button><button class='nbtn' data-act='note-cancel'>刪除</button></div>";
       if(f.cargo){
-        h += "<div class='notewrap'><span>泊位：</span><input id='standInput' class='noteinput' maxlength='10' value='"+esc(manualStand(f)).replace(/"/g,"&quot;")+"' placeholder='手動輸入'></div>";
+        /* 貨機：淨係手動泊位，唔用備註 */
+        h += "<div class='notewrap'><span>泊位：</span><input id='standInput' class='noteinput' maxlength='10' value='"+esc(manualStand(f)).replace(/"/g,"&quot;")+"' placeholder='手動輸入'>"+
+             "<button class='nbtn' data-act='note-save'>保存</button><button class='nbtn' data-act='note-cancel'>刪除</button></div>";
+      }else{
+        h += "<div class='notewrap'><span>備註：</span><input id='noteInput' class='noteinput' maxlength='140' value='"+esc(note).replace(/"/g,"&quot;")+"'>"+
+             "<button class='nbtn' data-act='note-save'>保存</button><button class='nbtn' data-act='note-cancel'>刪除</button></div>";
       }
     }else if(note){
       h += "<div><span>備註：</span>"+esc(note)+"</div>";
@@ -649,8 +672,8 @@ try{
       rowsEl.innerHTML = html;
       cardsEl.innerHTML = "";
     }
-    /* 備註輸入框：Enter 存檔，剛進入編輯時自動聚焦 */
-    var ni = document.getElementById("noteInput");
+    /* 備註／泊位輸入框：Enter 存檔，剛進入編輯時自動聚焦 */
+    var ni = document.getElementById("noteInput") || document.getElementById("standInput");
     if(ni){
       ni.addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); commitNote(); } });
       if(noteFocus){ noteFocus = false; try{ ni.focus(); }catch(e){} }
@@ -736,8 +759,11 @@ try{
   });
 
   function onType(v){ query = v; applyFilter(); }
-  q.addEventListener("input", function(){ qm.value = q.value; onType(q.value); });
-  qm.addEventListener("input", function(){ q.value = qm.value; onType(qm.value); });
+  q.addEventListener("input", function(){ qm.value = q.value; syncQclear(); onType(q.value); });
+  qm.addEventListener("input", function(){ q.value = qm.value; syncQclear(); onType(qm.value); });
+  var qc = document.getElementById("qclear");
+  function syncQclear(){ qm.closest(".swrap").classList.toggle("hasq", !!qm.value); }
+  qc.addEventListener("click", function(){ qm.value = ""; q.value = ""; syncQclear(); onType(""); qm.focus(); });
 
   /* 撳航班列：有備註先展開睇詳情，無備註冇反應（揀緊文字唔觸發，方便 copy） */
   function onRowAreaClick(e){
@@ -753,7 +779,7 @@ try{
       var act = actEl.getAttribute("data-act");
       detailFlight = f;
       if(act === "note-save"){ commitNote(); }
-      else if(act === "note-cancel"){ deleteNote(); }
+      else if(act === "note-cancel"){ deleteNote(f); }
       return;
     }
     if(t.closest("tr.drow") || t.closest(".mdetail")) return;  /* 詳情區其他位置唔收起 */
