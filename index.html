@@ -562,7 +562,7 @@ try{
 
   /* ---------- 「而家」分隔線 ---------- */
   function nowHtml(t, mobile){
-    var inner = "<div class='nl'><span>而家 "+esc(t)+"</span></div>";
+    var inner = "<div class='nl'><span>"+esc(t)+"</span></div>";
     return mobile ? "<div class='mnowline'>"+inner+"</div>"
                   : "<tr class='nowline'><td colspan='6'>"+inner+"</td></tr>";
   }
