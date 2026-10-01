@@ -79,31 +79,22 @@ try{
     border-bottom:1px solid var(--line);
   }
   .stickyinner{max-width:1100px; margin:0 auto; padding:0 8px;}
-  #stickyTs{padding:6px 0 4px; font-size:11px;}
+  #stickyTs{padding:6px 0 4px; font-size:11px; display:flex; align-items:center; gap:8px;}
+  .tsbtns{margin-left:auto; display:flex; gap:8px; align-items:center; flex:0 0 auto;}
+  .tsbtn{
+    width:34px; height:34px; border-radius:50%; flex:0 0 auto;
+    border:1px solid var(--line); background:var(--card); color:var(--text);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .tsbtn:active{transform:scale(.92);}
+  .tsbtn svg{width:18px; height:18px;}
   header .row1{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
   header h2{font-size:19px; margin:0; letter-spacing:4px;}
   header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
   .ts{font-size:12px; color:var(--muted); margin-top:2px;}
   .ts b{color:var(--accent); font-weight:600;}
   #headAbout{margin-left:auto;}
-  #refreshBtn{
-    position:fixed; top:10px; right:12px; z-index:20;
-    width:44px; height:44px; border-radius:50%;
-    border:1px solid var(--line); background:var(--card); color:var(--text);
-    display:flex; align-items:center; justify-content:center; cursor:pointer;
-    box-shadow:0 2px 8px rgba(0,0,0,.35);
-  }
-  #refreshBtn:active{transform:scale(.92);}
-  #refreshBtn svg{width:21px; height:21px;}
-  #themeBtn{
-    position:fixed; top:10px; right:64px; z-index:20;
-    width:44px; height:44px; border-radius:50%;
-    border:1px solid var(--line); background:var(--card); color:var(--text);
-    display:flex; align-items:center; justify-content:center; cursor:pointer;
-    box-shadow:0 2px 8px rgba(0,0,0,.35);
-  }
-  #themeBtn:active{transform:scale(.92);}
-  #themeBtn svg{width:21px; height:21px;}
+
   .linkbtn{
     background:none; border:1px solid var(--line); border-radius:14px;
     color:var(--accent2); font-size:12px; cursor:pointer; padding:5px 12px; letter-spacing:2px;
@@ -278,7 +269,7 @@ try{
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「HAS代理」開咗只顯示 HAS 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
       <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
       <li>長按貨機手動輸入泊位（存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。保存後自動收起；清空泊位欄再按保存、或按刪除掣即清除。</li>
-      <li>右上角按鈕可手動重新載入最新資料；太陽／月亮按鈕可切換日間／夜間模式。</li>
+      <li>時間列右邊嘅 ⟳ 可手動重新載入最新資料；☀️／🌙 可切換日間／夜間模式。</li>
       <li>時間顏色：<span class="c-blue">藍色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。</li>
     </ul>
     <p class="fine">時間為香港時間 (HKT)。航班資料僅供參考，請以機場官方公布為準。</p>
@@ -286,22 +277,7 @@ try{
   </div>
 </div>
 
-<button id="themeBtn" title="日／夜模式" aria-label="切換日夜模式">
-  <svg id="icoSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/>
-  </svg>
-  <svg id="icoMoon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none">
-    <path d="M20.6 14.5A8.8 8.8 0 0 1 9.5 3.4a.7.7 0 0 0-.9-.9 10.2 10.2 0 1 0 12.9 12.9.7.7 0 0 0-.9-.9z"/>
-  </svg>
-</button>
 
-<button id="refreshBtn" title="更新" aria-label="更新資料">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>
-  </svg>
-</button>
-
-<header>
   <div class="row1">
     <h2>航班資訊</h2>
     <span class="caps" id="capsLine">FLIGHT INFORMATION · HKG</span>
@@ -310,7 +286,18 @@ try{
 </header>
 
 <div class="stickybar"><div class="stickyinner">
-  <div class="ts" id="stickyTs">資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</div>
+  <div class="ts" id="stickyTs"><span>資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</span><span class="tsbtns"><button id="themeBtn" class="tsbtn" title="日／夜模式" aria-label="切換日夜模式">
+  <svg id="icoSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/>
+  </svg>
+  <svg id="icoMoon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none">
+    <path d="M20.6 14.5A8.8 8.8 0 0 1 9.5 3.4a.7.7 0 0 0-.9-.9 10.2 10.2 0 1 0 12.9 12.9.7.7 0 0 0-.9-.9z"/>
+  </svg>
+</button><button id="refreshBtn" class="tsbtn" title="更新" aria-label="更新資料">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>
+  </svg>
+</button></span></div>
   <div class="controls">
     <div class="tabs" role="tablist" aria-label="到港或離港">
       <button data-tab="arrival" class="on" role="tab">到港</button>
@@ -860,16 +847,6 @@ try{
     try{ localStorage.setItem("hkia-theme", next); }catch(e){}
     syncThemeUI();
   });
-
-  /* 上滑時隱藏右上角按鈕（唔好遮住 stickybar 嘅離港），返到頂先出返 */
-  var refreshBtn = document.getElementById("refreshBtn");
-  function onScrollHideRefresh(){
-    var hide = (window.scrollY > 60);
-    refreshBtn.style.display = hide ? "none" : "";
-    themeBtn.style.display = hide ? "none" : "";
-  }
-  window.addEventListener("scroll", onScrollHideRefresh, {passive:true});
-  onScrollHideRefresh();
 
   var overlay = document.getElementById("aboutOverlay");
   function openAbout(){ overlay.classList.add("open"); }
