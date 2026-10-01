@@ -114,9 +114,9 @@ try{
   .dates{display:flex; gap:8px;}
   .dates button{
     flex:1; background:var(--input-bg); border:1px solid var(--line); color:var(--muted);
-    border-radius:10px; padding:6px 4px; font-size:12px; cursor:pointer; line-height:1.35; letter-spacing:1px;
+    border-radius:10px; padding:3px 4px; font-size:11px; cursor:pointer; line-height:1.3; letter-spacing:1px;
   }
-  .dates button small{font-size:11px; opacity:.8;}
+  .dates button small{font-size:10px; opacity:.8;}
   .dates button.on{border-color:var(--accent2); color:var(--strong); font-weight:600;}
   .countrow{display:flex; justify-content:space-between; align-items:center; padding:8px 4px; gap:8px;}
   .count{font-size:12px; color:var(--muted);}
@@ -267,7 +267,7 @@ try{
     <ul>
       <li>資料來源：香港國際機場官方網站，每 15 分鐘自動更新。</li>
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
-      <li>在搜尋框輸入 Flight ID 或來往地關鍵字，即時篩選。</li>
+      <li>在搜尋框輸入 Flight ID、來往地或泊位關鍵字，即時篩選。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「HAS代理」開咗只顯示 HAS 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
       <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
       <li>長按貨機手動輸入泊位（存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。保存後自動收起；清空泊位欄再按保存、或按刪除掣即清除。</li>
@@ -315,7 +315,7 @@ try{
   </div>
   <div class="searchrow">
     <div class="swrap">
-      <input id="qm" type="search" placeholder="搜尋 Flight ID／來往地…" autocomplete="off">
+      <input id="qm" type="search" placeholder="搜尋 Flight ID／來往地／泊位…" autocomplete="off">
       <button id="qclear" class="qclear" aria-label="清除搜尋">✕</button>
     </div>
   </div>
@@ -501,7 +501,7 @@ try{
       if(/^[A-Z]{2}$/.test(nq)){
         return norm(opId(f)).indexOf(nq) === 0;
       }
-      return norm(f.flight_id).indexOf(nq) !== -1 || norm(f.via).indexOf(nq) !== -1;
+      return norm(f.flight_id).indexOf(nq) !== -1 || norm(f.via).indexOf(nq) !== -1 || norm(manualStand(f) || f.stand).indexOf(nq) !== -1;
     }) : all.slice();
     expanded = false;
     render();
@@ -773,7 +773,7 @@ try{
   qm.addEventListener("input", function(){ q.value = qm.value; syncQclear(); onType(qm.value); });
   var qc = document.getElementById("qclear");
   function syncQclear(){ qm.closest(".swrap").classList.toggle("hasq", !!qm.value); }
-  qc.addEventListener("click", function(){ qm.value = ""; q.value = ""; syncQclear(); onType(""); qm.focus(); });
+  qc.addEventListener("click", function(){ qm.value = ""; q.value = ""; syncQclear(); onType(""); qm.blur(); });
 
   /* 撳航班列：有備註先展開睇詳情，無備註冇反應（揀緊文字唔觸發，方便 copy） */
   function onRowAreaClick(e){
