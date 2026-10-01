@@ -179,7 +179,7 @@ try{
   [data-theme="light"] tr.rw.noted td{background:rgba(245,179,1,.16);}
   .mrow.noted{background:rgba(245,179,1,.10); border-left:3px solid #f5b301; padding-left:5px;}
   .rw.noted,.mrow.noted{-webkit-touch-callout:none;}
-  .noteinput{background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:4px 6px; font-size:12px; width:55%;}
+  .noteinput{background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:4px 6px; font-size:16px; width:55%;}
   .nbtn{background:var(--input-bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:3px 8px; font-size:12px; cursor:pointer; margin-left:4px;}
   .notewrap{display:flex; align-items:center; flex-wrap:wrap; gap:4px;}
   .expandbar{padding:10px; text-align:center;}
@@ -541,7 +541,7 @@ try{
       h += "<div class='notewrap'><span>備註：</span><input id='noteInput' class='noteinput' maxlength='140' value='"+esc(note).replace(/"/g,"&quot;")+"'>"+
            "<button class='nbtn' data-act='note-save'>存</button><button class='nbtn' data-act='note-cancel'>取消</button></div>";
     }else if(note){
-      h += "<div><span>備註：</span>"+esc(note)+" <button class='nbtn' data-act='note-edit' title='改備註'>📝</button></div>";
+      h += "<div><span>備註：</span>"+esc(note)+"</div>";
     }
     var dt = delayText(f);
     if(dt) h += "<div><span>時間：</span>"+esc(dt)+"</div>";
@@ -733,9 +733,7 @@ try{
     if(actEl){
       var act = actEl.getAttribute("data-act");
       detailFlight = f;
-      var k = watchKey(f);
-      if(act === "note-edit"){ if(!WATCH[k]) WATCH[k] = {t:Date.now()}; noteEditingKey = k; noteFocus = true; render(); }
-      else if(act === "note-save"){ commitNote(); }
+      if(act === "note-save"){ commitNote(); }
       else if(act === "note-cancel"){ cancelNote(); }
       return;
     }
