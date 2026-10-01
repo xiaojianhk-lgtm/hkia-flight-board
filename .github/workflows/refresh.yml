@@ -1,8 +1,8 @@
 name: Refresh flight data
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
+  # Scheduled runs moved to an external 15-min cron (GitHub's queue delays
+  # were 15-30+ min). Keep manual dispatch as a backup.
   workflow_dispatch: {}
 
 permissions:
