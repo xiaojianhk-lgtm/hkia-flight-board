@@ -966,8 +966,13 @@ try{
     var isLight = (t === "light");
     icoSun.style.display = isLight ? "none" : "";
     icoMoon.style.display = isLight ? "" : "none";
-    var mc = document.querySelector('meta[name="theme-color"]');
-    if(mc) mc.setAttribute("content", isLight ? "#eef2f6" : "#0b1c2c");
+    /* iOS web app 唔食直接改 content，要成個 meta 刪咗再起先會跟 */
+    var old = document.querySelector('meta[name="theme-color"]');
+    if(old) old.parentNode.removeChild(old);
+    var mc = document.createElement("meta");
+    mc.setAttribute("name", "theme-color");
+    mc.setAttribute("content", isLight ? "#eef2f6" : "#0b1c2c");
+    document.head.appendChild(mc);
   }
   syncThemeUI();
   themeBtn.addEventListener("click", function(){
