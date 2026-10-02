@@ -47,6 +47,7 @@ try{
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
+  html{scrollbar-gutter:stable;}  /* 桌面版篩選行數變化時，預留 scrollbar 位，版面唔會橫跳 */
   body{
     background:var(--bg); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","PingFang TC","Microsoft JhengHei",sans-serif;
@@ -163,7 +164,7 @@ try{
   tr.drow td{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 12px; white-space:normal;}
   .ddetail{font-size:12px; color:var(--text); line-height:1.8;}
   .ddetail span{color:var(--muted);}
-  .mrow{cursor:pointer;}
+  .mrow{cursor:pointer; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;}  /* 長按加備註唔彈複製選單 */
   .mdetail{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 4px;}
   /* ---------- 備註（長按加，有備註先喺目的地後面加 ⭐️） ---------- */
   .nst{font-size:12px; margin-left:2px;}
