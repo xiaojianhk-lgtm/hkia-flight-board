@@ -31,6 +31,7 @@ try{
     --row-line:rgba(31,58,85,.55); --row-alt:rgba(255,255,255,.018);
     --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
     --red:#ef5350; --green:#9ccc65; --blue:#4fc3f7;
+    --stS:#ffb74d; --stN:#ce93d8; --stW:#80deea;
     --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72); --error-fg:#ef9a9a;
   }
   /* 白天模式 */
@@ -43,6 +44,7 @@ try{
     --row-line:#e3eaf1; --row-alt:rgba(0,0,0,.028);
     --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
     --red:#d32f2f; --green:#558b2f; --blue:#0288d1;
+    --stS:#e65100; --stN:#7b1fa2; --stW:#00838f;
     --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45); --error-fg:#c62828;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -149,7 +151,6 @@ try{
   td.fid{font-weight:600; color:var(--strong);}
   td.eta{color:var(--blue);} td.ata{color:var(--red);}
   .estchg{color:var(--green); font-weight:700;}
-  .standchg{color:var(--red); font-weight:700;}
   td.dim{color:var(--muted);}
   .c-blue{color:var(--blue);} .c-green{color:var(--green);} .c-red{color:var(--red);}
   /* ---------- 「而家」分隔線 ---------- */
@@ -170,6 +171,10 @@ try{
   .nst{font-size:12px; margin-left:2px;}
   .ddate{font-size:11px; color:var(--dim); white-space:nowrap;}
   .avgdur{font-size:11px; color:var(--dim); white-space:nowrap;}
+  /* 泊位區域色：S橙 N紫 W青，R同其他唔上色 */
+  .stS{color:var(--stS); font-weight:700;}
+  .stN{color:var(--stN); font-weight:700;}
+  .stW{color:var(--stW); font-weight:700;}
   tr.rw.noted td{background:rgba(245,179,1,.22);}
   tbody tr.rw.noted:hover td{background:rgba(245,179,1,.30);}
   [data-theme="light"] tr.rw.noted td{background:rgba(245,179,1,.30);}
@@ -207,7 +212,6 @@ try{
     .mtime-est{font-weight:700; font-size:15px; color:var(--green); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .msep{color:var(--dim); font-size:13px; margin:0 2px;}
     .mstand{font-size:14px; font-weight:700; color:var(--text);}
-    .mstandchg{font-size:14px; font-weight:700; color:var(--red);}
     .mstandold{font-size:11px; color:var(--dim);}
     .mline2{font-size:11px; color:var(--dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
     #q{max-width:none;}
@@ -518,24 +522,34 @@ try{
 
   function badge(f){ return f.cargo ? '<span class="cbadge">貨</span>' : ""; }
 
+  /* 泊位區域色：S/N/W 上色，R同其他唔上色 */
+  function standColorCls(s){
+    var c = (s || "").charAt(0).toUpperCase();
+    return c === "S" ? "stS" : c === "N" ? "stN" : c === "W" ? "stW" : "";
+  }
+  function standSpan(s){
+    var c = standColorCls(s);
+    return c ? "<span class='"+c+"'>"+esc(s)+"</span>" : esc(s);
+  }
+
   function dstandHtml(f){
     var ms = manualStand(f);
-    if(ms) return esc(ms);  /* 手動泊位優先 */
+    if(ms) return standSpan(ms);  /* 手動泊位優先 */
     if(f.stand_old && f.stand_old !== f.stand){
-      return "<span class='standchg'>"+esc(f.stand)+"</span> <span class='dim'>("+esc(f.stand_old)+")</span>";
+      return standSpan(f.stand) + " <span class='dim'>("+esc(f.stand_old)+")</span>";
     }
-    return esc(f.stand);
+    return standSpan(f.stand);
   }
 
   function mstandHtml(f, wrap){
     var inner;
     var ms = manualStand(f);
     if(ms){
-      inner = "<span class='mstand'>"+esc(ms)+"</span>";
+      inner = "<span class='mstand'>"+standSpan(ms)+"</span>";
     }else if(f.stand_old && f.stand_old !== f.stand){
-      inner = "<span class='mstandchg'>"+esc(f.stand)+"</span> <span class='mstandold'>("+esc(f.stand_old)+")</span>";
+      inner = "<span class='mstand'>"+standSpan(f.stand)+"</span> <span class='mstandold'>("+esc(f.stand_old)+")</span>";
     }else{
-      inner = "<span class='mstand'>"+esc(f.stand||"—")+"</span>";
+      inner = "<span class='mstand'>"+standSpan(f.stand||"—")+"</span>";
     }
     return "<span class='"+(wrap||"mstandwrap")+"'>"+inner+"</span>";
   }
