@@ -9,6 +9,7 @@ No third-party dependencies.
 """
 
 import json
+import math
 import os
 import re
 import sys
@@ -28,13 +29,31 @@ ATD_RE = re.compile(r"Dep\s+(\d{1,2}:\d{2})")
 EST_RE = re.compile(r"Est at\s+(\d{1,2}:\d{2})")
 DATE_RE = re.compile(r"\((\d{1,2})/(\d{1,2})/(\d{4})\)")
 
-# 平均飛行時間（origin/destination → "XhYm"）：只有 STA（無預計／實際）時顯示作參考
-# CAI: 實測 9h48m(FA 2026-09-30)、10h32m/10h37m/10h38m(FR24)，平均約 10h25m
-# MNL: 直飛約 2h15m–2h27m，取約數
-ROUTE_AVG = {
-    "CAI": "10h25m",
-    "MNL": "2h20m",
-}
+HKG_LAT, HKG_LON = 22.3080, 113.9185
+
+def _load_coords():
+    try:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "airport_coords.json")
+        with open(p, encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+AIRPORT_COORDS = _load_coords()
+
+def rough_duration(iata: str) -> str:
+    """由大圓距離估算飛行時間（大致），如 '10h25m'；無座標回 ''。"""
+    c = AIRPORT_COORDS.get(iata or "")
+    if not c:
+        return ""
+    la1, lo1 = math.radians(HKG_LAT), math.radians(HKG_LON)
+    la2, lo2 = math.radians(c[0]), math.radians(c[1])
+    a = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    km = 12742 * math.asin(math.sqrt(a))
+    speed = 750 if km < 1500 else 850  # km/h，短途慢啲
+    mins = round(km / speed * 60 + 30)  # +30 分鐘爬升／下降
+    mins = round(mins / 5) * 5  # 取至 5 分鐘，大致就得
+    h, m = divmod(mins, 60)
+    return f"{h}h{m:02d}m" if m else f"{h}h"
 STAND_PREFIX_RE = re.compile(r"^([A-Za-z]+)(\d+.*)$")
 
 
@@ -106,7 +125,7 @@ def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
         "est_date": status_date if est != "—" else "",
         "ata": ata,
         "ata_date": status_date if ata != "—" else "",
-        "avg_dur": ROUTE_AVG.get(via_list[-1] if via_list else "", ""),
+        "avg_dur": rough_duration(via_list[-1] if via_list else ""),
         "cargo": cargo,
         "status_raw": status,
     }
