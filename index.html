@@ -168,6 +168,7 @@ try{
   .mdetail{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 4px;}
   /* ---------- 備註（長按加，有備註先喺目的地後面加 ⭐️） ---------- */
   .nst{font-size:12px; margin-left:2px;}
+  .ddate{font-size:11px; color:var(--dim); white-space:nowrap;}
   tr.rw.noted td{background:rgba(245,179,1,.22);}
   tbody tr.rw.noted:hover td{background:rgba(245,179,1,.30);}
   [data-theme="light"] tr.rw.noted td{background:rgba(245,179,1,.30);}
@@ -537,9 +538,19 @@ try{
   function etaCell(f){
     var h = esc(f.eta);
     if(f.est && f.est !== "—" && f.est !== f.eta){
-      h += " <span class='estchg'>"+esc(f.est)+"</span>";
+      h += " <span class='estchg'>"+esc(f.est)+"</span>"+dateTag(f,"est");
     }
     return h;
+  }
+  /* 預計／實際時間若同原定唔同日，後面加 (DD/MM) */
+  function dateTag(f, which){
+    var d = which === "est" ? f.est_date : f.ata_date;
+    var t = which === "est" ? f.est : f.ata;
+    if(!d || !t || t === "—") return "";
+    var sched = (DB && DB.dates && DB.dates[dateIdx]) || "";
+    if(!sched || d === sched) return "";
+    var p = d.split("-");
+    return " <span class='ddate'>("+p[2]+"/"+p[1]+")</span>";
   }
 
   function rowHtml(f, i){
@@ -547,7 +558,7 @@ try{
     return "<tr class='rw"+(hn?" noted":"")+"' data-i='"+i+"'><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
       "<td>"+esc(f.via)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>"+
       "<td class='eta'>"+etaCell(f)+"</td>"+
-      "<td class='ata'>"+esc(f.ata)+"</td><td>"+dstandHtml(f)+"</td></tr>";
+      "<td class='ata'>"+esc(f.ata)+dateTag(f,"ata")+"</td><td>"+dstandHtml(f)+"</td></tr>";
   }
 
   /* effective time: estimated if available, else scheduled — matches server sort */
@@ -558,11 +569,11 @@ try{
     var timeHtml = "<span class='mtime'>"+esc(f.eta||"—")+"</span>";
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
     if(estShown){
-      timeHtml += "<span class='msep'>/</span><span class='mtime-est'>"+esc(f.est)+"</span>";
+      timeHtml += "<span class='msep'>/</span><span class='mtime-est'>"+esc(f.est)+"</span>"+dateTag(f,"est");
     }
     /* actual time (At gate / Landed / Dep) always on the right, arrival + departure */
     if(f.ata && f.ata !== "—" && f.ata !== f.eta && (!estShown || f.ata !== f.est)){
-      timeHtml += "<span class='msep'>/</span><span class='mtime-ata'>"+esc(f.ata)+"</span>";
+      timeHtml += "<span class='msep'>/</span><span class='mtime-ata'>"+esc(f.ata)+"</span>"+dateTag(f,"ata");
     }
     var standRight = mstandHtml(f, "mstandwrap-r");
     var hn = hasNote(f);
