@@ -273,6 +273,7 @@ try{
     <ul>
       <li>資料來源：香港國際機場官方網站，每 15 分鐘自動更新。</li>
       <li>開住個頁唔郁超過一分鐘，有新資料會靜靜自動更新（捲動位置、搜尋同展開狀態不變）；睇緊詳情、打緊字嗰陣唔會郁。</li>
+      <li>手機喺航班列表向左滑動轉去離港、向右滑動返到港。</li>
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
       <li>在搜尋框輸入 Flight ID、來往地或泊位關鍵字，即時篩選。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「H**代理」開咗只顯示 H** 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
@@ -752,15 +753,36 @@ try{
   }
 
   var tabBtns = document.querySelectorAll(".tabs button");
+  function setTab(t){
+    if(tab === t) return;
+    tab = t;
+    for(var k=0;k<tabBtns.length;k++) tabBtns[k].classList.toggle("on", tabBtns[k].getAttribute("data-tab")===t);
+    applyFilter();
+  }
   for(var ti=0; ti<tabBtns.length; ti++){
     (function(b){
-      b.addEventListener("click", function(){
-        tab = b.getAttribute("data-tab");
-        for(var k=0;k<tabBtns.length;k++) tabBtns[k].classList.toggle("on", tabBtns[k]===b);
-        applyFilter();
-      });
+      b.addEventListener("click", function(){ setTab(b.getAttribute("data-tab")); });
     })(tabBtns[ti]);
   }
+
+  /* 手機左右滑動切換到港／離港（向左→離港，向右→到港） */
+  var swipeX = 0, swipeY = 0, swipeOn = false;
+  cardsEl.addEventListener("touchstart", function(e){
+    if(e.touches.length !== 1){ swipeOn = false; return; }
+    swipeX = e.touches[0].clientX;
+    swipeY = e.touches[0].clientY;
+    swipeOn = true;
+  }, {passive:true});
+  cardsEl.addEventListener("touchend", function(e){
+    if(!swipeOn) return;
+    swipeOn = false;
+    var dx = e.changedTouches[0].clientX - swipeX;
+    var dy = e.changedTouches[0].clientY - swipeY;
+    if(Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5){
+      if(dx < 0 && tab === "arrival") setTab("departure");
+      else if(dx > 0 && tab === "departure") setTab("arrival");
+    }
+  }, {passive:true});
 
   document.getElementById("hidePax").addEventListener("change", function(e){
     hidePax = !!e.target.checked;
