@@ -753,11 +753,26 @@ try{
   }
 
   var tabBtns = document.querySelectorAll(".tabs button");
-  function setTab(t){
+  function setTab(t, slideDir){
     if(tab === t) return;
     tab = t;
     for(var k=0;k<tabBtns.length;k++) tabBtns[k].classList.toggle("on", tabBtns[k].getAttribute("data-tab")===t);
     applyFilter();
+    /* 滑動切換時，新列表由滑動方向滑入 */
+    if(slideDir){
+      var el = isMobile() ? cardsEl : rowsEl;
+      el.style.transition = "none";
+      el.style.transform = "translateX(" + (slideDir * 60) + "px)";
+      el.style.opacity = "0.2";
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          el.style.transition = "transform .3s ease-out, opacity .3s ease-out";
+          el.style.transform = "translateX(0)";
+          el.style.opacity = "1";
+          setTimeout(function(){ el.style.transition = ""; el.style.transform = ""; el.style.opacity = ""; }, 350);
+        });
+      });
+    }
   }
   for(var ti=0; ti<tabBtns.length; ti++){
     (function(b){
@@ -765,7 +780,7 @@ try{
     })(tabBtns[ti]);
   }
 
-  /* 連點三下開搜尋欄 */
+  /* 連點三下開搜尋欄（focus 要喺 touchend 入面同步做，iOS 先會彈鍵盤） */
   var tapTimes = [];
   document.addEventListener("touchend", function(){
     var now = Date.now();
@@ -776,7 +791,6 @@ try{
     if(overlay.classList.contains("open")) return;
     var input = isMobile() ? qm : q;
     if(!input || document.activeElement === input) return;
-    try{ input.scrollIntoView({block:"nearest"}); }catch(e){}
     input.focus();
   }, {passive:true});
 
@@ -794,8 +808,8 @@ try{
     var dx = e.changedTouches[0].clientX - swipeX;
     var dy = e.changedTouches[0].clientY - swipeY;
     if(Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5){
-      if(dx < 0 && tab === "arrival") setTab("departure");
-      else if(dx > 0 && tab === "departure") setTab("arrival");
+      if(dx < 0 && tab === "arrival") setTab("departure", 1);   /* 向左滑，新頁由右滑入 */
+      else if(dx > 0 && tab === "departure") setTab("arrival", -1);  /* 向右滑，新頁由左滑入 */
     }
   }, {passive:true});
 
