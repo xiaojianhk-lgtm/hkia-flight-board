@@ -167,7 +167,39 @@ try{
   .estchg{color:var(--green); font-weight:700;}
   td.dim{color:var(--muted);}
   .c-blue{color:var(--blue);} .c-green{color:var(--green);} .c-red{color:var(--red);} .c-sched{color:var(--sched);}
-  /* ---------- 「而家」分隔線 ---------- */
+  /* ---------- 桌面版專業化 ---------- */
+  @media (min-width:720px){
+    main{max-width:1180px; padding:16px 24px 48px;}
+    .tablewrap{
+      border-radius:12px;
+      box-shadow:0 1px 2px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.08);
+    }
+    table{font-size:14px;}
+    thead th{
+      font-size:11px; letter-spacing:2px; text-transform:uppercase;
+      padding:14px 20px; background:var(--bg2);
+      border-bottom:2px solid var(--line);
+    }
+    thead th .lbl{margin-bottom:6px;}
+    #q{font-size:13px; padding:7px 10px; max-width:220px;}
+    tbody td{padding:13px 20px; border-bottom:1px solid var(--row-line);}
+    tbody tr.rw{transition:background-color .15s ease;}
+    tbody tr.rw:hover td{background:rgba(79,195,247,.06);}
+    [data-theme="light"] tbody tr.rw:hover td{background:rgba(2,136,209,.05);}
+    tbody tr:nth-child(even){background:transparent;}
+    tbody tr:nth-child(even):hover td{background:rgba(79,195,247,.06);}
+    td.fid{font-size:15px; font-weight:800; letter-spacing:.5px;}
+    td.standcell, th.standth{text-align:right;}
+    /* 工具列：緊湊儀表板風 */
+    .controls{flex-direction:row; align-items:center; gap:12px; padding:12px 4px 4px;}
+    .dates{flex:0 0 auto;}
+    .dates button{flex:none; padding:6px 14px; font-size:12px; border-radius:8px;}
+    .dates button small{display:block;}
+    .tabs{flex:0 1 340px; margin-left:auto;}
+    .tabs button{font-size:14px; padding:8px; letter-spacing:2px;}
+    .countrow{padding:10px 4px;}
+    .searchrow{display:none;} /* 桌面用表頭搜尋框 */
+  }
   tr.nowline td{padding:5px 6px; border-bottom:1px solid var(--line);}
   .nl{display:flex; align-items:center; gap:8px; color:var(--accent); font-size:11px; font-weight:700; letter-spacing:2px; white-space:nowrap;}
   .nl::before,.nl::after{content:""; flex:1; height:1px; background:var(--accent); opacity:.4;}
@@ -357,9 +389,8 @@ try{
     <table id="flightTable" aria-label="航班">
       <thead>
         <tr>
-          <th>NO</th>
           <th><span class="lbl">Flight ID</span><input id="q" type="search" placeholder="關鍵字篩選…" autocomplete="off"></th>
-          <th id="thVia">來自</th><th id="thEta">ETA</th><th id="thAta">ATA</th><th id="thStand">STAND</th>
+          <th id="thVia">來自</th><th id="thEta">ETA</th><th id="thAta">ATA</th><th id="thStand" class="standth">STAND</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -608,10 +639,10 @@ try{
 
   function rowHtml(f, i){
     var hn = hasNote(f);
-    return "<tr class='rw"+(hn?" noted":"")+"' data-i='"+i+"'><td class='dim'>"+f.no+"</td><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
+    return "<tr class='rw"+(hn?" noted":"")+"' data-i='"+i+"'><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
       "<td>"+esc(f.via)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>"+
       "<td class='eta'>"+etaCell(f)+"</td>"+
-      "<td class='ata'>"+esc(f.ata)+dateTag(f,"ata")+"</td><td>"+dstandHtml(f)+"</td></tr>";
+      "<td class='ata'>"+esc(f.ata)+dateTag(f,"ata")+"</td><td class='standcell'>"+dstandHtml(f)+"</td></tr>";
   }
 
   /* effective time: estimated if available, else scheduled — matches server sort */
