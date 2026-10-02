@@ -31,7 +31,8 @@ try{
     --row-line:rgba(31,58,85,.55); --row-alt:rgba(255,255,255,.018);
     --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
     --red:#ef5350; --green:#9ccc65; --blue:#4fc3f7;
-    --stS:#ffb74d; --stN:#ce93d8; --stW:#80deea;
+    --stS:#ffb74d; --stN:#ce93d8;
+    --sched:#ffffff;
     --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72); --error-fg:#ef9a9a;
   }
   /* 白天模式 */
@@ -44,7 +45,8 @@ try{
     --row-line:#e3eaf1; --row-alt:rgba(0,0,0,.028);
     --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
     --red:#d32f2f; --green:#558b2f; --blue:#0288d1;
-    --stS:#e65100; --stN:#7b1fa2; --stW:#00838f;
+    --stS:#e65100; --stN:#7b1fa2;
+    --sched:#16283a;
     --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45); --error-fg:#c62828;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -149,10 +151,10 @@ try{
   tbody td{padding:6px; border-bottom:1px solid var(--row-line); white-space:nowrap;}
   tbody tr:nth-child(even){background:var(--row-alt);}
   td.fid{font-weight:600; color:var(--strong);}
-  td.eta{color:var(--blue);} td.ata{color:var(--red);}
+  td.eta{color:var(--sched);} td.ata{color:var(--red);}
   .estchg{color:var(--green); font-weight:700;}
   td.dim{color:var(--muted);}
-  .c-blue{color:var(--blue);} .c-green{color:var(--green);} .c-red{color:var(--red);}
+  .c-blue{color:var(--blue);} .c-green{color:var(--green);} .c-red{color:var(--red);} .c-sched{color:var(--sched);}
   /* ---------- 「而家」分隔線 ---------- */
   tr.nowline td{padding:5px 6px; border-bottom:1px solid var(--line);}
   .nl{display:flex; align-items:center; gap:8px; color:var(--accent); font-size:11px; font-weight:700; letter-spacing:2px; white-space:nowrap;}
@@ -174,7 +176,7 @@ try{
   /* 泊位區域色：S橙 N紫 W青，R同其他唔上色 */
   .stS{color:var(--stS); font-weight:700;}
   .stN{color:var(--stN); font-weight:700;}
-  .stW{color:var(--stW); font-weight:700;}
+  .stW{color:var(--blue); font-weight:700;}
   tr.rw.noted td{background:rgba(245,179,1,.22);}
   tbody tr.rw.noted:hover td{background:rgba(245,179,1,.30);}
   [data-theme="light"] tr.rw.noted td{background:rgba(245,179,1,.30);}
@@ -207,7 +209,7 @@ try{
     .mtimewrap{white-space:nowrap; position:relative;}
     .mtimewrap .ddate{position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:5px;}
     .mtimewrap .ddate ~ .ddate{margin-left:54px;}
-    .mtime{font-weight:700; font-size:15px; color:var(--blue); white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mtime{font-weight:700; font-size:15px; color:var(--sched); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-ata{font-weight:700; font-size:15px; color:var(--red); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-est{font-weight:700; font-size:15px; color:var(--green); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .msep{color:var(--dim); font-size:13px; margin:0 2px;}
@@ -284,7 +286,7 @@ try{
       <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
       <li>長按貨機手動輸入泊位（存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。保存後自動收起；清空泊位欄再按保存、或按刪除掣即清除。</li>
       <li>時間列右邊嘅 ⟳ 可手動重新載入最新資料；☀️／🌙 可切換日間／夜間模式。</li>
-      <li>時間顏色：<span class="c-blue">藍色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。</li>
+      <li>時間顏色：<span class="c-sched">白色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。</li>
     </ul>
     <p class="fine">時間為香港時間 (HKT)。航班資料僅供參考，請以機場官方公布為準。</p>
     <button id="aboutClose">關閉</button>
