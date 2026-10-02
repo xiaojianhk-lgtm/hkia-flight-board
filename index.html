@@ -780,9 +780,10 @@ try{
     })(tabBtns[ti]);
   }
 
-  /* 連點三下開搜尋欄（focus 要喺 touchend 入面同步做，iOS 先會彈鍵盤） */
+  /* 連點三下開搜尋欄（focus 要喺 touchend 入面同步做，iOS 先會彈鍵盤；
+     第三下 preventDefault 唔俾佢變 click，否則 iOS 當「點咗出面」即刻收起鍵盤） */
   var tapTimes = [];
-  document.addEventListener("touchend", function(){
+  document.addEventListener("touchend", function(e){
     var now = Date.now();
     tapTimes.push(now);
     while(tapTimes.length && now - tapTimes[0] > 800) tapTimes.shift();
@@ -791,8 +792,9 @@ try{
     if(overlay.classList.contains("open")) return;
     var input = isMobile() ? qm : q;
     if(!input || document.activeElement === input) return;
+    e.preventDefault();
     input.focus();
-  }, {passive:true});
+  }, {passive:false});
 
   /* 手機左右滑動切換到港／離港（向左→離港，向右→到港） */
   var swipeX = 0, swipeY = 0, swipeOn = false;
