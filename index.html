@@ -271,6 +271,7 @@ try{
     <h3>關於航班資訊</h3>
     <ul>
       <li>資料來源：香港國際機場官方網站，每 15 分鐘自動更新。</li>
+      <li>開住個頁唔郁超過一分鐘，有新資料會靜靜自動更新（捲動位置、搜尋同展開狀態不變）；睇緊詳情、打緊字嗰陣唔會郁。</li>
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。</li>
       <li>在搜尋框輸入 Flight ID、來往地或泊位關鍵字，即時篩選。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「H**代理」開咗只顯示 H** 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
@@ -912,6 +913,47 @@ try{
       var wait = Math.max(0, 1200 - (Date.now()-t0));
       setTimeout(function(){ document.getElementById("splash").classList.add("hide"); }, wait);
     });
+
+  /* ---------- 靜默自動更新：每5分鐘check，有新資料＋冇郁手先靜靜換 ---------- */
+  var lastActive = Date.now();
+  ["touchstart","touchmove","mousedown","keydown","wheel","scroll"].forEach(function(ev){
+    window.addEventListener(ev, function(){ lastActive = Date.now(); }, {passive:true});
+  });
+  var IDLE_MS = 60000, POLL_MS = 5*60*1000;
+  function userBusy(){
+    if(Date.now() - lastActive < IDLE_MS) return true;
+    if(detailFlight) return true;  /* 睇緊詳情 */
+    var q = document.getElementById("q");
+    if(q && document.activeElement === q) return true;  /* 打緊字 */
+    if(overlay.classList.contains("open")) return true;  /* 關於頁開緊 */
+    return false;
+  }
+  function silentUpdate(d){
+    var sy = window.scrollY || window.pageYOffset || 0;
+    var keepExpanded = expanded;
+    DB = d;
+    document.getElementById("headTs").textContent = d.generated_at || "—";
+    buildDates();
+    applyFilter();  /* 會 reset expanded＋render */
+    if(keepExpanded){ expanded = true; render(); }
+    if(sy) window.scrollTo(0, sy);
+  }
+  function checkForUpdate(){
+    if(!DB || document.visibilityState !== "visible" || userBusy()) return;
+    fetch("data.json?_="+Date.now(), {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+      .then(function(d){
+        if(!d || !d.generated_at || !d.dates || !d.days) return;
+        if(d.generated_at === DB.generated_at) return;  /* 冇新嘢 */
+        if(userBusy()) return;  /* fetch 期間郁過手就等下次 */
+        silentUpdate(d);
+      })
+      .catch(function(){ /* 靜靜失敗，下次再試 */ });
+  }
+  setInterval(checkForUpdate, POLL_MS);
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible") checkForUpdate();
+  });
 })();
 </script>
 </body>
