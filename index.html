@@ -919,7 +919,7 @@ try{
   ["touchstart","touchmove","mousedown","keydown","wheel","scroll"].forEach(function(ev){
     window.addEventListener(ev, function(){ lastActive = Date.now(); }, {passive:true});
   });
-  var IDLE_MS = 60000, POLL_MS = 5*60*1000;
+  var IDLE_MS = 60000, POLL_MS = 15*60*1000;
   function userBusy(){
     if(Date.now() - lastActive < IDLE_MS) return true;
     if(detailFlight) return true;  /* 睇緊詳情 */
