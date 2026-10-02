@@ -27,6 +27,14 @@ ATA_RE = re.compile(r"(?:At gate|Landed)\s+(\d{1,2}:\d{2})")
 ATD_RE = re.compile(r"Dep\s+(\d{1,2}:\d{2})")
 EST_RE = re.compile(r"Est at\s+(\d{1,2}:\d{2})")
 DATE_RE = re.compile(r"\((\d{1,2})/(\d{1,2})/(\d{4})\)")
+
+# 平均飛行時間（origin/destination → "XhYm"）：只有 STA（無預計／實際）時顯示作參考
+# CAI: 實測 9h48m(FA 2026-09-30)、10h32m/10h37m/10h38m(FR24)，平均約 10h25m
+# MNL: 直飛約 2h15m–2h27m，取約數
+ROUTE_AVG = {
+    "CAI": "10h25m",
+    "MNL": "2h20m",
+}
 STAND_PREFIX_RE = re.compile(r"^([A-Za-z]+)(\d+.*)$")
 
 
@@ -98,6 +106,7 @@ def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
         "est_date": status_date if est != "—" else "",
         "ata": ata,
         "ata_date": status_date if ata != "—" else "",
+        "avg_dur": ROUTE_AVG.get(via_list[-1] if via_list else "", ""),
         "cargo": cargo,
         "status_raw": status,
     }
