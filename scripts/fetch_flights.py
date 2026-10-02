@@ -26,6 +26,7 @@ TIMEOUT_SECS = 30
 ATA_RE = re.compile(r"(?:At gate|Landed)\s+(\d{1,2}:\d{2})")
 ATD_RE = re.compile(r"Dep\s+(\d{1,2}:\d{2})")
 EST_RE = re.compile(r"Est at\s+(\d{1,2}:\d{2})")
+DATE_RE = re.compile(r"\((\d{1,2})/(\d{1,2})/(\d{4})\)")
 STAND_PREFIX_RE = re.compile(r"^([A-Za-z]+)(\d+.*)$")
 
 
@@ -43,6 +44,16 @@ def parse_est(status: str) -> str:
         return "—"
     m = EST_RE.search(status)
     return m.group(1) if m else "—"
+
+
+def parse_status_date(status: str) -> str:
+    """Date (YYYY-MM-DD) from a status like 'Est at 01:20 (03/10/2026)'; '' if none."""
+    if not status:
+        return ""
+    m = DATE_RE.search(status)
+    if not m:
+        return ""
+    return f"{m.group(3)}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
 
 
 def fetch(url: str):
@@ -71,6 +82,9 @@ def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
     status = (f.get("status") or "").strip()
     via_list = f.get("origin" if arrival else "destination") or []
     stand = (f.get("stand") if arrival else f.get("gate")) or ""
+    est = parse_est(status)
+    ata = parse_actual(status, arrival)
+    status_date = parse_status_date(status)
     return {
         "flight_id": " / ".join(x.get("no", "") for x in f.get("flight", [])),
         "via": " / ".join(via_list),
@@ -80,8 +94,10 @@ def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
         "baggage": (f.get("baggage") or "").strip() or "—",
         "hall": (f.get("hall") or "").strip() or "—",
         "eta": (f.get("time") or "").strip(),
-        "est": parse_est(status),
-        "ata": parse_actual(status, arrival),
+        "est": est,
+        "est_date": status_date if est != "—" else "",
+        "ata": ata,
+        "ata_date": status_date if ata != "—" else "",
         "cargo": cargo,
         "status_raw": status,
     }
