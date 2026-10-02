@@ -31,7 +31,7 @@ try{
     --row-line:rgba(31,58,85,.55); --row-alt:rgba(255,255,255,.018);
     --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
     --red:#ef5350; --green:#9ccc65; --blue:#4fc3f7;
-    --stS:#ffb74d; --stN:#ce93d8;
+    --stW:#ce93d8;
     --sched:#ffffff;
     --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72); --error-fg:#ef9a9a;
   }
@@ -45,7 +45,7 @@ try{
     --row-line:#e3eaf1; --row-alt:rgba(0,0,0,.028);
     --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
     --red:#d32f2f; --green:#558b2f; --blue:#0288d1;
-    --stS:#e65100; --stN:#7b1fa2;
+    --stW:#7b1fa2;
     --sched:#16283a;
     --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45); --error-fg:#c62828;
   }
@@ -173,10 +173,11 @@ try{
   .nst{font-size:12px; margin-left:2px;}
   .ddate{font-size:11px; color:var(--dim); white-space:nowrap;}
   .avgdur{font-size:11px; color:var(--dim); white-space:nowrap;}
-  /* 泊位區域色：S橙 N紫 W青，R同其他唔上色 */
-  .stS{color:var(--stS); font-weight:700;}
-  .stN{color:var(--stN); font-weight:700;}
-  .stW{color:var(--blue); font-weight:700;}
+  /* 泊位區域色：S藍 N白 W紫 R灰（低調），其他唔上色 */
+  .stS{color:var(--blue); font-weight:700;}
+  .stN{color:var(--sched); font-weight:700;}
+  .stW{color:var(--stW); font-weight:700;}
+  .stR{color:var(--dim);}
   tr.rw.noted td{background:rgba(245,179,1,.22);}
   tbody tr.rw.noted:hover td{background:rgba(245,179,1,.30);}
   [data-theme="light"] tr.rw.noted td{background:rgba(245,179,1,.30);}
@@ -524,10 +525,10 @@ try{
 
   function badge(f){ return f.cargo ? '<span class="cbadge">貨</span>' : ""; }
 
-  /* 泊位區域色：S/N/W 上色，R同其他唔上色 */
+  /* 泊位區域色：S/N/W 上色，R用低調灰，其他唔上色 */
   function standColorCls(s){
     var c = (s || "").charAt(0).toUpperCase();
-    return c === "S" ? "stS" : c === "N" ? "stN" : c === "W" ? "stW" : "";
+    return c === "S" ? "stS" : c === "N" ? "stN" : c === "W" ? "stW" : c === "R" ? "stR" : "";
   }
   function standSpan(s){
     var c = standColorCls(s);
