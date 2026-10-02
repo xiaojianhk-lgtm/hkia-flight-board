@@ -125,7 +125,7 @@ def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
         "est_date": status_date if est != "—" else "",
         "ata": ata,
         "ata_date": status_date if ata != "—" else "",
-        "avg_dur": rough_duration(via_list[-1] if via_list else ""),
+        "avg_dur": rough_duration(via_list[-1] if via_list else "") if arrival else "",
         "cargo": cargo,
         "status_raw": status,
     }
