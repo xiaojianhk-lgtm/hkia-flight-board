@@ -169,6 +169,7 @@ try{
   /* ---------- 備註（長按加，有備註先喺目的地後面加 ⭐️） ---------- */
   .nst{font-size:12px; margin-left:2px;}
   .ddate{font-size:11px; color:var(--dim); white-space:nowrap;}
+  .avgdur{font-size:11px; color:var(--dim); white-space:nowrap;}
   tr.rw.noted td{background:rgba(245,179,1,.22);}
   tbody tr.rw.noted:hover td{background:rgba(245,179,1,.30);}
   [data-theme="light"] tr.rw.noted td{background:rgba(245,179,1,.30);}
@@ -543,7 +544,16 @@ try{
     if(f.est && f.est !== "—" && f.est !== f.eta){
       h += " <span class='estchg'>"+esc(f.est)+"</span>"+dateTag(f,"est");
     }
+    h += avgDurTag(f);
     return h;
+  }
+  /* 只有 STA（無預計／實際）時，細細隻顯示該航線平均飛行時間 */
+  function avgDurTag(f){
+    if(!f.avg_dur) return "";
+    var estShown = f.est && f.est !== "—" && f.est !== f.eta;
+    var ataShown = f.ata && f.ata !== "—" && f.ata !== f.eta;
+    if(estShown || ataShown) return "";
+    return " <span class='avgdur'>~"+esc(f.avg_dur)+"</span>";
   }
   /* 預計／實際時間若同原定唔同日，後面加 (DD/MM) */
   function dateTag(f, which){
@@ -578,6 +588,7 @@ try{
     if(f.ata && f.ata !== "—" && f.ata !== f.eta && (!estShown || f.ata !== f.est)){
       timeHtml += "<span class='msep'>/</span><span class='mtime-ata'>"+esc(f.ata)+"</span>"+dateTag(f,"ata");
     }
+    timeHtml += avgDurTag(f);
     var standRight = mstandHtml(f, "mstandwrap-r");
     var hn = hasNote(f);
     return "<div class='mrow"+(hn?" noted":"")+"' data-i='"+i+"'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span> "+badge(f)+
