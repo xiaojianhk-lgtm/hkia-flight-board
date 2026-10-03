@@ -137,7 +137,14 @@ try{
   tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
   tbody tr.rw:active td{background:rgba(128,128,128,.14);}
   @media (hover:hover){ tbody tr.rw:hover td{background:rgba(128,128,128,.12);} }
-  td.fid{font-weight:700;}
+  td.fid{font-weight:700; position:relative;}
+  /* 已巡視：紅色 / 覆蓋喺航班編號上面 */
+  td.fid.insp::after{
+    content:"/"; position:absolute; left:0; right:0; top:50%;
+    transform:translateY(-50%); text-align:center;
+    color:var(--red); font-size:24px; font-weight:800; line-height:1;
+    pointer-events:none;
+  }
   td.time{font-weight:600;}
   .tchg{color:var(--red); font-weight:700;}
   .tsta{color:var(--dim);}
@@ -213,6 +220,7 @@ try{
       <li>離港時間減 50 分鐘後同到港一齊排序（對應前一班到港航機）。</li>
       <li>泊位右邊色 bar：<span style="color:var(--blue)">藍</span>=南、<span style="color:var(--stN)">橙</span>=北、<span style="color:var(--stW)">紫</span>=西、灰=R/數字。</li>
       <li>長按航班加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
+      <li>喺航班上向左滑，航班編號會多條<span style="color:var(--red)">紅色／</span>代表已巡視；向右滑取消。</li>
       <li>每 15 分鐘自動更新（閒置先會靜靜換）。</li>
     </ul>
     <button id="aboutClose">關閉</button>
@@ -287,7 +295,7 @@ try{
   var WATCH = (function(){
     try{
       var w = JSON.parse(localStorage.getItem("hkia-watch-v1")) || {};
-      Object.keys(w).forEach(function(k){ if(!w[k] || (!w[k].note && !w[k].stand)) delete w[k]; });
+      Object.keys(w).forEach(function(k){ if(!w[k] || (!w[k].note && !w[k].stand && !w[k].insp)) delete w[k]; });
       return w;
     }catch(e){ return {}; }
   })();
@@ -298,10 +306,18 @@ try{
   }
   function hasNote(typ, f){
     var k = watchKey(typ, f), w = WATCH[k];
-    if(f.cargo){ if(w && w.note){ delete w.note; if(!w.stand) delete WATCH[k]; saveWatch(); } return false; }
+    if(f.cargo){ if(w && w.note){ delete w.note; if(!w.stand && !w.insp) delete WATCH[k]; saveWatch(); } return false; }
     return !!(w && w.note);
   }
   function manualStand(typ, f){ var w = WATCH[watchKey(typ, f)]; return (w && w.stand) || ""; }
+  /* 已巡視標記（localStorage，同備註共用 WATCH） */
+  function isInspected(typ, f){ var w = WATCH[watchKey(typ, f)]; return !!(w && w.insp); }
+  function setInspected(typ, f, on){
+    var k = watchKey(typ, f), w = WATCH[k];
+    if(on){ if(!w) w = WATCH[k] = {t:Date.now()}; w.insp = 1; }
+    else if(w){ delete w.insp; if(!w.note && !w.stand) delete WATCH[k]; }
+    saveWatch();
+  }
 
   var HAS_PAX_CODES = ["CX","PX","JX","KE","JL","QR","FJ","BI","LH","LX","DL","UO","AK","FD","Z2","QZ","GK","9G"];
   var HAS_CARGO_CODES = ["CX","LD","QY","3V","C6","D4","MS","CK","AK","Z2"];
@@ -502,7 +518,7 @@ try{
       var hn = hasNote(typ, f);
       var cls = "rw"+(hn?" noted":"")+(f.cancelled?" cancelled":"");
       var key = itemKey(it);
-      var fidCell = "<td class='fid'>"+esc(opId(f))+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>";
+      var fidCell = "<td class='fid"+(isInspected(typ,f)?" insp":"")+"'>"+esc(opId(f))+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>";
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
                 "<td class='time tcol'>"+arrTimeHtml(f)+"</td><td class='tcol'></td>"+
@@ -552,7 +568,7 @@ try{
       WATCH[k] = WATCH[k] || {t:Date.now()};
       if(ni){ var v = ni.value.trim(); if(v) WATCH[k].note = v; else delete WATCH[k].note; }
       if(si){ var s = si.value.trim().toUpperCase(); if(s) WATCH[k].stand = s; else delete WATCH[k].stand; }
-      if(!WATCH[k].note && !WATCH[k].stand) delete WATCH[k];
+      if(!WATCH[k].note && !WATCH[k].stand && !WATCH[k].insp) delete WATCH[k];
       saveWatch();
       if(!(WATCH[k] && WATCH[k].note)) detailKey = null;
     }
@@ -563,7 +579,7 @@ try{
     noteEditingKey = null;
     if(k && WATCH[k]){
       if(f && f.cargo) delete WATCH[k].stand; else delete WATCH[k].note;
-      if(!WATCH[k].note && !WATCH[k].stand) delete WATCH[k];
+      if(!WATCH[k].note && !WATCH[k].stand && !WATCH[k].insp) delete WATCH[k];
       saveWatch();
     }
     detailKey = null;
@@ -686,6 +702,32 @@ try{
   rowsEl.addEventListener("mouseup", pressCancel);
   rowsEl.addEventListener("mousemove", pressCancel);
   rowsEl.addEventListener("contextmenu", function(e){ if(rowFromEvent(e)) e.preventDefault(); });
+
+  /* 左右滑：左滑加紅「/」（已巡視），右滑取消 */
+  var swSX = 0, swSY = 0, swRow = null;
+  rowsEl.addEventListener("touchstart", function(e){
+    var row = rowFromEvent(e);
+    if(!row){ swRow = null; return; }
+    var t = e.touches && e.touches[0];
+    if(t){ swSX = t.clientX; swSY = t.clientY; swRow = row; }
+  }, {passive:true});
+  rowsEl.addEventListener("touchend", function(e){
+    if(!swRow) return;
+    var row = swRow; swRow = null;
+    var t = e.changedTouches && e.changedTouches[0];
+    if(!t) return;
+    var dx = t.clientX - swSX, dy = t.clientY - swSY;
+    if(Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+    var it = lastItems[+row.getAttribute("data-k")];
+    if(!it) return;
+    var want = dx < 0;
+    if(isInspected(it.typ, it.f) === want) return;
+    setInspected(it.typ, it.f, want);
+    suppressClick = true;
+    setTimeout(function(){ suppressClick = false; }, 800);
+    tapTimes.length = 0;
+    render();
+  });
 
   /* 連點三下開搜尋 */
   var tapTimes = [];
