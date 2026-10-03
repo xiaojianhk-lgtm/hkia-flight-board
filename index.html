@@ -224,6 +224,7 @@ try{
   .stW{border-right-color:var(--stW);}
   .stR{border-right-color:var(--dim);}
   .stchg{color:var(--red);}
+  .st .dim{font-weight:400;} /* 包住新舊泊位嗰陣，舊泊位唔跟粗 */
   tr.rw.noted td{background:rgba(245,179,1,.22);}
   tbody tr.rw.noted:hover td{background:rgba(245,179,1,.30);}
   [data-theme="light"] tr.rw.noted td{background:rgba(245,179,1,.30);}
@@ -261,7 +262,7 @@ try{
     .mtime-est{font-weight:700; font-size:15px; color:var(--green); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .msep{color:var(--dim); font-size:13px; margin:0 2px;}
     .mstand{font-size:16px; font-weight:700; color:var(--text);}
-    .mstandold{font-size:11px; color:var(--dim);}
+    .mstandold{font-size:11px; color:var(--dim); font-weight:400;}
     .mline2{font-size:11px; color:var(--dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
     #q{max-width:none;}
     .searchrow{padding:8px 2px 10px;}
@@ -592,22 +593,28 @@ try{
     var ms = manualStand(f);
     if(ms) return standSpan(ms);  /* 手動泊位優先 */
     if(f.stand_old && f.stand_old !== f.stand){
-      return standSpan(f.stand, true) + " <span class='dim'>("+esc(f.stand_old)+")</span>";
+      /* bar 放喺舊泊位右邊（最右），唔係新舊中間 */
+      var ccls = standColorCls(f.stand);
+      var inner = "<span class='stchg'>"+esc(f.stand)+"</span> <span class='dim'>("+esc(f.stand_old)+")</span>";
+      return ccls ? "<span class='st "+ccls+"'>"+inner+"</span>" : inner;
     }
     return standSpan(f.stand);
   }
 
   function mstandHtml(f, wrap){
-    var inner;
+    var inner, wcls = "";
     var ms = manualStand(f);
     if(ms){
       inner = "<span class='mstand'>"+standSpan(ms)+"</span>";
     }else if(f.stand_old && f.stand_old !== f.stand){
-      inner = "<span class='mstand'>"+standSpan(f.stand, true)+"</span> <span class='mstandold'>("+esc(f.stand_old)+")</span>";
+      /* bar 放喺舊泊位右邊（最右），唔係新舊中間 */
+      var ccls = standColorCls(f.stand);
+      inner = "<span class='mstand stchg'>"+esc(f.stand)+"</span> <span class='mstandold'>("+esc(f.stand_old)+")</span>";
+      if(ccls) wcls = " st "+ccls;
     }else{
       inner = "<span class='mstand'>"+standSpan(f.stand||"—")+"</span>";
     }
-    return "<span class='"+(wrap||"mstandwrap")+"'>"+inner+"</span>";
+    return "<span class='"+(wrap||"mstandwrap")+wcls+"'>"+inner+"</span>";
   }
 
   function etaCell(f){
