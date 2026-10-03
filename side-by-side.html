@@ -126,21 +126,19 @@ try{
   table{width:100%; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums; table-layout:fixed;}
   thead th{
     position:sticky; top:var(--barH,0px); background:var(--card); z-index:5;
-    font-size:11px; padding:10px 4px; border-bottom:2px solid var(--line);
+    font-size:11px; padding:8px 4px; border-bottom:2px solid var(--line);
     text-align:left; white-space:nowrap; color:var(--muted); letter-spacing:1px;
   }
   thead th .hzh{font-size:12px; font-weight:700; color:var(--text); letter-spacing:2px;}
   thead th .hen{font-size:10px; font-weight:400; opacity:.7; margin-left:4px; letter-spacing:1px;}
   thead th.tcol, tbody td.tcol{text-align:center;}
   thead th.bayh, tbody td.bayc{text-align:right;}
-  tbody td{padding:10px 4px; white-space:nowrap; border-bottom:1px solid var(--row-line); overflow:hidden; text-overflow:ellipsis;}
+  tbody td{padding:7px 4px; white-space:nowrap; border-bottom:1px solid var(--row-line); overflow:hidden; text-overflow:ellipsis;}
+  tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
   tbody tr.rw:active td{background:rgba(128,128,128,.14);}
-  @media (hover:hover){ tbody tr.rw:hover td{background:rgba(128,128,128,.07);} }
-  td.fid{font-weight:700; font-size:14px;}
+  @media (hover:hover){ tbody tr.rw:hover td{background:rgba(128,128,128,.12);} }
+  td.fid{font-weight:700;}
   td.time{font-weight:600;}
-  /* 到港時間：實際紅＋A、預計深綠＋E */
-  .atm-act{color:var(--red);}
-  .atm-est{color:var(--green2);}
   .tchg{color:var(--red); font-weight:700;}
   .tmark{font-size:10px; font-weight:700; margin-left:2px; letter-spacing:.5px; opacity:.85;}
   /* 泊位右邊色 bar */
@@ -211,7 +209,7 @@ try{
     <h3>關於並排版</h3>
     <ul>
       <li>到港喺左、離港喺右，同一頁睇晒。</li>
-      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：已降落嘅顯示實際時間（正常顏色）、<span style="color:var(--green2)">深綠色＋E</span>＝預計到達、原定後＋S＝仲未有預計。離港：已起飛嘅顯示實際時間＋A（正常顏色）；未起飛但時間有變（預計同原定唔同）會變<span style="color:var(--red)">紅色</span>。</li>
+      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：已降落嘅顯示實際時間＋A、預計到達＋E、原定後＋S＝仲未有預計（全部正常顏色，唔再分色）。離港：已起飛嘅顯示實際時間＋A（正常顏色）；未起飛但時間有變（預計同原定唔同）會變<span style="color:var(--red)">紅色</span>。</li>
       <li>離港時間減 50 分鐘後同到港一齊排序（對應前一班到港航機）。</li>
       <li>泊位右邊色 bar：<span style="color:var(--blue)">藍</span>=南、<span style="color:var(--stN)">橙</span>=北、<span style="color:var(--stW)">紫</span>=西、灰=R/數字。</li>
       <li>長按航班加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
@@ -259,7 +257,7 @@ try{
 <main>
   <table>
     <colgroup>
-      <col style="width:26%"><col style="width:26%"><col style="width:15%"><col style="width:15%"><col style="width:18%">
+      <col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%">
     </colgroup>
     <thead>
       <tr>
@@ -328,12 +326,12 @@ try{
     if(f.est && f.est !== "—") return f.est;
     return f.eta || "—";
   }
-  /* 到港時間顯示：已降落正常顯示、預計深綠＋E、只有STA加S（排序照用 eff） */
+  /* 到港時間顯示：已降落＋A、預計＋E、只有STA加S（全部正常顏色；排序照用 eff） */
   function arrTimeHtml(f){
     var noAta = !(f.ata && f.ata !== "—");
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
-    if(!noAta) return esc(f.ata);
-    if(estShown) return "<span class='atm-est'>"+esc(f.est)+"<span class='tmark'>E</span></span>";
+    if(!noAta) return esc(f.ata)+"<span class='tmark'>A</span>";
+    if(estShown) return esc(f.est)+"<span class='tmark'>E</span>";
     return esc(f.eta || "—") + "<span class='tmark'>S</span>";
   }
   /* 離港時間顯示：已起飛正常顯示＋A、有變（預計同原定唔同）就紅色，否則原色 */
