@@ -137,14 +137,14 @@ try{
   tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
   tbody tr.rw:active td{background:rgba(128,128,128,.14);}
   @media (hover:hover){ tbody tr.rw:hover td{background:rgba(128,128,128,.12);} }
-  td.fid{font-weight:700; position:relative;}
-  /* 已巡視：紅色 / 覆蓋喺航班編號上面 */
-  td.fid.insp::after{
-    content:"/"; position:absolute; left:0; right:0; top:50%;
-    transform:translateY(-50%); text-align:center;
-    color:var(--red); font-size:24px; font-weight:800; line-height:1;
-    pointer-events:none;
-  }
+  td.fid{font-weight:700;}
+  .tmark.inspk{color:var(--red); opacity:1;}
+  /* 同區泊位高亮：實色 pill */
+  .sthl{border-radius:4px; padding:1px 7px; color:#fff; font-weight:700; white-space:nowrap;}
+  .sthl.stS{background:var(--blue);}
+  .sthl.stN{background:var(--stN);}
+  .sthl.stW{background:var(--stW);}
+  .sthl.stR{background:var(--dim);}
   td.time{font-weight:600;}
   .tchg{color:var(--red); font-weight:700;}
   .tsta{color:var(--dim);}
@@ -219,8 +219,9 @@ try{
       <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：已降落嘅顯示實際時間＋A、預計到達＋E、得原定時間嘅顯示<span style="color:var(--dim)">淺灰色＋S</span>。離港：已起飛嘅顯示實際時間＋A（正常顏色）；未起飛但時間有變（預計同原定唔同）會變<span style="color:var(--red)">紅色</span>。</li>
       <li>離港時間減 50 分鐘後同到港一齊排序（對應前一班到港航機）。</li>
       <li>泊位右邊色 bar：<span style="color:var(--blue)">藍</span>=南、<span style="color:var(--stN)">橙</span>=北、<span style="color:var(--stW)">紫</span>=西、灰=R/數字。</li>
-      <li>長按航班加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
-      <li>喺航班上向左滑，航班編號會多條<span style="color:var(--red)">紅色／</span>代表已巡視；向右滑取消。</li>
+      <li>長按航班其他位加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
+      <li>喺航班上向左滑：航班編號加<span style="color:var(--red)">紅色✓</span>（一次巡視）；再滑多下，時間都會加✓（二次巡視）。向右滑逐級取消。</li>
+      <li>長按泊位：高亮所有同區泊位（S藍／N橙／W紫／R灰）；再長按取消，長按另一區會轉過去。</li>
       <li>每 15 分鐘自動更新（閒置先會靜靜換）。</li>
     </ul>
     <button id="aboutClose">關閉</button>
@@ -310,14 +311,25 @@ try{
     return !!(w && w.note);
   }
   function manualStand(typ, f){ var w = WATCH[watchKey(typ, f)]; return (w && w.stand) || ""; }
-  /* 已巡視標記（localStorage，同備註共用 WATCH） */
-  function isInspected(typ, f){ var w = WATCH[watchKey(typ, f)]; return !!(w && w.insp); }
-  function setInspected(typ, f, on){
+  /* 已巡視級別 0/1/2（localStorage，同備註共用 WATCH） */
+  function inspLevel(typ, f){ var w = WATCH[watchKey(typ, f)]; return (w && w.insp) || 0; }
+  function setInspLevel(typ, f, lvl){
     var k = watchKey(typ, f), w = WATCH[k];
-    if(on){ if(!w) w = WATCH[k] = {t:Date.now()}; w.insp = 1; }
+    if(lvl > 0){ if(!w) w = WATCH[k] = {t:Date.now()}; w.insp = lvl; }
     else if(w){ delete w.insp; if(!w.note && !w.stand) delete WATCH[k]; }
     saveWatch();
   }
+  /* 泊位區（S/N/W/R，數字歸R組；冇泊位返 ""） */
+  function standArea(typ, f){
+    var s = ((manualStand(typ, f) || f.stand || "").trim().toUpperCase());
+    if(!s || s === "—") return "";
+    var c = s.charAt(0);
+    if(c === "S" || c === "N" || c === "W") return c;
+    if(c === "R" || /^\d+$/.test(s)) return "R";
+    return "";
+  }
+  /* 同區高亮狀態（唔 save，純睇嘢用） */
+  var hlArea = null;
 
   var HAS_PAX_CODES = ["CX","PX","JX","KE","JL","QR","FJ","BI","LH","LX","DL","UO","AK","FD","Z2","QZ","GK","9G"];
   var HAS_CARGO_CODES = ["CX","LD","QY","3V","C6","D4","MS","CK","AK","Z2"];
@@ -386,17 +398,15 @@ try{
   }
   function standHtml(typ, f){
     var ms = manualStand(typ, f);
-    if(ms){
-      var c = standColorCls(ms);
-      return c ? "<span class='st "+c+"'>"+esc(ms)+"</span>" : esc(ms);
-    }
-    if(f.stand_old && f.stand_old !== f.stand){
-      var ccls = standColorCls(f.stand);
-      var inner = "<span class='stchg'>"+esc(f.stand)+"</span> <span class='stold'>("+esc(f.stand_old)+")</span>";
-      return ccls ? "<span class='st "+ccls+"'>"+inner+"</span>" : inner;
-    }
-    var c2 = standColorCls(f.stand);
-    return c2 ? "<span class='st "+c2+"'>"+esc(f.stand)+"</span>" : esc(f.stand);
+    var inner, c;
+    if(ms){ inner = esc(ms); c = standColorCls(ms); }
+    else if(f.stand_old && f.stand_old !== f.stand){
+      inner = "<span class='stchg'>"+esc(f.stand)+"</span> <span class='stold'>("+esc(f.stand_old)+")</span>";
+      c = standColorCls(f.stand);
+    } else { inner = esc(f.stand); c = standColorCls(f.stand); }
+    if(!c) return inner;
+    if(hlArea && standArea(typ, f) === hlArea) return "<span class='sthl "+c+"'>"+inner+"</span>";
+    return "<span class='st "+c+"'>"+inner+"</span>";
   }
 
   function badge(f){
@@ -518,14 +528,16 @@ try{
       var hn = hasNote(typ, f);
       var cls = "rw"+(hn?" noted":"")+(f.cancelled?" cancelled":"");
       var key = itemKey(it);
-      var fidCell = "<td class='fid"+(isInspected(typ,f)?" insp":"")+"'>"+esc(opId(f))+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>";
+      var ilv = inspLevel(typ, f);
+      var fidCell = "<td class='fid'>"+esc(opId(f))+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
+      var tMark2 = ilv>=2 ? "<span class='tmark inspk'>✓</span>" : "";
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
-                "<td class='time tcol'>"+arrTimeHtml(f)+"</td><td class='tcol'></td>"+
+                "<td class='time tcol'>"+arrTimeHtml(f)+tMark2+"</td><td class='tcol'></td>"+
                 "<td class='bayc'>"+standHtml(typ,f)+"</td></tr>";
       }else{
         html += "<tr class='"+cls+"' data-k='"+i+"'><td></td>"+fidCell+
-                "<td class='tcol'></td><td class='time tcol'>"+depTimeHtml(f)+"</td>"+
+                "<td class='tcol'></td><td class='time tcol'>"+depTimeHtml(f)+tMark2+"</td>"+
                 "<td class='bayc'>"+standHtml(typ,f)+"</td></tr>";
       }
       if(detailKey === key){
@@ -673,7 +685,8 @@ try{
     render();
   });
 
-  /* 長按加備註／手動泊位 */
+  /* 長按：Bay 格=高亮同區泊位，其他位=加備註／手動泊位 */
+  var pressOnBay = false;
   function pressStart(e){
     if(pressTimer) clearTimeout(pressTimer);
     var row = rowFromEvent(e);
@@ -682,14 +695,20 @@ try{
     var it = lastItems[+row.getAttribute("data-k")];
     if(!it) return;
     pressItem = it;
+    pressOnBay = !!(e.target.closest && e.target.closest("td.bayc"));
     pressTimer = setTimeout(function(){
       pressTimer = null;
       suppressClick = true;
       setTimeout(function(){ suppressClick = false; }, 800);
-      var k = itemKey(pressItem);
-      if(!WATCH[k]) WATCH[k] = {t:Date.now()};
-      detailKey = k; noteEditingKey = k; noteFocus = true;
-      render();
+      if(pressOnBay){
+        var area = standArea(pressItem.typ, pressItem.f);
+        if(area){ hlArea = (hlArea === area) ? null : area; render(); }
+      }else{
+        var k = itemKey(pressItem);
+        if(!WATCH[k]) WATCH[k] = {t:Date.now()};
+        detailKey = k; noteEditingKey = k; noteFocus = true;
+        render();
+      }
     }, 550);
   }
   function pressCancel(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; } pressItem = null; }
@@ -720,9 +739,10 @@ try{
     if(Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
     var it = lastItems[+row.getAttribute("data-k")];
     if(!it) return;
-    var want = dx < 0;
-    if(isInspected(it.typ, it.f) === want) return;
-    setInspected(it.typ, it.f, want);
+    var lvl = inspLevel(it.typ, it.f);
+    var want = Math.max(0, Math.min(2, lvl + (dx < 0 ? 1 : -1)));
+    if(want === lvl) return;
+    setInspLevel(it.typ, it.f, want);
     suppressClick = true;
     setTimeout(function(){ suppressClick = false; }, 800);
     tapTimes.length = 0;
