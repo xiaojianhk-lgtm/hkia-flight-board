@@ -659,8 +659,8 @@ try{
   function schedMark(f){
     if(tab !== "arrival") return "";
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
-    var ataShown = f.ata && f.ata !== "—" && f.ata !== f.eta;
-    if(estShown || ataShown) return "";
+    if(estShown) return "";
+    if(f.ata && f.ata !== "—") return "";  /* 有實際時間（就算同原定一樣）都唔係「只有 STA」 */
     return "<span class='tmark'>s</span>";
   }
 
