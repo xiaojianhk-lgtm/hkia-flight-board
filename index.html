@@ -30,7 +30,7 @@ try{
     --header-bg:rgba(11,28,44,.96); --header-bg-solid:rgb(11,28,44);
     --row-line:rgba(31,58,85,.55); --row-alt:rgba(255,255,255,.018);
     --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
-    --red:#ef5350; --green:#9ccc65; --blue:#4fc3f7;
+    --red:#ef5350; --green:#9ccc65; --green2:#8bc34a; --blue:#4fc3f7;
     --stN:#ffb74d; --stW:#ab47bc;
     --sched:#ffffff;
     --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72); --error-fg:#ef9a9a;
@@ -44,7 +44,7 @@ try{
     --header-bg:rgba(255,255,255,.96); --header-bg-solid:#ffffff;
     --row-line:#e3eaf1; --row-alt:rgba(0,0,0,.028);
     --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
-    --red:#d32f2f; --green:#558b2f; --blue:#0288d1;
+    --red:#d32f2f; --green:#558b2f; --green2:#33691e; --blue:#0288d1;
     --stN:#e65100; --stW:#8e24aa;
     --sched:#16283a;
     --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45); --error-fg:#c62828;
@@ -173,6 +173,10 @@ try{
     .st{font-size:14px;}
   }
   .estchg{color:var(--green); font-weight:700;}
+  /* 到港預計：加深綠色 */
+  .estchg.arr{color:var(--green2);}
+  /* 實際(A)／預計(E)時間標記：細細隻跟住時間 */
+  .tmark{font-size:10px; font-weight:700; margin-left:2px; letter-spacing:.5px; opacity:.85;}
   td.dim{color:var(--muted);}
   .c-blue{color:var(--blue);} .c-green{color:var(--green);} .c-red{color:var(--red);} .c-sched{color:var(--sched);}
   /* ---------- 桌面版專業化 ---------- */
@@ -268,6 +272,7 @@ try{
     .mtime{font-weight:700; font-size:15px; color:var(--sched); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-ata{font-weight:700; font-size:15px; color:var(--red); white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mtime-est{font-weight:700; font-size:15px; color:var(--green); white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mtime-est.arr{color:var(--green2);}
     .msep{color:var(--dim); font-size:13px; margin:0 2px;}
     .mstand{font-size:16px; font-weight:700; color:var(--text);}
     .mstandold{font-size:11px; color:var(--dim); font-weight:400;}
@@ -342,7 +347,7 @@ try{
       <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
       <li>長按貨機手動輸入泊位（存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。保存後自動收起；清空泊位欄再按保存、或按刪除掣即清除。</li>
       <li>時間列右邊嘅 ⟳ 可手動重新載入最新資料；☀️／🌙 可切換日間／夜間模式。</li>
-      <li>時間顏色：<span class="c-sched">白色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。</li>
+      <li>時間顏色：<span class="c-sched">白色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。到港航班：預計時間用深綠色＋<b>E</b>，實際時間後面加 <span class="c-red"><b>A</b></span>。</li>
     </ul>
     <p class="fine">時間為香港時間 (HKT)。航班資料僅供參考，請以機場官方公布為準。</p>
     <button id="aboutClose">關閉</button>
@@ -629,10 +634,17 @@ try{
     return "<span class='"+(wrap||"mstandwrap")+wcls+"'>"+inner+"</span>";
   }
 
+  /* 到港實際時間後面加 A 標記 */
+  function ataMark(f){
+    return (tab === "arrival" && f.ata && f.ata !== "—") ? "<span class='tmark'>A</span>" : "";
+  }
+
   function etaCell(f){
     var h = esc(f.eta);
     if(f.est && f.est !== "—" && f.est !== f.eta){
-      h += " <span class='estchg'>"+esc(f.est)+"</span>"+dateTag(f,"est");
+      /* 到港預計：加深綠色＋E 標記 */
+      var arrE = (tab === "arrival");
+      h += " <span class='estchg"+(arrE?" arr":"")+"'>"+esc(f.est)+(arrE?"<span class='tmark'>E</span>":"")+"</span>"+dateTag(f,"est");
     }
     h += avgDurTag(f);
     return h;
@@ -662,7 +674,7 @@ try{
     return "<tr class='"+cls+"' data-i='"+i+"'><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
       "<td>"+esc(f.via)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>"+
       "<td class='eta'>"+etaCell(f)+"</td>"+
-      "<td class='ata'>"+esc(f.ata)+dateTag(f,"ata")+"</td><td class='standcell'>"+dstandHtml(f)+"</td></tr>";
+      "<td class='ata'>"+esc(f.ata)+ataMark(f)+dateTag(f,"ata")+"</td><td class='standcell'>"+dstandHtml(f)+"</td></tr>";
   }
 
   /* effective time: estimated if available, else scheduled — matches server sort */
@@ -672,12 +684,13 @@ try{
   function mrowHtml(f, i){
     var timeHtml = "<span class='mtime'>"+esc(f.eta||"—")+"</span>";
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
+    var arrM = (tab === "arrival");
     if(estShown){
-      timeHtml += "<span class='msep'>/</span><span class='mtime-est'>"+esc(f.est)+"</span>"+dateTag(f,"est");
+      timeHtml += "<span class='msep'>/</span><span class='mtime-est"+(arrM?" arr":"")+"'>"+esc(f.est)+(arrM?"<span class='tmark'>E</span>":"")+"</span>"+dateTag(f,"est");
     }
     /* actual time (At gate / Landed / Dep) always on the right, arrival + departure */
     if(f.ata && f.ata !== "—" && f.ata !== f.eta && (!estShown || f.ata !== f.est)){
-      timeHtml += "<span class='msep'>/</span><span class='mtime-ata'>"+esc(f.ata)+"</span>"+dateTag(f,"ata");
+      timeHtml += "<span class='msep'>/</span><span class='mtime-ata'>"+esc(f.ata)+(arrM?"<span class='tmark'>A</span>":"")+"</span>"+dateTag(f,"ata");
     }
     timeHtml += avgDurTag(f);
     var standRight = mstandHtml(f, "mstandwrap-r");
