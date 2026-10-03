@@ -31,7 +31,6 @@ try{
     --row-line:rgba(31,58,85,.55); --row-alt:rgba(255,255,255,.018);
     --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
     --red:#ef5350; --green:#9ccc65; --green2:#8bc34a; --blue:#4fc3f7;
-    --stN:#ffb74d; --stW:#ab47bc;
     --sched:#ffffff;
     --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72); --error-fg:#ef9a9a;
   }
@@ -45,7 +44,6 @@ try{
     --row-line:#e3eaf1; --row-alt:rgba(0,0,0,.028);
     --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
     --red:#d32f2f; --green:#558b2f; --green2:#33691e; --blue:#0288d1;
-    --stN:#e65100; --stW:#8e24aa;
     --sched:#16283a;
     --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45); --error-fg:#c62828;
   }
@@ -232,13 +230,16 @@ try{
   .nst{font-size:12px; margin-left:2px;}
   .ddate{font-size:11px; color:var(--dim); white-space:nowrap;}
   .avgdur{font-size:11px; color:var(--dim); white-space:nowrap;}
-  /* 泊位區域色：右邊色 bar，字保持原色（S藍 N橙 W紫；R同純數字用淺灰） */
-  .st{border-right:4px solid transparent; padding-right:6px; font-weight:700;}
-  .stS{border-right-color:var(--blue);}
-  .stN{border-right-color:var(--stN);}
-  .stW{border-right-color:var(--stW);}
-  .stR{border-right-color:var(--dim);}
+  /* 泊位：粗體；轉位紅字 */
+  .st{font-weight:700;}
   .stchg{color:var(--red);}
+  /* 長按泊位嘅區域高亮：統一螢光黃底＋深色字 */
+  .hizone{background:#ffff00; border-radius:3px; padding:0 3px;}
+  .hizone .mstand, .hizone .stchg{color:#111;}
+  .hizone .mstandold, .hizone .dim{color:#333;}
+  td.standcell.hizone{padding:2px 8px; color:#111;}
+  td.standcell.hizone .stchg{color:#111;}
+  td.standcell.hizone .dim{color:#333;}
   .st .dim{font-weight:400;} /* 包住新舊泊位嗰陣，舊泊位唔跟粗 */
   tr.rw.noted td{background:rgba(245,179,1,.22);}
   tbody tr.rw.noted:hover td{background:rgba(245,179,1,.30);}
@@ -350,6 +351,7 @@ try{
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「H**代理」開咗只顯示 H** 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
       <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
       <li>長按貨機手動輸入泊位（存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。保存後自動收起；清空泊位欄再按保存、或按刪除掣即清除。</li>
+      <li>長按<b>泊位格</b>可將同一區域（S／N／W／R）嘅泊位全部螢光黃高亮，再長按取消；重開頁面自動清除。</li>
       <li>時間列右邊嘅 ⟳ 可手動重新載入最新資料；☀️／🌙 可切換日間／夜間模式。</li>
       <li>時間顏色：<span class="c-sched">白色</span>為原定時間，<span class="c-green">綠色</span>為預計時間（到港用深綠色）。字母標記：<b>S</b>＝原定時間，<b>E</b>＝預計時間，<b>A</b>＝實際時間（到港／離港都有）。</li>
     </ul>
@@ -629,20 +631,29 @@ try{
     return h;
   }
 
-  /* 泊位區域色：S/N/W 上色；R同純數字用淺灰；其他唔上色 */
-  function standColorCls(s){
-    s = (s || "").trim();
-    var c = s.charAt(0).toUpperCase();
-    if(c === "S") return "stS";
-    if(c === "N") return "stN";
-    if(c === "W") return "stW";
-    if(c === "R" || /^\d+$/.test(s)) return "stR";
+  /* 泊位所屬區域（長按高亮用）：S/N/W；R同純數字歸 R */
+  function standZone(s){
+    s = (s || "").trim().toUpperCase();
+    var c = s.charAt(0);
+    if(c === "S" || c === "N" || c === "W") return c;
+    if(c === "R" || /^\d+$/.test(s)) return "R";
     return "";
   }
+  /* hiZone：而家高亮緊邊個區域（"" = 無）；唔存 localStorage，重開頁面清除 */
+  var hiZone = "";
+  function hiCls(f){
+    if(!hiZone) return "";
+    var z = standZone(manualStand(f) || f.stand);
+    return (z && z === hiZone) ? " hizone" : "";
+  }
+  function toggleZoneHi(f){
+    var z = standZone(manualStand(f) || f.stand);
+    if(!z) return;
+    hiZone = (hiZone === z) ? "" : z;
+    render();
+  }
   function standSpan(s, changed){
-    var c = standColorCls(s);
-    if(!c && !changed) return esc(s);
-    var cls = "st" + (c ? " "+c : "") + (changed ? " stchg" : "");
+    var cls = "st" + (changed ? " stchg" : "");
     return "<span class='"+cls+"'>"+esc(s)+"</span>";
   }
 
@@ -650,28 +661,22 @@ try{
     var ms = manualStand(f);
     if(ms) return standSpan(ms);  /* 手動泊位優先 */
     if(f.stand_old && f.stand_old !== f.stand){
-      /* bar 放喺舊泊位右邊（最右），唔係新舊中間 */
-      var ccls = standColorCls(f.stand);
-      var inner = "<span class='stchg'>"+esc(f.stand)+"</span> <span class='dim'>("+esc(f.stand_old)+")</span>";
-      return ccls ? "<span class='st "+ccls+"'>"+inner+"</span>" : inner;
+      return "<span class='stchg'>"+esc(f.stand)+"</span> <span class='dim'>("+esc(f.stand_old)+")</span>";
     }
     return standSpan(f.stand);
   }
 
   function mstandHtml(f, wrap){
-    var inner, wcls = "";
+    var inner;
     var ms = manualStand(f);
     if(ms){
       inner = "<span class='mstand'>"+standSpan(ms)+"</span>";
     }else if(f.stand_old && f.stand_old !== f.stand){
-      /* bar 放喺舊泊位右邊（最右），唔係新舊中間 */
-      var ccls = standColorCls(f.stand);
       inner = "<span class='mstand stchg'>"+esc(f.stand)+"</span> <span class='mstandold'>("+esc(f.stand_old)+")</span>";
-      if(ccls) wcls = " st "+ccls;
     }else{
       inner = "<span class='mstand'>"+standSpan(f.stand||"—")+"</span>";
     }
-    return "<span class='"+(wrap||"mstandwrap")+wcls+"'>"+inner+"</span>";
+    return "<span class='"+(wrap||"mstandwrap")+hiCls(f)+"'>"+inner+"</span>";
   }
 
   /* 實際時間後面加 A 標記（到港／離港都有） */
@@ -731,7 +736,7 @@ try{
     return "<tr class='"+cls+"' data-i='"+i+"'><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
       "<td>"+esc(f.via)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>"+
       "<td class='eta'>"+etaCell(f)+"</td>"+
-      "<td class='ata'>"+esc(f.ata)+ataMark(f)+dateTag(f,"ata")+"</td><td class='standcell'>"+dstandHtml(f)+"</td></tr>";
+      "<td class='ata'>"+esc(f.ata)+ataMark(f)+dateTag(f,"ata")+"</td><td class='standcell"+hiCls(f)+"'>"+dstandHtml(f)+"</td></tr>";
   }
 
   /* effective time: estimated if available, else scheduled — matches server sort */
@@ -1095,6 +1100,17 @@ try{
     if(t.closest("[data-act]")) return;
     var f = lastList[+row.getAttribute("data-i")];
     if(!f) return;
+    /* 長按泊位格 → 切換區域高亮；長按行嘅其他位 → 備註（原有） */
+    if(t.closest(".mstandwrap-r") || t.closest("td.standcell")){
+      pressFlight = f;
+      pressTimer = setTimeout(function(){
+        pressTimer = null;
+        suppressClick = true;
+        setTimeout(function(){ suppressClick = false; }, 800);
+        toggleZoneHi(pressFlight);
+      }, 550);
+      return;
+    }
     pressFlight = f;
     pressWatchKey = watchKey(f);
     pressTimer = setTimeout(function(){
