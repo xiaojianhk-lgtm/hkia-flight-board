@@ -139,6 +139,14 @@ try{
     border:1px solid var(--badge-bd); border-radius:4px; padding:0 4px; margin-left:5px;
     vertical-align:1px; font-weight:400; letter-spacing:1px;
   }
+  .cbadge.cancel{
+    background:rgba(211,47,47,.14); color:var(--red); border-color:var(--red);
+    font-weight:700;
+  }
+  /* 取消航班：成行淡啲 */
+  tr.rw.cancelled td{opacity:.55;}
+  .mrow.cancelled{opacity:.55;}
+  .mrow.cancelled .cbadge.cancel, tr.rw.cancelled .cbadge.cancel{opacity:1;}
   /* ---------- table ---------- */
   .tablewrap{overflow-x:clip; border:1px solid var(--line); border-radius:8px; background:var(--bg2);}
   table{width:100%; border-collapse:collapse; font-size:12.5px; font-variant-numeric:tabular-nums;}
@@ -570,7 +578,11 @@ try{
     render();
   }
 
-  function badge(f){ return f.cargo ? '<span class="cbadge">貨</span>' : ""; }
+  function badge(f){
+    var h = f.cargo ? '<span class="cbadge">貨</span>' : "";
+    if(f.cancelled) h += '<span class="cbadge cancel">取消</span>';
+    return h;
+  }
 
   /* 泊位區域色：S/N/W 上色；R同純數字用淺灰；其他唔上色 */
   function standColorCls(s){
@@ -646,7 +658,8 @@ try{
 
   function rowHtml(f, i){
     var hn = hasNote(f);
-    return "<tr class='rw"+(hn?" noted":"")+"' data-i='"+i+"'><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
+    var cls = 'rw'+(hn?" noted":"")+(f.cancelled?" cancelled":"");
+    return "<tr class='"+cls+"' data-i='"+i+"'><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
       "<td>"+esc(f.via)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>"+
       "<td class='eta'>"+etaCell(f)+"</td>"+
       "<td class='ata'>"+esc(f.ata)+dateTag(f,"ata")+"</td><td class='standcell'>"+dstandHtml(f)+"</td></tr>";
@@ -669,7 +682,8 @@ try{
     timeHtml += avgDurTag(f);
     var standRight = mstandHtml(f, "mstandwrap-r");
     var hn = hasNote(f);
-    return "<div class='mrow"+(hn?" noted":"")+"' data-i='"+i+"'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span> "+badge(f)+
+    var mcls = 'mrow'+(hn?" noted":"")+(f.cancelled?" cancelled":"");
+    return "<div class='"+mcls+"' data-i='"+i+"'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span> "+badge(f)+
       " <span class='mdest'>"+esc(f.via)+"</span>"+(hn?"<span class='nst'>⭐️</span>":"")+"</span><span class='mtimewrap'>"+timeHtml+"</span><span class='mright'>"+standRight+"</span></div></div>";
   }
 
@@ -686,6 +700,8 @@ try{
   }
   function detailInner(f){
     var h = "";
+    /* 取消 */
+    if(f.cancelled) h += "<div><span style='color:var(--red);font-weight:700;'>已取消</span></div>";
     /* 備註 */
     var wk = watchKey(f), w = WATCH[wk];
     var note = w ? (w.note || "") : "";
