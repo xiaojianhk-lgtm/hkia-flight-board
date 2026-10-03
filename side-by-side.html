@@ -30,6 +30,7 @@ try{
     --red:#ef5350; --green:#9ccc65; --green2:#8bc34a; --blue:#4fc3f7;
     --stN:#ffb74d; --stW:#ab47bc;
     --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72);
+    --header-bg:rgba(11,28,44,.96);
   }
   [data-theme="light"]{
     --bg:#ffffff; --bg2:#f5f5f5; --card:#ffffff; --line:#ddd;
@@ -41,6 +42,7 @@ try{
     --red:#d32f2f; --green:#2e7d32; --green2:#1b5e20; --blue:#0288d1;
     --stN:#e65100; --stW:#8e24aa;
     --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45);
+    --header-bg:rgba(255,255,255,.96);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   button{transition:transform .12s ease;}
@@ -51,6 +53,22 @@ try{
     font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","PingFang TC","Microsoft JhengHei",sans-serif;
     font-size:14px; line-height:1.45;
   }
+  /* ---------- header（碌走唔固定，同舊版一模一樣） ---------- */
+  header{
+    background:var(--header-bg);
+    border-bottom:1px solid var(--line);
+    padding:10px 16px 10px 24px; padding-right:104px;
+  }
+  header .row1{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .plane-ico{width:24px; height:24px; color:var(--accent2); flex:none;}
+  header h2{font-size:19px; margin:0; letter-spacing:4px;}
+  header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
+  #aboutBtn{margin-left:auto;}
+  .linkbtn{
+    background:none; border:1px solid var(--line); border-radius:14px;
+    color:var(--accent2); font-size:12px; cursor:pointer; padding:5px 12px; letter-spacing:2px;
+  }
+  .linkbtn:active{transform:scale(.95);}
   /* ---------- sticky 頂部 ---------- */
   .stickybar{
     position:-webkit-sticky; position:sticky; top:0; z-index:10;
@@ -59,30 +77,31 @@ try{
     backdrop-filter:blur(14px) saturate(1.3);
     border-bottom:1px solid var(--line);
   }
-  [data-theme="light"] .stickybar{ background:rgba(255,255,255,.92); }
+  [data-theme="light"] .stickybar{ background:rgba(255,255,255,.85); }
   .stickyinner{max-width:1100px; margin:0 auto; padding:0 8px;}
-  .tsrow{padding:6px 0 4px; font-size:11px; display:flex; align-items:center; gap:8px; color:var(--muted);}
-  .tsrow b{color:var(--accent); font-weight:600;}
-  .tsbtns{margin-left:auto; display:flex; gap:12px; align-items:center; flex:0 0 auto;}
+  #stickyTs{padding:6px 0 4px; font-size:11px; display:flex; align-items:center; gap:8px;}
+  .ts{font-size:12px; color:var(--muted); margin-top:2px;}
+  .ts b{color:var(--accent); font-weight:600;}
+  .tsbtns{margin-left:auto; display:flex; gap:14px; align-items:center; flex:0 0 auto;}
   .tsbtn{
-    width:36px; height:36px; border-radius:50%; flex:0 0 auto;
+    width:38px; height:38px; border-radius:50%; flex:0 0 auto;
     border:1px solid var(--line); background:var(--card); color:var(--text);
     display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
   .tsbtn:active{transform:scale(.92);}
-  .tsbtn svg{width:18px; height:18px;}
-  .dates{display:flex; gap:8px; padding:8px 2px 0;}
+  .tsbtn svg{width:19px; height:19px;}
+  .dates{display:flex; gap:8px; padding:10px 2px 0;}
   .dates button{
     flex:1; background:var(--input-bg); border:1px solid var(--line); color:var(--muted);
-    border-radius:10px; padding:4px; font-size:11px; cursor:pointer; line-height:1.3;
+    border-radius:10px; padding:3px 4px; font-size:11px; cursor:pointer; line-height:1.3; letter-spacing:1px;
   }
   .dates button small{font-size:10px; opacity:.8;}
-  .dates button.on{border-color:var(--accent2); color:var(--strong); font-weight:700;}
-  .countrow{display:flex; align-items:center; padding:8px 4px; gap:10px; flex-wrap:wrap;}
+  .dates button.on{border-color:var(--accent2); color:var(--strong); font-weight:600;}
+  .countrow{display:flex; justify-content:space-between; align-items:center; padding:8px 4px; gap:8px; flex-wrap:wrap;}
   .count{font-size:12px; color:var(--muted);}
   .hidecargo{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;}
   .hidecargo input{accent-color:var(--accent2);}
-  .searchrow{padding:0 2px 10px;}
+  .searchrow{padding:8px 2px 10px;}
   .swrap{position:relative;}
   .swrap input{
     width:100%; background:var(--input-bg); border:1px solid var(--line); border-radius:8px;
@@ -191,12 +210,18 @@ try{
   </div>
 </div>
 
+<header>
+  <div class="row1">
+    <svg class="plane-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+    <h2>航班資訊</h2>
+    <span class="caps">FLIGHT INFORMATION · HKG · 到港離港並排</span>
+    <button id="aboutBtn" class="linkbtn">關於</button>
+  </div>
+</header>
+
 <div class="stickybar"><div class="stickyinner">
-  <div class="tsrow">
-    <span>資料擷取時間：<b id="headTs">—</b></span>
-    <span class="tsbtns">
-      <button id="aboutBtn" class="linkbtn" style="border-radius:50%;width:36px;height:36px;padding:0;">？</button>
-      <button id="themeBtn" class="tsbtn" aria-label="日夜模式">
+  <div class="ts" id="stickyTs"><span>資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</span><span class="tsbtns">
+      <button id="themeBtn" class="tsbtn" title="日／夜模式" aria-label="切換日夜模式">
         <svg id="icoSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/></svg>
         <svg id="icoMoon" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M20.6 14.5A8.8 8.8 0 0 1 9.5 3.4a.7.7 0 0 0-.9-.9 10.2 10.2 0 1 0 12.9 12.9.7.7 0 0 0-.9-.9z"/></svg>
       </button>
@@ -482,6 +507,7 @@ try{
     $("countLine").textContent = query
       ? "「"+query+"」找到到港 "+g.arr.length+"／離港 "+g.dep.length+" 班"
       : (DB ? md(DB.dates[dateIdx])+" " : "") + "到港 "+g.arr.length+" 班 / 離港 "+g.dep.length+" 班";
+    $("headCount").textContent = g.arr.length + g.dep.length;
     var total = items.length;
     if(total > showN && !expanded){
       $("expandBar").style.display = "";
