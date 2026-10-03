@@ -211,7 +211,7 @@ try{
     <h3>關於並排版</h3>
     <ul>
       <li>到港喺左、離港喺右，同一頁睇晒。</li>
-      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：<span style="color:var(--red)">紅色＋A</span>＝實際到達、<span style="color:var(--green2)">深綠色＋E</span>＝預計到達、原定後＋S＝仲未有預計。離港時間有變（預計／實際同原定唔同）會變<span style="color:var(--red)">紅色</span>。</li>
+      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：已降落嘅顯示實際時間（正常顏色）、<span style="color:var(--green2)">深綠色＋E</span>＝預計到達、原定後＋S＝仲未有預計。離港：已起飛嘅顯示實際時間＋A（正常顏色）；未起飛但時間有變（預計同原定唔同）會變<span style="color:var(--red)">紅色</span>。</li>
       <li>離港時間減 50 分鐘後同到港一齊排序（對應前一班到港航機）。</li>
       <li>泊位右邊色 bar：<span style="color:var(--blue)">藍</span>=南、<span style="color:var(--stN)">橙</span>=北、<span style="color:var(--stW)">紫</span>=西、灰=R/數字。</li>
       <li>長按航班加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
@@ -328,19 +328,20 @@ try{
     if(f.est && f.est !== "—") return f.est;
     return f.eta || "—";
   }
-  /* 到港時間顯示：實際紅＋A、預計深綠＋E、只有STA加S（排序照用 eff） */
+  /* 到港時間顯示：已降落正常顯示、預計深綠＋E、只有STA加S（排序照用 eff） */
   function arrTimeHtml(f){
     var noAta = !(f.ata && f.ata !== "—");
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
-    if(!noAta) return "<span class='atm-act'>"+esc(f.ata)+"<span class='tmark'>A</span></span>";
+    if(!noAta) return esc(f.ata);
     if(estShown) return "<span class='atm-est'>"+esc(f.est)+"<span class='tmark'>E</span></span>";
     return esc(f.eta || "—") + "<span class='tmark'>S</span>";
   }
-  /* 離港時間顯示：有變（預計／實際同原定唔同）就紅色，否則原色 */
+  /* 離港時間顯示：已起飛正常顯示＋A、有變（預計同原定唔同）就紅色，否則原色 */
   function depTimeHtml(f){
     var t = eff(f);
-    var changed = (f.est && f.est !== "—" && f.est !== f.eta) ||
-                  (f.ata && f.ata !== "—" && f.ata !== f.eta);
+    var flown = f.ata && f.ata !== "—";
+    if(flown) return esc(t)+"<span class='tmark'>A</span>";
+    var changed = f.est && f.est !== "—" && f.est !== f.eta;
     if(changed) return "<span class='tchg'>"+esc(t)+"</span>";
     return esc(t);
   }
@@ -483,11 +484,12 @@ try{
     var showNow = (dateIdx === 1 && items.length > 0);
     var divPos = -1, nowLabel = "";
     if(showNow){
-      var now2 = nowHHMM();
+      var now2 = nowHHMM(), nowMin = toMin(now2);
       divPos = items.length;
       for(var j=0;j<items.length;j++){
         var tj = eff(items[j].f);
-        if(tj && tj !== "—" && tj >= now2){ divPos = j; break; }
+        /* 用同排序一樣嘅 key（離港已減 50 分鐘，即係到港嗰邊嘅時間軸）嚟定位 */
+        if(tj && tj !== "—" && items[j].sk >= nowMin){ divPos = j; break; }
       }
       divPos = Math.max(0, divPos - start);
       nowLabel = now2;
