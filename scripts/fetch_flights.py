@@ -144,6 +144,7 @@ def main() -> int:
     old_payload = None
     old_stands = {}
     old_ests = {}
+    old_stand_olds = {}
     if os.path.exists(out_path):
         try:
             with open(out_path, encoding="utf-8") as fh:
@@ -152,6 +153,8 @@ def main() -> int:
                 for tk in ("arrival", "departure"):
                     for f in day.get(tk, []):
                         old_stands[(d, tk, f.get("flight_id"))] = f.get("stand")
+                        if f.get("stand_old"):
+                            old_stand_olds[(d, tk, f.get("flight_id"))] = f.get("stand_old")
                         if f.get("est") and f.get("est") != "—":
                             old_ests[(d, tk, f.get("flight_id"))] = (f.get("est"), f.get("est_date") or "")
         except (json.JSONDecodeError, OSError) as exc:
@@ -242,7 +245,15 @@ def main() -> int:
                     continue
                 prev_norm = prefix_gate(prev, prefix_map) if key == "departure" else prev
                 if prev_norm != cur:
+                    # 泊位變咗：舊泊位 = 上次嘅現時泊位
                     fl["stand_old"] = prev
+                else:
+                    # 泊位冇變：上次有舊泊位就繼續留住，直到再變先更新
+                    prev_old = old_stand_olds.get((date, key, fl["flight_id"]))
+                    if prev_old and prev_old != "—":
+                        prev_old_norm = prefix_gate(prev_old, prefix_map) if key == "departure" else prev_old
+                        if prev_old_norm != cur:
+                            fl["stand_old"] = prev_old_norm
 
     if map_changed:
         tmp_map = prefix_path + ".tmp"
