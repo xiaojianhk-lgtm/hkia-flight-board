@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Fetch HKIA flights for yesterday/today/tomorrow (Asia/Hong_Kong).
+"""Fetch HKIA flights for yesterday/today/tomorrow/day-after (Asia/Hong_Kong).
 
 Covers arrival + departure, passenger + cargo. Writes data.json.
+The extra 4th day supports 04:00->03:59 display windows
+(e.g. "tomorrow" view runs until 03:59 of the day after).
 
 Idempotent: rewrites data.json only when the flight data changed; on any
 API failure exits non-zero and leaves the existing file untouched.
@@ -134,7 +136,7 @@ def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
 
 def main() -> int:
     now = datetime.now(HKT)
-    dates = [(now + timedelta(days=d)).strftime("%Y-%m-%d") for d in (-1, 0, 1)]
+    dates = [(now + timedelta(days=d)).strftime("%Y-%m-%d") for d in (-1, 0, 1, 2)]
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(script_dir)
@@ -286,7 +288,7 @@ def main() -> int:
     os.replace(tmp_path, out_path)
 
     total = sum(len(v) for d in days.values() for v in d.values())
-    print(f"OK: wrote {total} flights for {dates[0]}..{dates[2]} -> {out_path}")
+    print(f"OK: wrote {total} flights for {dates[0]}..{dates[3]} -> {out_path}")
     return 0
 
 
