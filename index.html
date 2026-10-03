@@ -216,6 +216,9 @@ try{
   .nl{display:flex; align-items:center; gap:8px; color:var(--accent); font-size:11px; font-weight:700; letter-spacing:2px; white-space:nowrap;}
   .nl::before,.nl::after{content:""; flex:1; height:1px; background:var(--accent); opacity:.4;}
   .mnowline{padding:7px 2px;}
+  /* 跨表搜尋嘅到港／離港分組標題 */
+  .mgroup{padding:10px 2px 4px; font-size:12px; font-weight:700; color:var(--accent2); letter-spacing:3px;}
+  tr.grow td{padding:8px 12px; font-size:12px; font-weight:700; color:var(--accent2); letter-spacing:3px; background:var(--bg2); border-bottom:1px solid var(--line);}
   /* ---------- 撳入詳情 ---------- */
   tr.rw{cursor:pointer;}
   tbody tr.rw:hover td{background:rgba(79,195,247,.07);}
@@ -343,7 +346,7 @@ try{
       <li>開住個頁唔郁超過一分鐘，有新資料會靜靜自動更新（捲動位置、搜尋同展開狀態不變）；睇緊詳情、打緊字嗰陣唔會郁。</li>
       <li>手機喺航班列表向左滑動轉去離港、向右滑動返到港；連點三下開搜尋欄。</li>
       <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。每日由 04:00 至翌日 03:59（跨日航班時間後面有短日期）。</li>
-      <li>在搜尋框輸入 Flight ID、來往地或泊位關鍵字，即時篩選。</li>
+      <li>在搜尋框輸入 Flight ID、來往地或泊位關鍵字，即時篩選。搜泊位（如 N5、S33）會同時顯示到港同離港，分兩組排列。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「H**代理」開咗只顯示 H** 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
       <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
       <li>長按貨機手動輸入泊位（存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。保存後自動收起；清空泊位欄再按保存、或按刪除掣即清除。</li>
@@ -438,9 +441,10 @@ try{
   var pressTimer = null, pressFlight = null, pressWatchKey = null, suppressClick = false;
   function saveWatch(){ try{ localStorage.setItem("hkia-watch-v1", JSON.stringify(WATCH)); }catch(e){} }
   function watchKey(f){
-    /* 跨日併入嘅航班用佢真正所屬日期，等喺聽日頁睇返同一班機都對得上備註 */
+    /* 跨表搜尋時用航班真正所屬 tab，等喺正常視圖睇返同一班機都對得上備註 */
+    var t = f._tab || tab;
     var d = f._date || ((DB && DB.dates && DB.dates[dateIdx]) ? DB.dates[dateIdx] : ("d"+dateIdx));
-    return d + "|" + tab + "|" + opId(f);
+    return d + "|" + t + "|" + opId(f);
   }
   /* 舊 key 用 tab 位（d0/d1/d2＝昨天／今天／明天）記，換日就對唔返；用建立時間推算真正日期 (HKT) 遷移到新 key */
   (function migrateWatchKeys(){
@@ -547,26 +551,29 @@ try{
     });
   }
 
-  function currentFlights(){
+  function tabFlights(t){
     if(!DB || !DB.dates || !DB.days) return [];
     /* 每日窗口：當日 04:00 至翌日 03:59（例如「今天」= 今日 04:00 → 聽朝 03:59） */
     var d0 = DB.dates[dateIdx], d1 = DB.dates[dateIdx+1];
     var list = [];
-    var l0 = (d0 && DB.days[d0] && DB.days[d0][tab]) || [];
+    var l0 = (d0 && DB.days[d0] && DB.days[d0][t]) || [];
     for(var i=0;i<l0.length;i++){
-      var t = effTime(l0[i]);
-      if(!t || t === "—" || t >= "04:00"){ tagFlightDate([l0[i]], d0); list.push(l0[i]); }
+      var tm = effTime(l0[i]);
+      if(!tm || tm === "—" || tm >= "04:00"){ tagFlightDate([l0[i]], d0); list.push(l0[i]); }
     }
-    var l1 = (d1 && DB.days[d1] && DB.days[d1][tab]) || [];
+    var l1 = (d1 && DB.days[d1] && DB.days[d1][t]) || [];
     for(var j=0;j<l1.length;j++){
-      var t2 = effTime(l1[j]);
-      if(t2 && t2 !== "—" && t2 < "04:00"){ tagFlightDate([l1[j]], d1); list.push(l1[j]); }
+      var tm2 = effTime(l1[j]);
+      if(tm2 && tm2 !== "—" && tm2 < "04:00"){ tagFlightDate([l1[j]], d1); list.push(l1[j]); }
     }
     if(hideCargo) list = list.filter(function(f){ return !f.cargo; });
     if(hidePax) list = list.filter(function(f){ return f.cargo; });
     if(onlyHas) list = list.filter(isHasFlight);
+    /* 記住真正所屬 tab，跨表搜尋時備註 key 先啱 */
+    for(var k=0;k<list.length;k++){ if(list[k] && !list[k]._tab) list[k]._tab = t; }
     return list;
   }
+  function currentFlights(){ return tabFlights(tab); }
 
   /* 記住每班機真正所屬日期（跨日併入時用嚟標日期、計備註 key） */
   function tagFlightDate(list, d){
@@ -587,16 +594,31 @@ try{
     return (f.cargo ? HAS_CARGO_CODES : HAS_PAX_CODES).indexOf(code) !== -1;
   }
 
+  /* 泊位查詢（N5、S33、W71、R16、純數字等）：觸發跨到港／離港搜尋 */
+  function isStandQuery(nq){
+    return /^([SNWRsnwr]?\d+)$/.test(nq);
+  }
+  /* crossSplit >= 0 時為跨表搜尋：filtered 前段係到港（0..crossSplit-1），後段係離港 */
+  var crossSplit = -1;
+  function matchFlight(f, nq){
+    // 純兩字母航空公司代碼：只配對營運方（搜 CX 唔出 UO 671/CX 5671 呢啲 codeshare）
+    if(/^[A-Z]{2}$/.test(nq)){
+      return norm(opId(f)).indexOf(nq) === 0;
+    }
+    return norm(f.flight_id).indexOf(nq) !== -1 || norm(f.via).indexOf(nq) !== -1 || norm(manualStand(f) || f.stand).indexOf(nq) !== -1;
+  }
   function applyFilter(){
-    var all = currentFlights();
     var nq = norm(query);
-    filtered = nq ? all.filter(function(f){
-      // 純兩字母航空公司代碼：只配對營運方（搜 CX 唔出 UO 671/CX 5671 呢啲 codeshare）
-      if(/^[A-Z]{2}$/.test(nq)){
-        return norm(opId(f)).indexOf(nq) === 0;
-      }
-      return norm(f.flight_id).indexOf(nq) !== -1 || norm(f.via).indexOf(nq) !== -1 || norm(manualStand(f) || f.stand).indexOf(nq) !== -1;
-    }) : all.slice();
+    if(nq && isStandQuery(nq)){
+      var arr = tabFlights("arrival").filter(function(f){ return matchFlight(f, nq); });
+      var dep = tabFlights("departure").filter(function(f){ return matchFlight(f, nq); });
+      filtered = arr.concat(dep);
+      crossSplit = arr.length;
+    }else{
+      crossSplit = -1;
+      var all = currentFlights();
+      filtered = nq ? all.filter(function(f){ return matchFlight(f, nq); }) : all.slice();
+    }
     expanded = false;
     render();
   }
@@ -802,32 +824,49 @@ try{
                   : "<tr class='nowline'><td colspan='5'>"+inner+"</td></tr>";
   }
 
+  /* 跨表搜尋嘅分組標題 */
+  function groupHeader(t, n, mobile){
+    var label = (t === "arrival" ? "到港" : "離港") + "（" + n + "班）";
+    if(mobile) return "<div class='mgroup'>"+label+"</div>";
+    return "<tr class='grow'><td colspan='5'>"+label+"</td></tr>";
+  }
+
   function render(){
     var l = L[tab];
-    document.getElementById("thVia").textContent = l.via;
-    document.getElementById("thStand").textContent = l.stand;
-    document.getElementById("thEta").textContent = l.eta;
-    document.getElementById("thAta").textContent = l.ata;
+    var isCross = crossSplit >= 0;
+    if(isCross){
+      /* 跨到港／離港：用中性表頭 */
+      document.getElementById("thVia").textContent = "來往地";
+      document.getElementById("thStand").textContent = "泊位";
+      document.getElementById("thEta").textContent = "時間";
+      document.getElementById("thAta").textContent = "實際";
+    }else{
+      document.getElementById("thVia").textContent = l.via;
+      document.getElementById("thStand").textContent = l.stand;
+      document.getElementById("thEta").textContent = l.eta;
+      document.getElementById("thAta").textContent = l.ata;
+    }
     document.getElementById("capsLine").innerHTML = esc(l.caps).replace(/HKG/, "<span class='hkg'>HKG</span>");
     document.getElementById("flightTable").setAttribute("aria-label", l.name+"航班");
 
     var ps = isMobile() ? 50 : PAGE;
     /* 今天：由現時之前 8 班（已完成）開始，顯示 50 班；昨天/明天/搜尋維持由頭顯示 */
+    /* 跨表搜尋：顯示全部，唔分頁 */
     var start = 0, showN = ps, centered = false;
-    if(!expanded && !query && dateIdx === 1 && filtered.length){
+    if(!isCross && !expanded && !query && dateIdx === 1 && filtered.length){
       var w = 50, ai = timeAnchorIndex(filtered);
       start = Math.max(0, Math.min(ai - 8, filtered.length - w));
       showN = Math.min(w, filtered.length);
       centered = true;
     }
-    var list = expanded ? filtered : filtered.slice(start, start + showN);
+    var list = (isCross || expanded) ? filtered : filtered.slice(start, start + showN);
     lastStart = start;
     lastList = list;
     /* 已展開詳情嘅航班若唔喺而家個 list，收返埋 */
     if(detailFlight && list.indexOf(detailFlight) === -1){ detailFlight = null; noteEditingKey = null; }
 
-    /* 「而家」分隔線：只限今天 */
-    var showNow = (dateIdx === 1 && filtered.length > 0);
+    /* 「而家」分隔線：只限今天（跨表搜尋唔顯示） */
+    var showNow = (!isCross && dateIdx === 1 && filtered.length > 0);
     var divPos = -1, nowLabel = "";
     if(showNow){
       var aiNow = timeAnchorIndex(filtered);
@@ -838,7 +877,14 @@ try{
 
     var mobile = isMobile();
     var htmlArr = [];
+    var savedTab = tab;
     for(var i = 0; i < list.length; i++){
+      if(isCross){
+        /* 按組別切換 tab，等時間標記／備註 key 用啱 */
+        tab = (i < crossSplit) ? "arrival" : "departure";
+        if(i === 0 && crossSplit > 0) htmlArr.push(groupHeader("arrival", crossSplit, mobile));
+        if(i === crossSplit && crossSplit < list.length) htmlArr.push(groupHeader("departure", list.length - crossSplit, mobile));
+      }
       if(showNow && i === divPos) htmlArr.push(nowHtml(nowLabel, mobile));
       var f = list[i];
       if(mobile){
@@ -849,6 +895,7 @@ try{
         if(f === detailFlight) htmlArr.push(dDetailHtml(f, i));
       }
     }
+    tab = savedTab;
     if(showNow && divPos >= list.length) htmlArr.push(nowHtml(nowLabel, mobile));
     var html = htmlArr.join("");
     if(mobile){
@@ -866,11 +913,18 @@ try{
     }
     var total = filtered.length;
     var dlabel = DB ? md(DB.dates[dateIdx]) + " " + l.name : l.name;
-    countLine.textContent = query
-      ? "「"+query+"」找到 "+total+" 班"
-      : dlabel+"共 "+total+" 班";
+    if(isCross){
+      var depN = total - crossSplit;
+      countLine.textContent = "「"+query+"」到港 "+crossSplit+" 班 / 離港 "+depN+" 班";
+    }else{
+      countLine.textContent = query
+        ? "「"+query+"」找到 "+total+" 班"
+        : dlabel+"共 "+total+" 班";
+    }
     headCount.textContent = currentFlights().length;
-    if(total > showN && !expanded){
+    if(isCross){
+      expandBar.style.display = "none";
+    }else if(total > showN && !expanded){
       expandBar.style.display = "";
       expandBtn.textContent = "展開全部 "+total+" 班航班";
     }else if(total > showN && expanded){
