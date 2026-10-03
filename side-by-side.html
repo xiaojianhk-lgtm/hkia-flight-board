@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>航班並排 · 香港國際機場</title>
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; padding:0; background:#fff; color:#111;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","PingFang TC","Microsoft JhengHei",sans-serif;
+    font-size:14px; line-height:1.45;
+  }
+  header{
+    background:#fff; border-bottom:1px solid #ddd;
+    padding:10px 12px; position:sticky; top:0; z-index:10;
+  }
+  header h2{font-size:16px; margin:0 0 8px; letter-spacing:2px;}
+  .dates{display:flex; gap:8px; margin-bottom:8px;}
+  .dates button{
+    flex:1; background:#f5f5f5; border:1px solid #ddd; color:#666;
+    border-radius:8px; padding:6px 4px; font-size:12px; cursor:pointer; line-height:1.3;
+  }
+  .dates button small{font-size:10px; opacity:.8;}
+  .dates button.on{border-color:#0288d1; color:#111; font-weight:700;}
+  .toolbar{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
+  .toolbar input{
+    flex:1; border:1px solid #ddd; border-radius:8px; padding:8px 10px;
+    font-size:14px; outline:none; background:#f9f9f9;
+  }
+  .toolbar input:focus{border-color:#0288d1; background:#fff;}
+  .toolbar label{font-size:12px; color:#666; white-space:nowrap; display:flex; align-items:center; gap:4px;}
+  .ts{font-size:11px; color:#888; margin-bottom:6px;}
+  .ts b{color:#b97a00;}
+  main{padding:0 8px 32px;}
+  table{width:100%; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums;}
+  thead th{
+    position:sticky; top:0; background:#fff; z-index:5;
+    font-size:11px; padding:8px 3px; border-bottom:2px solid #333;
+    text-align:left; white-space:nowrap; color:#333;
+  }
+  thead th .sub{display:block; font-weight:400; color:#888; font-size:10px;}
+  tbody td{padding:8px 3px; white-space:nowrap; border-bottom:1px solid #eee;}
+  tbody tr:nth-child(even) td{background:#f0f0f0;}
+  td.arr{font-weight:600;}
+  td.dep{font-weight:600; color:#444;}
+  td.time{font-weight:500;}
+  td.bay{font-weight:600; text-align:left;}
+  .cancelled td{opacity:.5;}
+  .cbadge{
+    display:inline-block; font-size:10px; background:#fff8e1; color:#8a6100;
+    border:1px solid #e6c34a; border-radius:4px; padding:0 4px; margin-left:4px;
+    vertical-align:1px;
+  }
+  .cbadge.cancel{background:#fdecea; color:#d32f2f; border-color:#d32f2f; font-weight:700;}
+  .count{font-size:12px; color:#888; padding:8px 2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h2>航班並排</h2>
+  <div class="dates" id="datePills"></div>
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="搜尋 Flight ID／來往地／泊位…" autocomplete="off">
+    <label><input type="checkbox" id="hideCargo" checked> 隱藏貨機</label>
+  </div>
+  <div class="ts">資料擷取時間：<b id="headTs">—</b></div>
+</header>
+
+<main>
+  <div class="count" id="countLine"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Flight No<span class="sub">到港</span></th>
+        <th>Flight No<span class="sub">離港</span></th>
+        <th>ETA</th>
+        <th>ETD</th>
+        <th>Bay</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var DB = null, dateIdx = 1, query = "", hideCargo = true;
+  var DATE_NAMES = ["昨天","今天","明天"];
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function norm(s){ return (s||"").replace(/\s+/g,"").toUpperCase(); }
+  function md(iso){ var p = String(iso).split("-"); return (+p[1]) + "/" + (+p[2]); }
+  function opId(f){ return (f.flight_id || "").split(" / ")[0].replace(/\s/g,""); }
+
+  /* 單一時間：實際 > 預計 > 原定 */
+  function eff(f){
+    if(f.ata && f.ata !== "—") return f.ata;
+    if(f.est && f.est !== "—") return f.est;
+    return f.eta || "—";
+  }
+  function toMin(t){
+    var m = /^(\d{1,2}):(\d{2})/.exec(t || "");
+    return m ? (+m[1])*60 + (+m[2]) : 99999;
+  }
+
+  function getFlights(){
+    if(!DB || !DB.dates || !DB.days) return {arr:[], dep:[]};
+    var d = DB.dates[dateIdx];
+    var arr = (DB.days[d] && DB.days[d].arrival) || [];
+    var dep = (DB.days[d] && DB.days[d].departure) || [];
+    if(hideCargo){
+      arr = arr.filter(function(f){ return !f.cargo; });
+      dep = dep.filter(function(f){ return !f.cargo; });
+    }
+    var nq = norm(query);
+    if(nq){
+      var mf = function(f){
+        return norm(f.flight_id).indexOf(nq) !== -1 ||
+               norm(f.via).indexOf(nq) !== -1 ||
+               norm(f.stand).indexOf(nq) !== -1;
+      };
+      arr = arr.filter(mf); dep = dep.filter(mf);
+    }
+    return {arr:arr, dep:dep};
+  }
+
+  /* 合併排序：到港按有效時間；離港減50分鐘後同到港一齊排 */
+  function merged(){
+    var g = getFlights();
+    var items = [];
+    g.arr.forEach(function(f){ items.push([toMin(eff(f)), 'arr', f]); });
+    g.dep.forEach(function(f){ items.push([toMin(eff(f)) - 50, 'dep', f]); });
+    items.sort(function(a,b){ return a[0]-b[0]; });
+    return items;
+  }
+
+  function badge(f){
+    var h = f.cargo ? '<span class="cbadge">貨</span>' : "";
+    if(f.cancelled) h += '<span class="cbadge cancel">取消</span>';
+    return h;
+  }
+
+  function render(){
+    var items = merged();
+    var html = "";
+    for(var i=0;i<items.length;i++){
+      var typ = items[i][1], f = items[i][2];
+      var cls = f.cancelled ? " class='cancelled'" : "";
+      if(typ === 'arr'){
+        html += "<tr"+cls+"><td class='arr'>"+esc(opId(f))+badge(f)+"</td><td></td>"+
+                "<td class='time'>"+esc(eff(f))+"</td><td></td>"+
+                "<td class='bay'>"+esc(f.stand)+"</td></tr>";
+      }else{
+        html += "<tr"+cls+"><td></td><td class='dep'>"+esc(opId(f))+badge(f)+"</td>"+
+                "<td></td><td class='time'>"+esc(eff(f))+"</td>"+
+                "<td class='bay'>"+esc(f.stand)+"</td></tr>";
+      }
+    }
+    $("rows").innerHTML = html;
+    var g = getFlights();
+    $("countLine").textContent = (DB ? md(DB.dates[dateIdx]) : "") +
+      " 到港 " + g.arr.length + " 班 / 離港 " + g.dep.length + " 班";
+  }
+
+  function buildDates(){
+    var wrap = $("datePills");
+    wrap.innerHTML = "";
+    DB.dates.forEach(function(d, i){
+      var b = document.createElement("button");
+      b.innerHTML = esc(DATE_NAMES[i]||d) + "<br><small>" + esc(md(d)) + "</small>";
+      if(i===dateIdx) b.classList.add("on");
+      b.addEventListener("click", function(){
+        dateIdx = i;
+        var btns = wrap.querySelectorAll("button");
+        for(var k=0;k<btns.length;k++) btns[k].classList.toggle("on", k===i);
+        render();
+      });
+      wrap.appendChild(b);
+    });
+  }
+
+  $("q").addEventListener("input", function(){ query = this.value; render(); });
+  $("hideCargo").addEventListener("change", function(){ hideCargo = !!this.checked; render(); });
+
+  fetch("data.json?_="+Date.now(), {cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(d){
+      DB = d;
+      if(!DB.dates || !DB.days) throw new Error("bad data");
+      $("headTs").textContent = d.generated_at || "—";
+      buildDates();
+      render();
+    })
+    .catch(function(e){
+      $("rows").innerHTML = "<tr><td colspan='5' style='text-align:center;color:#c62828;padding:24px;'>載入失敗："+esc(e.message)+"</td></tr>";
+    });
+
+  /* 靜默自動更新（15分鐘） */
+  var lastActive = Date.now();
+  ["touchstart","mousedown","keydown","wheel"].forEach(function(ev){
+    window.addEventListener(ev, function(){ lastActive = Date.now(); }, {passive:true});
+  });
+  setInterval(function(){
+    if(!DB || document.visibilityState !== "visible") return;
+    if(Date.now() - lastActive < 60000) return;
+    if(document.activeElement === $("q")) return;
+    fetch("data.json?_="+Date.now(), {cache:"no-store"})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.generated_at && d.generated_at !== DB.generated_at){
+          var sy = window.scrollY;
+          DB = d;
+          $("headTs").textContent = d.generated_at;
+          buildDates(); render();
+          if(sy) window.scrollTo(0, sy);
+        }
+      })
+      .catch(function(){});
+  }, 15*60*1000);
+})();
+</script>
+</body>
+</html>
