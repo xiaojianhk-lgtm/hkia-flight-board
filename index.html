@@ -267,6 +267,7 @@ try{
     .mstandwrap{text-align:center; white-space:nowrap;}
     .mstandwrap-r{text-align:right; white-space:nowrap;}
     .mtimewrap{white-space:nowrap; position:relative; width:120px; text-align:left;}
+    .mtimewrap.single{text-align:center;}
     .mtimewrap .ddate{position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:5px;}
     .mtimewrap .ddate ~ .ddate{margin-left:54px;}
     .mtime{font-weight:700; font-size:15px; color:var(--sched); white-space:nowrap; font-variant-numeric:tabular-nums;}
@@ -719,19 +720,25 @@ try{
     var timeHtml = "<span class='mtime'>"+esc(f.eta||"—")+schedMark(f)+"</span>"+schedDateTag(f);
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
     var arrM = (tab === "arrival");
+    var multi = false;
     if(estShown){
+      multi = true;
       timeHtml += "<span class='msep'>/</span><span class='mtime-est"+(arrM?" arr":"")+"'>"+esc(f.est)+(arrM?"<span class='tmark'>E</span>":"")+"</span>"+dateTag(f,"est");
     }
     /* actual time (At gate / Landed / Dep) always on the right, arrival + departure */
     if(f.ata && f.ata !== "—" && f.ata !== f.eta && (!estShown || f.ata !== f.est)){
+      multi = true;
       timeHtml += "<span class='msep'>/</span><span class='mtime-ata'>"+esc(f.ata)+ataMark(f)+"</span>"+dateTag(f,"ata");
     }
-    timeHtml += avgDurTag(f);
+    var dur = avgDurTag(f);
+    if(dur){ multi = true; timeHtml += dur; }
     var standRight = mstandHtml(f, "mstandwrap-r");
     var hn = hasNote(f);
     var mcls = 'mrow'+(hn?" noted":"")+(f.cancelled?" cancelled":"");
+    /* 得一個光禿禿時間嗰陣置中，唔係睇落縮埋一邊 */
+    var twrapCls = multi ? "mtimewrap" : "mtimewrap single";
     return "<div class='"+mcls+"' data-i='"+i+"'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span> "+badge(f)+
-      " <span class='mdest'>"+esc(f.via)+"</span>"+(hn?"<span class='nst'>⭐️</span>":"")+"</span><span class='mtimewrap'>"+timeHtml+"</span><span class='mright'>"+standRight+"</span></div></div>";
+      " <span class='mdest'>"+esc(f.via)+"</span>"+(hn?"<span class='nst'>⭐️</span>":"")+"</span><span class='"+twrapCls+"'>"+timeHtml+"</span><span class='mright'>"+standRight+"</span></div></div>";
   }
 
   /* ---------- 撳入詳情 ---------- */
