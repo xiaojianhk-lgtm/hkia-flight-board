@@ -108,7 +108,6 @@ try{
   tbody td{padding:8px 3px; white-space:nowrap; border-bottom:1px solid var(--row-line);}
   tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
   td.fid{font-weight:700; font-size:14px;}
-  td.fid.dep{color:var(--muted);}
   td.time{font-weight:600;}
   /* 泊位右邊色 bar */
   .st{border-right:4px solid transparent; padding-right:6px; font-weight:700;}
@@ -444,7 +443,7 @@ try{
       var hn = hasNote(typ, f);
       var cls = "rw"+(hn?" noted":"")+(f.cancelled?" cancelled":"");
       var key = itemKey(it);
-      var fidCell = "<td class='fid"+(typ==='departure'?" dep":"")+"'>"+esc(opId(f))+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>";
+      var fidCell = "<td class='fid'>"+esc(opId(f))+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>";
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
                 "<td class='time'>"+esc(eff(f))+"</td><td></td>"+
@@ -562,19 +561,26 @@ try{
   }
   $("rows").addEventListener("click", function(e){
     if(suppressClick){ suppressClick = false; return; }
+    var t = e.target;
+    if(!t || !t.closest) return;
+
+    /* 先處理詳情區按鈕（保存／刪除）：佢哋喺 tr.drow 入面，唔係 tr.rw */
+    var actEl = t.closest("[data-act]");
+    if(actEl){
+      var act = actEl.getAttribute("data-act");
+      var it2 = null;
+      for(var j=0;j<lastItems.length;j++){
+        if(itemKey(lastItems[j]) === detailKey){ it2 = lastItems[j]; break; }
+      }
+      if(act === "note-save"){ commitNote(); }
+      else if(act === "note-cancel" && it2){ deleteNote(it2.typ, it2.f); }
+      return;
+    }
+
     var row = rowFromEvent(e);
     if(!row) return;
     var it = lastItems[+row.getAttribute("data-k")];
     if(!it) return;
-    var actEl = e.target.closest ? e.target.closest("[data-act]") : null;
-    if(actEl){
-      var act = actEl.getAttribute("data-act");
-      detailKey = itemKey(it);
-      if(act === "note-save") commitNote();
-      else if(act === "note-cancel") deleteNote(it.typ, it.f);
-      return;
-    }
-    if(e.target.closest && e.target.closest("tr.drow")) return;
     if(!hasNote(it.typ, it.f)) return;
     if(window.getSelection && window.getSelection().toString()) return;
     var k = itemKey(it);
