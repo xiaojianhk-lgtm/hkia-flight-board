@@ -347,7 +347,7 @@ try{
       <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
       <li>長按貨機手動輸入泊位（存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。保存後自動收起；清空泊位欄再按保存、或按刪除掣即清除。</li>
       <li>時間列右邊嘅 ⟳ 可手動重新載入最新資料；☀️／🌙 可切換日間／夜間模式。</li>
-      <li>時間顏色：<span class="c-sched">白色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。到港航班：預計時間用深綠色＋<b>E</b>，實際時間後面加 <span class="c-red"><b>A</b></span>。</li>
+      <li>時間顏色：<span class="c-sched">白色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。到港航班：預計時間用深綠色＋<b>E</b>，實際時間後面加 <span class="c-red"><b>A</b></span>；淨係得原定時間嗰陣加細 <b>s</b>。</li>
     </ul>
     <p class="fine">時間為香港時間 (HKT)。航班資料僅供參考，請以機場官方公布為準。</p>
     <button id="aboutClose">關閉</button>
@@ -655,9 +655,17 @@ try{
   function ataMark(f){
     return (tab === "arrival" && f.ata && f.ata !== "—") ? "<span class='tmark'>A</span>" : "";
   }
+  /* 到港只有原定時間（無預計／實際）時，原定時間後面加細 s */
+  function schedMark(f){
+    if(tab !== "arrival") return "";
+    var estShown = f.est && f.est !== "—" && f.est !== f.eta;
+    var ataShown = f.ata && f.ata !== "—" && f.ata !== f.eta;
+    if(estShown || ataShown) return "";
+    return "<span class='tmark'>s</span>";
+  }
 
   function etaCell(f){
-    var h = esc(f.eta) + schedDateTag(f);
+    var h = esc(f.eta) + schedMark(f) + schedDateTag(f);
     if(f.est && f.est !== "—" && f.est !== f.eta){
       /* 到港預計：加深綠色＋E 標記 */
       var arrE = (tab === "arrival");
@@ -708,7 +716,7 @@ try{
 
   /* status text without the time (time moves to the right side) */
   function mrowHtml(f, i){
-    var timeHtml = "<span class='mtime'>"+esc(f.eta||"—")+"</span>"+schedDateTag(f);
+    var timeHtml = "<span class='mtime'>"+esc(f.eta||"—")+schedMark(f)+"</span>"+schedDateTag(f);
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
     var arrM = (tab === "arrival");
     if(estShown){
