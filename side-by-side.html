@@ -175,8 +175,7 @@ try{
   .ddetail{font-size:12px; color:var(--text); line-height:1.8;}
   .ddetail span{color:var(--muted);}
   .adir{display:inline-block; min-width:16px; font-weight:700;}
-  tr.rw.arr .adir{color:var(--blue);}
-  tr.rw.dep .adir{color:var(--accent);}
+  tr.rw.dep td.fid{color:var(--green);}
   tr.rw.noted td{background:rgba(201,162,39,.10);}
   tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(201,162,39,.6);}
   .nst{font-size:12px; margin-left:2px;}
@@ -219,8 +218,8 @@ try{
     <h3>關於並排版</h3>
     <ul>
       <li>到港喺左、離港喺右，同一頁睇晒。</li>
-      <li>每行左緣箭頭：<span style="color:var(--blue)">↓</span>=到港（讀左邊兩格）、<span style="color:var(--accent)">↑</span>=離港（讀右邊兩格）。</li>
-      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：已降落嘅顯示實際時間＋A、預計到達＋E、得原定時間嘅顯示<span style="color:var(--dim)">淺灰色＋S</span>。離港：已起飛嘅顯示實際時間＋A（正常顏色）；未起飛但時間有變（預計同原定唔同）會變<span style="color:var(--red)">紅色</span>。</li>
+      <li>每行左緣箭頭：↓=到港、↑=離港。離港航班編號係<span style="color:var(--green)">綠色</span>。</li>
+      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：已降落嘅顯示實際時間＋A、預計到達＋E、得原定時間嘅顯示<span style="color:var(--dim)">淺灰色＋S</span>。離港：未起飛顯示時間＋E（有變會變<span style="color:var(--red)">紅色</span>），已起飛嘅顯示實際時間＋A。</li>
       <li>離港時間減 50 分鐘後同到港一齊排序（對應前一班到港航機）。</li>
       <li>泊位右邊色 bar：<span style="color:var(--blue)">藍</span>=南、<span style="color:var(--stN)">橙</span>=北、<span style="color:var(--stW)">紫</span>=西、灰=R/數字。</li>
       <li>長按航班其他位加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
@@ -372,8 +371,8 @@ try{
     var flown = f.ata && f.ata !== "—";
     if(flown) return esc(t)+"<span class='tmark'>A</span>";
     var changed = f.est && f.est !== "—" && f.est !== f.eta;
-    if(changed) return "<span class='tchg'>"+esc(t)+"</span>";
-    return esc(t);
+    if(changed) return "<span class='tchg'>"+esc(t)+"</span><span class='tmark'>E</span>";
+    return esc(t)+"<span class='tmark'>E</span>";
   }
   function toMin(t){
     var m = /^(\d{1,2}):(\d{2})/.exec(t || "");
