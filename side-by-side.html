@@ -748,6 +748,28 @@ try{
     render();
   });
 
+  /* 橫向手勢由網頁接管：一起勢就 preventDefault，唔俾瀏覽器搶去做返回／前進 */
+  var hSX = 0, hSY = 0, hId = null, hLock = null;
+  document.addEventListener("touchstart", function(e){
+    if(e.touches.length !== 1){ hId = null; return; }
+    var t = e.touches[0];
+    hId = t.identifier; hSX = t.clientX; hSY = t.clientY; hLock = null;
+  }, {passive:true});
+  document.addEventListener("touchmove", function(e){
+    if(hId === null) return;
+    var t = null;
+    for(var i = 0; i < e.touches.length; i++) if(e.touches[i].identifier === hId) t = e.touches[i];
+    if(!t) return;
+    var dx = t.clientX - hSX, dy = t.clientY - hSY;
+    if(hLock === null){
+      if(Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      hLock = (Math.abs(dx) > Math.abs(dy) * 1.5) ? "h" : "v";
+    }
+    if(hLock === "h") e.preventDefault();
+  }, {passive:false});
+  document.addEventListener("touchend", function(){ hId = null; }, {passive:true});
+  document.addEventListener("touchcancel", function(){ hId = null; }, {passive:true});
+
   /* 連點三下開搜尋 */
   var tapTimes = [];
   document.addEventListener("touchend", function(e){
