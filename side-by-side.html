@@ -48,6 +48,9 @@ try{
   button{transition:transform .12s ease;}
   button:active{transform:scale(.96);}
   html,body{margin:0; padding:0;}
+  /* 橫向滑動由網頁自己處理，唔好觸發瀏覽器嘅右滑返回 */
+  html{overscroll-behavior-x:none;}
+  body{touch-action:pan-y pinch-zoom;}
   body{
     background:var(--bg); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","PingFang TC","Microsoft JhengHei",sans-serif;
