@@ -174,7 +174,8 @@ try{
   tr.drow td{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 12px; white-space:normal;}
   .ddetail{font-size:12px; color:var(--text); line-height:1.8;}
   .ddetail span{color:var(--muted);}
-  tr.rw.noted td{background:rgba(245,179,1,.18);}
+  tr.rw.noted td{background:rgba(201,162,39,.10);}
+  tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(201,162,39,.6);}
   .nst{font-size:12px; margin-left:2px;}
   .noteinput{background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:4px 6px; font-size:16px; width:55%;}
   .nbtn{background:var(--input-bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:3px 8px; font-size:12px; cursor:pointer; margin-left:4px;}
@@ -256,7 +257,7 @@ try{
   </div>
   <div class="searchrow">
     <div class="swrap">
-      <input id="q" type="search" placeholder="搜尋 Flight ID／來往地／泊位…" autocomplete="off">
+      <input id="q" type="search" placeholder="搜尋 Flight ID／來往地／泊位／備註…" autocomplete="off">
       <button id="qclear" class="qclear" aria-label="清除">✕</button>
     </div>
   </div>
@@ -430,9 +431,11 @@ try{
     if(nq){
       var mf = function(typ){
         return function(f){
+          var w = WATCH[watchKey(typ, f)];
           return norm(f.flight_id).indexOf(nq) !== -1 ||
                  norm(f.via).indexOf(nq) !== -1 ||
-                 norm(manualStand(typ, f) || f.stand).indexOf(nq) !== -1;
+                 norm(manualStand(typ, f) || f.stand).indexOf(nq) !== -1 ||
+                 norm(w && w.note).indexOf(nq) !== -1;
         };
       };
       arr = arr.filter(mf('arrival')); dep = dep.filter(mf('departure'));
