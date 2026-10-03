@@ -523,7 +523,7 @@ try{
   function buildDates(){
     var wrap = $("datePills");
     wrap.innerHTML = "";
-    DB.dates.forEach(function(d, i){
+    DB.dates.slice(0,3).forEach(function(d, i){
       var b = document.createElement("button");
       b.innerHTML = esc(DATE_NAMES[i]||d) + "<br><small>" + esc(md(d)) + "</small>";
       if(i===dateIdx) b.classList.add("on");
