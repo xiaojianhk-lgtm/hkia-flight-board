@@ -27,7 +27,7 @@ try{
     --input-bg:#0a1928; --placeholder:#5b748c;
     --row-line:rgba(31,58,85,.55);
     --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
-    --red:#ef5350; --green:#9ccc65; --blue:#4fc3f7;
+    --red:#ef5350; --green:#9ccc65; --green2:#8bc34a; --blue:#4fc3f7;
     --stN:#ffb74d; --stW:#ab47bc;
     --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72);
   }
@@ -38,7 +38,7 @@ try{
     --input-bg:#f9f9f9; --placeholder:#aaa;
     --row-line:#eee;
     --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
-    --red:#d32f2f; --green:#2e7d32; --blue:#0288d1;
+    --red:#d32f2f; --green:#2e7d32; --green2:#1b5e20; --blue:#0288d1;
     --stN:#e65100; --stW:#8e24aa;
     --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45);
   }
@@ -109,6 +109,10 @@ try{
   tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
   td.fid{font-weight:700; font-size:14px;}
   td.time{font-weight:600;}
+  /* 到港時間：實際紅＋A、預計深綠＋E */
+  .atm-act{color:var(--red);}
+  .atm-est{color:var(--green2);}
+  .tmark{font-size:10px; font-weight:700; margin-left:2px; letter-spacing:.5px; opacity:.85;}
   /* 泊位右邊色 bar */
   .st{border-right:4px solid transparent; padding-right:6px; font-weight:700;}
   .stS{border-right-color:var(--blue);}
@@ -177,7 +181,7 @@ try{
     <h3>關於並排版</h3>
     <ul>
       <li>到港喺左、離港喺右，同一頁睇晒。</li>
-      <li>每班機淨顯示一個時間（實際＞預計＞原定）。</li>
+      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：<span style="color:var(--red)">紅色＋A</span>＝實際到達、<span style="color:var(--green2)">深綠色＋E</span>＝預計到達。</li>
       <li>離港時間減 50 分鐘後同到港一齊排序（對應前一班到港航機）。</li>
       <li>泊位右邊色 bar：<span style="color:var(--blue)">藍</span>=南、<span style="color:var(--stN)">橙</span>=北、<span style="color:var(--stW)">紫</span>=西、灰=R/數字。</li>
       <li>長按航班加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
@@ -284,6 +288,12 @@ try{
     if(f.ata && f.ata !== "—") return f.ata;
     if(f.est && f.est !== "—") return f.est;
     return f.eta || "—";
+  }
+  /* 到港時間顯示：實際紅＋A、預計深綠＋E（排序照用 eff） */
+  function arrTimeHtml(f){
+    if(f.ata && f.ata !== "—") return "<span class='atm-act'>"+esc(f.ata)+"<span class='tmark'>A</span></span>";
+    if(f.est && f.est !== "—") return "<span class='atm-est'>"+esc(f.est)+"<span class='tmark'>E</span></span>";
+    return esc(f.eta || "—");
   }
   function toMin(t){
     var m = /^(\d{1,2}):(\d{2})/.exec(t || "");
@@ -446,7 +456,7 @@ try{
       var fidCell = "<td class='fid'>"+esc(opId(f))+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>";
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
-                "<td class='time'>"+esc(eff(f))+"</td><td></td>"+
+                "<td class='time'>"+arrTimeHtml(f)+"</td><td></td>"+
                 "<td>"+standHtml(typ,f)+"</td></tr>";
       }else{
         html += "<tr class='"+cls+"' data-k='"+i+"'><td></td>"+fidCell+
