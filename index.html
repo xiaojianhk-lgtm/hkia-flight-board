@@ -341,7 +341,7 @@ try{
       <li>資料來源：香港國際機場官方網站，每 15 分鐘自動更新。</li>
       <li>開住個頁唔郁超過一分鐘，有新資料會靜靜自動更新（捲動位置、搜尋同展開狀態不變）；睇緊詳情、打緊字嗰陣唔會郁。</li>
       <li>手機喺航班列表向左滑動轉去離港、向右滑動返到港；連點三下開搜尋欄。</li>
-      <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。「今天」會顯示到聽朝 04:00 前嘅航班，時間後面有短日期。</li>
+      <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢。每日由 04:00 至翌日 03:59（跨日航班時間後面有短日期）。</li>
       <li>在搜尋框輸入 Flight ID、來往地或泊位關鍵字，即時篩選。</li>
       <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「H**代理」開咗只顯示 H** 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
       <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
@@ -548,17 +548,18 @@ try{
 
   function currentFlights(){
     if(!DB || !DB.dates || !DB.days) return [];
-    var d = DB.dates[dateIdx];
-    var list = (d && DB.days[d] && DB.days[d][tab]) || [];
-    tagFlightDate(list, d);
-    /* 今天：加埋聽朝 04:00 前嘅航班（原定時間後面加短日期） */
-    if(dateIdx === 1 && DB.dates[2] && DB.days[DB.dates[2]]){
-      var d2 = DB.dates[2], tm = DB.days[d2][tab] || [], extra = [];
-      for(var i=0;i<tm.length;i++){
-        var t = effTime(tm[i]);
-        if(t && t !== "—" && t < "04:00"){ tagFlightDate([tm[i]], d2); extra.push(tm[i]); }
-      }
-      if(extra.length) list = list.concat(extra);
+    /* 每日窗口：當日 04:00 至翌日 03:59（例如「今天」= 今日 04:00 → 聽朝 03:59） */
+    var d0 = DB.dates[dateIdx], d1 = DB.dates[dateIdx+1];
+    var list = [];
+    var l0 = (d0 && DB.days[d0] && DB.days[d0][tab]) || [];
+    for(var i=0;i<l0.length;i++){
+      var t = effTime(l0[i]);
+      if(!t || t === "—" || t >= "04:00"){ tagFlightDate([l0[i]], d0); list.push(l0[i]); }
+    }
+    var l1 = (d1 && DB.days[d1] && DB.days[d1][tab]) || [];
+    for(var j=0;j<l1.length;j++){
+      var t2 = effTime(l1[j]);
+      if(t2 && t2 !== "—" && t2 < "04:00"){ tagFlightDate([l1[j]], d1); list.push(l1[j]); }
     }
     if(hideCargo) list = list.filter(function(f){ return !f.cargo; });
     if(hidePax) list = list.filter(function(f){ return f.cargo; });
@@ -869,7 +870,7 @@ try{
   function buildDates(){
     var wrap = document.getElementById("datePills");
     wrap.innerHTML = "";
-    DB.dates.forEach(function(d, i){
+    DB.dates.slice(0,3).forEach(function(d, i){
       var b = document.createElement("button");
       b.innerHTML = esc(DATE_NAMES[i]||d) + "<br><small>" + esc(md(d)) + "</small>";
       if(i===dateIdx) b.classList.add("on");
