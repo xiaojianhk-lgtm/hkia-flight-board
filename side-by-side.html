@@ -115,6 +115,12 @@ try{
     font-size:15px; line-height:1; padding:0; cursor:pointer;
   }
   .swrap.hasq .qclear{display:block;}
+  /* 手機版計數列逼埋一行：字稍細、間距收窄 */
+  @media (max-width:719px){
+    .countrow{gap:6px;}
+    .count{font-size:11px;}
+    .hidecargo{font-size:11px;}
+  }
   /* ---------- 表格 ---------- */
   main{padding:8px 8px 32px; max-width:1100px; margin:0 auto;}
   table{width:100%; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums;}
@@ -505,8 +511,8 @@ try{
 
     var g = getLists();
     $("countLine").textContent = query
-      ? "「"+query+"」找到到港 "+g.arr.length+"／離港 "+g.dep.length+" 班"
-      : (DB ? md(DB.dates[dateIdx])+" " : "") + "到港 "+g.arr.length+" 班 / 離港 "+g.dep.length+" 班";
+      ? "「"+query+"」到港"+g.arr.length+"／離港"+g.dep.length
+      : "到港"+g.arr.length+"／離港"+g.dep.length;
     $("headCount").textContent = g.arr.length + g.dep.length;
     var total = items.length;
     if(total > showN && !expanded){
