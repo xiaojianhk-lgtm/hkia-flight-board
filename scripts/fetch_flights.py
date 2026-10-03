@@ -139,9 +139,11 @@ def main() -> int:
     project_root = os.path.dirname(script_dir)
     out_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(project_root, "data.json")
 
-    # Previous stands, keyed by (date, tab, flight_id), for stand-change detection.
+    # Previous stands/ests, keyed by (date, tab, flight_id), for stand-change
+    # detection and for preserving last-known estimated times.
     old_payload = None
     old_stands = {}
+    old_ests = {}
     if os.path.exists(out_path):
         try:
             with open(out_path, encoding="utf-8") as fh:
@@ -150,6 +152,8 @@ def main() -> int:
                 for tk in ("arrival", "departure"):
                     for f in day.get(tk, []):
                         old_stands[(d, tk, f.get("flight_id"))] = f.get("stand")
+                        if f.get("est") and f.get("est") != "—":
+                            old_ests[(d, tk, f.get("flight_id"))] = (f.get("est"), f.get("est_date") or "")
         except (json.JSONDecodeError, OSError) as exc:
             print(f"WARN: existing data.json unreadable ({exc}), rewriting", file=sys.stderr)
             old_payload = None
@@ -225,6 +229,13 @@ def main() -> int:
             continue
         for key in ("arrival", "departure"):
             for fl in day.get(key, []):
+                # 保留上次已知嘅預計時間：status 由 "Est at XX:XX" 轉做
+                # Final Call/Boarding 等之後，API 唔再俾預計時間，但舊嘅仍然有效
+                #（未有實際時間先保留）。
+                if fl["est"] == "—" and fl["ata"] == "—":
+                    oe = old_ests.get((date, key, fl["flight_id"]))
+                    if oe:
+                        fl["est"], fl["est_date"] = oe[0], oe[1]
                 prev = old_stands.get((date, key, fl["flight_id"]))
                 cur = fl["stand"]
                 if not prev or prev == "—" or not cur or cur == "—":
