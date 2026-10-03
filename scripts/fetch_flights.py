@@ -178,6 +178,18 @@ def main() -> int:
             print(f"WARN: stand_prefix.json unreadable ({exc}), starting empty", file=sys.stderr)
     map_changed = False
 
+    # 遠方泊位：登機閘口 -> 實際泊位（人手對照表，例如 520 -> S101）。
+    # 官網離港 API 得 gate 欄，冇 stand 欄，呢個對唔到數字關係（520 vs S101），
+    # 所以只能靠人手維護。Add-only：唔估、唔覆寫。
+    gate_stand_path = os.path.join(project_root, "gate_stand.json")
+    gate_stand_map = {}
+    if os.path.exists(gate_stand_path):
+        try:
+            with open(gate_stand_path, encoding="utf-8") as fh:
+                gate_stand_map = json.load(fh) or {}
+        except (json.JSONDecodeError, OSError) as exc:
+            print(f"WARN: gate_stand.json unreadable ({exc}), ignoring", file=sys.stderr)
+
     days = {}
     try:
         for date in dates:
@@ -218,7 +230,12 @@ def main() -> int:
                                     map_changed = True
                         else:
                             # Departure API only gives bare gate numbers.
-                            fl["stand"] = prefix_gate(fl["stand"], prefix_map)
+                            # 遠方泊位先查人手對照表（520 -> S101），查唔到先用字母前綴。
+                            raw_gate = fl["stand"].strip()
+                            if raw_gate in gate_stand_map:
+                                fl["stand"] = gate_stand_map[raw_gate]
+                            else:
+                                fl["stand"] = prefix_gate(fl["stand"], prefix_map)
                         flights.append(fl)
                 # Sort by most relevant time: actual (ATA/ATD) if landed/departed,
                 # else estimated (EST), else scheduled (STA/STD).
@@ -246,7 +263,14 @@ def main() -> int:
     #   marker are kept instead of showing "—". (The old `continue` here
     #   silently dropped stand_old whenever the API omitted the gate.)
     def _norm(k, s):
-        return prefix_gate(s, prefix_map) if k == "departure" else s
+        # 轉做顯示用嘅泊位：遠方泊位對照表優先，其次字母前綴；arrival 原樣。
+        # prefix_gate / gate_stand_map 對已經轉好嘅值係 idempotent。
+        if k == "departure":
+            sg = (s or "").strip()
+            if sg in gate_stand_map:
+                return gate_stand_map[sg]
+            return prefix_gate(s, prefix_map)
+        return s
 
     for date in dates:
         day = days.get(date)
@@ -259,27 +283,29 @@ def main() -> int:
                 prev_old = old_stand_olds.get(k)
                 cur = fl["stand"]
                 flown = bool(fl.get("ata") and fl["ata"] != "—")
+                # 上次嘅 stand/stand_old 轉做 display form 先比較
+                #（gate_stand.json 新增後，舊裸號 520 要當 S101 比，唔係誤判轉 bay）
+                prev_d = _norm(key, prev) if prev and prev != "—" else prev
+                prev_old_d = _norm(key, prev_old) if prev_old and prev_old != "—" else prev_old
                 if flown:
                     # 起飛／降落後：只留最終泊位，唔再顯示變動
-                    if (not cur or cur == "—") and prev and prev != "—":
-                        fl["stand"] = prev
+                    if (not cur or cur == "—") and prev_d and prev_d != "—":
+                        fl["stand"] = prev_d
                     fl.pop("stand_old", None)
                     continue
                 if not cur or cur == "—":
                     # API 今次冇俾泊位：沿用上次已知嘅泊位＋變動標記
-                    if prev and prev != "—":
-                        fl["stand"] = prev
-                        if (prev_old and prev_old != "—"
-                                and _norm(key, prev_old) != _norm(key, prev)):
-                            fl["stand_old"] = _norm(key, prev_old)
+                    if prev_d and prev_d != "—":
+                        fl["stand"] = prev_d
+                        if prev_old_d and prev_old_d != "—" and prev_old_d != prev_d:
+                            fl["stand_old"] = prev_old_d
                     continue
-                if prev and prev != "—" and _norm(key, prev) != cur:
+                if prev_d and prev_d != "—" and prev_d != cur:
                     # 泊位變咗：上次嘅新（prev）變成今次嘅舊
-                    fl["stand_old"] = _norm(key, prev)
-                elif (prev_old and prev_old != "—"
-                        and _norm(key, prev_old) != cur):
+                    fl["stand_old"] = prev_d
+                elif prev_old_d and prev_old_d != "—" and prev_old_d != cur:
                     # 泊位冇變：上次嘅變動標記繼續留住，直到起飛／降落
-                    fl["stand_old"] = _norm(key, prev_old)
+                    fl["stand_old"] = prev_old_d
 
     if map_changed:
         tmp_map = prefix_path + ".tmp"
