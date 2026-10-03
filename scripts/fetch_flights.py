@@ -195,6 +195,13 @@ def main() -> int:
                         continue
                     for f in grp.get("list", []):
                         fl = parse_flight(f, arrival, cargo)
+                        # 保留上次已知嘅預計時間（要喺排序之前做，等排序用啱時間）：
+                        # status 由 "Est at XX:XX" 轉做 Final Call/Boarding 等之後，
+                        # API 唔再俾預計時間，但舊嘅仍然有效（未有實際時間先保留）。
+                        if fl["est"] == "—" and fl["ata"] == "—":
+                            oe = old_ests.get((date, key, fl["flight_id"]))
+                            if oe:
+                                fl["est"], fl["est_date"] = oe[0], oe[1]
                         if arrival:
                             # Learn number -> letter from arrival stands.
                             pm = STAND_PREFIX_RE.match(fl["stand"])
@@ -232,13 +239,6 @@ def main() -> int:
             continue
         for key in ("arrival", "departure"):
             for fl in day.get(key, []):
-                # 保留上次已知嘅預計時間：status 由 "Est at XX:XX" 轉做
-                # Final Call/Boarding 等之後，API 唔再俾預計時間，但舊嘅仍然有效
-                #（未有實際時間先保留）。
-                if fl["est"] == "—" and fl["ata"] == "—":
-                    oe = old_ests.get((date, key, fl["flight_id"]))
-                    if oe:
-                        fl["est"], fl["est_date"] = oe[0], oe[1]
                 prev = old_stands.get((date, key, fl["flight_id"]))
                 cur = fl["stand"]
                 if not prev or prev == "—" or not cur or cur == "—":
