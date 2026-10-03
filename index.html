@@ -347,7 +347,7 @@ try{
       <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
       <li>長按貨機手動輸入泊位（存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。保存後自動收起；清空泊位欄再按保存、或按刪除掣即清除。</li>
       <li>時間列右邊嘅 ⟳ 可手動重新載入最新資料；☀️／🌙 可切換日間／夜間模式。</li>
-      <li>時間顏色：<span class="c-sched">白色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。到港航班：預計時間用深綠色＋<b>E</b>，實際時間後面加 <span class="c-red"><b>A</b></span>；淨係得原定時間嗰陣加細 <b>s</b>。</li>
+      <li>時間顏色：<span class="c-sched">白色</span>為原定時間，<span class="c-green">綠色</span>為預計時間，<span class="c-red">紅色</span>為實際時間。到港航班：預計時間用深綠色＋<b>E</b>，實際時間後面加 <span class="c-red"><b>A</b></span>；淨係得原定時間嗰陣加細 <b>S</b>。</li>
     </ul>
     <p class="fine">時間為香港時間 (HKT)。航班資料僅供參考，請以機場官方公布為準。</p>
     <button id="aboutClose">關閉</button>
@@ -661,7 +661,7 @@ try{
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
     if(estShown) return "";
     if(f.ata && f.ata !== "—") return "";  /* 有實際時間（就算同原定一樣）都唔係「只有 STA」 */
-    return "<span class='tmark'>s</span>";
+    return "<span class='tmark'>S</span>";
   }
 
   function etaCell(f){
