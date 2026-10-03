@@ -715,7 +715,7 @@ try{
     return h;
   }
   function dDetailHtml(f, i){
-    return "<tr class='drow' data-i='"+i+"'><td colspan='6'><div class='ddetail'>"+detailInner(f)+"</div></td></tr>";
+    return "<tr class='drow' data-i='"+i+"'><td colspan='5'><div class='ddetail'>"+detailInner(f)+"</div></td></tr>";
   }
   function mDetailHtml(f, i){
     return "<div class='mdetail' data-i='"+i+"'><div class='ddetail'>"+detailInner(f)+"</div></div>";
@@ -729,7 +729,7 @@ try{
   function nowHtml(t, mobile){
     var inner = "<div class='nl'><span>"+esc(t)+"</span></div>";
     return mobile ? "<div class='mnowline'>"+inner+"</div>"
-                  : "<tr class='nowline'><td colspan='6'>"+inner+"</td></tr>";
+                  : "<tr class='nowline'><td colspan='5'>"+inner+"</td></tr>";
   }
 
   function render(){
@@ -1069,8 +1069,8 @@ try{
   function userBusy(){
     if(Date.now() - lastActive < IDLE_MS) return true;
     if(detailFlight) return true;  /* 睇緊詳情 */
-    var q = document.getElementById("q");
-    if(q && document.activeElement === q) return true;  /* 打緊字 */
+    var ae = document.activeElement;
+    if(ae && (ae === q || ae === qm)) return true;  /* 打緊字（桌面#q／手機#qm） */
     if(overlay.classList.contains("open")) return true;  /* 關於頁開緊 */
     return false;
   }
