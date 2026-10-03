@@ -236,27 +236,50 @@ def main() -> int:
     # Stand-change detection (second pass, so departure gates are already
     # prefixed with the final map; old bare numbers are normalized the same
     # way to avoid false "changed" flags on the migration run).
+    #
+    # Policy (user 2026-10-04):
+    # - A change shows as new (old), e.g. W61 (S33). If it changes again,
+    #   the previous new becomes the old: C (B).
+    # - The marker persists until the flight actually operates (has an
+    #   actual time); afterwards only the final stand is kept.
+    # - If the API temporarily drops the stand, the last known stand and
+    #   marker are kept instead of showing "—". (The old `continue` here
+    #   silently dropped stand_old whenever the API omitted the gate.)
+    def _norm(k, s):
+        return prefix_gate(s, prefix_map) if k == "departure" else s
+
     for date in dates:
         day = days.get(date)
         if not day:
             continue
         for key in ("arrival", "departure"):
             for fl in day.get(key, []):
-                prev = old_stands.get((date, key, fl["flight_id"]))
+                k = (date, key, fl["flight_id"])
+                prev = old_stands.get(k)
+                prev_old = old_stand_olds.get(k)
                 cur = fl["stand"]
-                if not prev or prev == "—" or not cur or cur == "—":
+                flown = bool(fl.get("ata") and fl["ata"] != "—")
+                if flown:
+                    # 起飛／降落後：只留最終泊位，唔再顯示變動
+                    if (not cur or cur == "—") and prev and prev != "—":
+                        fl["stand"] = prev
+                    fl.pop("stand_old", None)
                     continue
-                prev_norm = prefix_gate(prev, prefix_map) if key == "departure" else prev
-                if prev_norm != cur:
-                    # 泊位變咗：舊泊位 = 上次嘅現時泊位
-                    fl["stand_old"] = prev
-                else:
-                    # 泊位冇變：上次有舊泊位就繼續留住，直到再變先更新
-                    prev_old = old_stand_olds.get((date, key, fl["flight_id"]))
-                    if prev_old and prev_old != "—":
-                        prev_old_norm = prefix_gate(prev_old, prefix_map) if key == "departure" else prev_old
-                        if prev_old_norm != cur:
-                            fl["stand_old"] = prev_old_norm
+                if not cur or cur == "—":
+                    # API 今次冇俾泊位：沿用上次已知嘅泊位＋變動標記
+                    if prev and prev != "—":
+                        fl["stand"] = prev
+                        if (prev_old and prev_old != "—"
+                                and _norm(key, prev_old) != _norm(key, prev)):
+                            fl["stand_old"] = _norm(key, prev_old)
+                    continue
+                if prev and prev != "—" and _norm(key, prev) != cur:
+                    # 泊位變咗：上次嘅新（prev）變成今次嘅舊
+                    fl["stand_old"] = _norm(key, prev)
+                elif (prev_old and prev_old != "—"
+                        and _norm(key, prev_old) != cur):
+                    # 泊位冇變：上次嘅變動標記繼續留住，直到起飛／降落
+                    fl["stand_old"] = _norm(key, prev_old)
 
     if map_changed:
         tmp_map = prefix_path + ".tmp"
