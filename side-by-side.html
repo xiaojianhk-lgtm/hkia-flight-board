@@ -646,7 +646,8 @@ try{
     }
   });
   $("refreshBtn").addEventListener("click", function(){
-    location.href = location.pathname + "?t=" + Date.now();
+    /* replace 唔會加 history，唔會越撳越多上一頁 */
+    location.replace(location.pathname + "?t=" + Date.now());
   });
 
   /* 撳列展開（有備註先有反應） */
