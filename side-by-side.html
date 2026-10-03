@@ -488,16 +488,18 @@ try{
 
   function render(){
     var items = merged();
-    /* 今日：由而家之前 8 班開始顯示 50 班 */
+    /* 而家位置（sk 時間軸，同排序一致；時間線同 50 班 window 都用佢） */
+    var now2 = nowHHMM(), nowMin = toMin(now2);
+    var divPos = items.length;
+    for(var j=0;j<items.length;j++){
+      var tj = eff(items[j].f);
+      if(tj && tj !== "—" && items[j].sk >= nowMin){ divPos = j; break; }
+    }
+    /* 今日：時間線之前 8 班開始顯示 50 班（上面8班，下面42班） */
     var start = 0, showN = 50;
     if(!expanded && !query && dateIdx === 1 && items.length){
-      var now = nowHHMM(), ai = items.length;
-      for(var k=0;k<items.length;k++){
-        var t = eff(items[k].f);
-        if(t && t !== "—" && t >= now){ ai = k; break; }
-      }
-      start = Math.max(0, Math.min(ai - 8, items.length - 50));
       showN = Math.min(50, items.length);
+      start = Math.max(0, Math.min(divPos - 8, items.length - showN));
     }
     var list = expanded ? items : items.slice(start, start + showN);
     lastItems = list;
@@ -505,18 +507,8 @@ try{
 
     /* 而家分隔線（只限今天） */
     var showNow = (dateIdx === 1 && items.length > 0);
-    var divPos = -1, nowLabel = "";
-    if(showNow){
-      var now2 = nowHHMM(), nowMin = toMin(now2);
-      divPos = items.length;
-      for(var j=0;j<items.length;j++){
-        var tj = eff(items[j].f);
-        /* 用同排序一樣嘅 key（離港已減 50 分鐘，即係到港嗰邊嘅時間軸）嚟定位 */
-        if(tj && tj !== "—" && items[j].sk >= nowMin){ divPos = j; break; }
-      }
-      divPos = Math.max(0, divPos - start);
-      nowLabel = now2;
-    }
+    var nowLabel = showNow ? now2 : "";
+    divPos = Math.max(0, divPos - start);
 
     var html = "";
     for(var i=0;i<list.length;i++){
@@ -815,6 +807,8 @@ try{
   overlay.addEventListener("click", function(e){ if(e.target===overlay) overlay.classList.remove("open"); });
 
   window.addEventListener("resize", function(){ setBarH(); });
+  /* 瀏覽器唔好自動還原舊 scroll 位，定位由我哋控制 */
+  try{ history.scrollRestoration = "manual"; }catch(e){}
   setBarH();
 
   /* 載入 */
@@ -827,6 +821,8 @@ try{
       $("headTs").textContent = d.generated_at || "—";
       buildDates();
       render();
+      /* 開頁停喺時間線：上面8班，下面42班 */
+      window.scrollTo(0, 0);
     })
     .catch(function(e){
       $("rows").innerHTML = "<tr><td colspan='5' style='text-align:center;color:var(--red);padding:24px;'>載入失敗："+esc(e.message)+"</td></tr>";
@@ -852,7 +848,9 @@ try{
           $("headTs").textContent = d.generated_at;
           buildDates(); render();
           if(keepEx){ expanded = true; render(); }
-          if(sy) window.scrollTo(0, sy);
+          /* 展開／搜尋緊就還原舊位，否則停返時間線（上面8班，下面42班） */
+          if(keepEx || query){ if(sy) window.scrollTo(0, sy); }
+          else window.scrollTo(0, 0);
         }
       })
       .catch(function(){});
