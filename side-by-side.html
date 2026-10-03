@@ -174,6 +174,8 @@ try{
   tr.drow td{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 12px; white-space:normal;}
   .ddetail{font-size:12px; color:var(--text); line-height:1.8;}
   .ddetail span{color:var(--muted);}
+  tr.rw.arr td:first-child{box-shadow:inset 3px 0 0 var(--blue);}
+  tr.rw.dep td:first-child{box-shadow:inset 3px 0 0 var(--accent);}
   tr.rw.noted td{background:rgba(201,162,39,.10);}
   tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(201,162,39,.6);}
   .nst{font-size:12px; margin-left:2px;}
@@ -216,6 +218,7 @@ try{
     <h3>關於並排版</h3>
     <ul>
       <li>到港喺左、離港喺右，同一頁睇晒。</li>
+      <li>每行左緣色條：<span style="color:var(--blue)">藍</span>=到港（讀左邊兩格）、<span style="color:var(--accent)">橙</span>=離港（讀右邊兩格）。</li>
       <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：已降落嘅顯示實際時間＋A、預計到達＋E、得原定時間嘅顯示<span style="color:var(--dim)">淺灰色＋S</span>。離港：已起飛嘅顯示實際時間＋A（正常顏色）；未起飛但時間有變（預計同原定唔同）會變<span style="color:var(--red)">紅色</span>。</li>
       <li>離港時間減 50 分鐘後同到港一齊排序（對應前一班到港航機）。</li>
       <li>泊位右邊色 bar：<span style="color:var(--blue)">藍</span>=南、<span style="color:var(--stN)">橙</span>=北、<span style="color:var(--stW)">紫</span>=西、灰=R/數字。</li>
@@ -520,7 +523,7 @@ try{
       }
       var it = list[i], f = it.f, typ = it.typ;
       var hn = hasNote(typ, f);
-      var cls = "rw"+(hn?" noted":"")+(f.cancelled?" cancelled":"");
+      var cls = "rw"+(typ==="arrival"?" arr":" dep")+(hn?" noted":"")+(f.cancelled?" cancelled":"");
       var key = itemKey(it);
       var ilv = inspLevel(typ, f);
       var fidCell = "<td class='fid'>"+esc(opId(f))+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
