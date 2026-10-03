@@ -187,6 +187,11 @@ try{
     background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
     padding:8px 18px; font-size:13px; cursor:pointer;
   }
+  tr.xrow td{padding:8px 4px; text-align:center;}
+  tr.xrow .xrowbtn{
+    background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
+    padding:8px 18px; font-size:13px; cursor:pointer;
+  }
   /* 關於 */
   #aboutOverlay{
     position:fixed; inset:0; z-index:60; background:var(--overlay-bg);
@@ -516,7 +521,9 @@ try{
     var nowLabel = showNow ? now2 : "";
     divPos = Math.max(0, divPos - start);
 
-    var html = "";
+    var html = (items.length > showN)
+      ? "<tr class='xrow'><td colspan='5'><button class='xrowbtn'>"+(expanded?"收起":"展開全部 "+items.length+" 班航班")+"</button></td></tr>"
+      : "";
     for(var i=0;i<list.length;i++){
       if(showNow && i === divPos){
         html += "<tr class='nowline'><td colspan='5'><div class='nl'><span>"+esc(nowLabel)+"</span></div></td></tr>";
@@ -559,16 +566,15 @@ try{
       : "到港"+g.arr.length+"／離港"+g.dep.length;
     $("headCount").textContent = g.arr.length + g.dep.length;
     var total = items.length;
-    if(total > showN && !expanded){
+    if(total > showN){
       $("expandBar").style.display = "";
-      $("expandBtn").textContent = "展開全部 "+total+" 行";
-    }else if(total > showN && expanded){
-      $("expandBar").style.display = "";
-      $("expandBtn").textContent = "收起";
+      $("expandBtn").textContent = expanded ? "收起" : "展開全部 "+total+" 班航班";
     }else{
       $("expandBar").style.display = "none";
     }
     setBarH();
+    var xb = document.querySelector("#rows .xrowbtn");
+    if(xb) xb.addEventListener("click", toggleExpand);
   }
 
   function commitNote(){
@@ -631,7 +637,7 @@ try{
   $("hidePax").addEventListener("change", function(){ hidePax = !!this.checked; expanded=false; render(); });
   $("hideCargo").addEventListener("change", function(){ hideCargo = !!this.checked; expanded=false; render(); });
   $("showHas").addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); });
-  $("expandBtn").addEventListener("click", function(){
+  function toggleExpand(){
     if(!expanded){
       /* 展開前記住「而家」線喺畫面嘅位置，render 後放返同一位置，唔跳 */
       var nl = document.querySelector("tr.nowline");
@@ -643,7 +649,8 @@ try{
       expanded = false; render();
       window.scrollTo({top:0, behavior:"smooth"});
     }
-  });
+  }
+  $("expandBtn").addEventListener("click", toggleExpand);
   $("refreshBtn").addEventListener("click", function(){
     /* replace 唔會加 history，唔會越撳越多上一頁 */
     location.replace(location.pathname + "?t=" + Date.now());
