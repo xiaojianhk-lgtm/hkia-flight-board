@@ -556,8 +556,17 @@ try{
   $("hideCargo").addEventListener("change", function(){ hideCargo = !!this.checked; expanded=false; render(); });
   $("showHas").addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); });
   $("expandBtn").addEventListener("click", function(){
-    expanded = !expanded; render();
-    if(!expanded) window.scrollTo({top:0, behavior:"smooth"});
+    if(!expanded){
+      /* 展開前記住「而家」線喺畫面嘅位置，render 後放返同一位置，唔跳 */
+      var nl = document.querySelector("tr.nowline");
+      var top = nl ? nl.getBoundingClientRect().top : null;
+      expanded = true; render();
+      var nl2 = document.querySelector("tr.nowline");
+      if(nl2 && top !== null) window.scrollTo(0, window.scrollY + nl2.getBoundingClientRect().top - top);
+    }else{
+      expanded = false; render();
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
   });
   $("refreshBtn").addEventListener("click", function(){
     location.href = location.pathname + "?t=" + Date.now();
