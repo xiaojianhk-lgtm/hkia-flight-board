@@ -123,15 +123,19 @@ try{
   }
   /* ---------- 表格 ---------- */
   main{padding:8px 8px 32px; max-width:1100px; margin:0 auto;}
-  table{width:100%; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums;}
+  table{width:100%; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums; table-layout:fixed;}
   thead th{
     position:sticky; top:var(--barH,0px); background:var(--card); z-index:5;
-    font-size:11px; padding:8px 3px; border-bottom:2px solid var(--line);
+    font-size:11px; padding:10px 4px; border-bottom:2px solid var(--line);
     text-align:left; white-space:nowrap; color:var(--muted); letter-spacing:1px;
   }
-  thead th .sub{display:block; font-weight:400; font-size:10px; opacity:.8;}
-  tbody td{padding:8px 3px; white-space:nowrap; border-bottom:1px solid var(--row-line);}
-  tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
+  thead th .hzh{font-size:12px; font-weight:700; color:var(--text); letter-spacing:2px;}
+  thead th .hen{font-size:10px; font-weight:400; opacity:.7; margin-left:4px; letter-spacing:1px;}
+  thead th.tcol, tbody td.tcol{text-align:center;}
+  thead th.bayh, tbody td.bayc{text-align:right;}
+  tbody td{padding:10px 4px; white-space:nowrap; border-bottom:1px solid var(--row-line); overflow:hidden; text-overflow:ellipsis;}
+  tbody tr.rw:active td{background:rgba(128,128,128,.14);}
+  @media (hover:hover){ tbody tr.rw:hover td{background:rgba(128,128,128,.07);} }
   td.fid{font-weight:700; font-size:14px;}
   td.time{font-weight:600;}
   /* 到港時間：實際紅＋A、預計深綠＋E */
@@ -254,13 +258,16 @@ try{
 
 <main>
   <table>
+    <colgroup>
+      <col style="width:26%"><col style="width:26%"><col style="width:15%"><col style="width:15%"><col style="width:18%">
+    </colgroup>
     <thead>
       <tr>
-        <th>Flight No<span class="sub">到港</span></th>
-        <th>Flight No<span class="sub">離港</span></th>
-        <th>ETA</th>
-        <th>ETD</th>
-        <th>Bay</th>
+        <th><span class="hzh">到港</span><span class="hen">ARR</span></th>
+        <th><span class="hzh">離港</span><span class="hen">DEP</span></th>
+        <th class="tcol">ETA</th>
+        <th class="tcol">ETD</th>
+        <th class="bayh">Bay</th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
@@ -498,12 +505,12 @@ try{
       var fidCell = "<td class='fid'>"+esc(opId(f))+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>";
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
-                "<td class='time'>"+arrTimeHtml(f)+"</td><td></td>"+
-                "<td>"+standHtml(typ,f)+"</td></tr>";
+                "<td class='time tcol'>"+arrTimeHtml(f)+"</td><td class='tcol'></td>"+
+                "<td class='bayc'>"+standHtml(typ,f)+"</td></tr>";
       }else{
         html += "<tr class='"+cls+"' data-k='"+i+"'><td></td>"+fidCell+
-                "<td></td><td class='time'>"+depTimeHtml(f)+"</td>"+
-                "<td>"+standHtml(typ,f)+"</td></tr>";
+                "<td class='tcol'></td><td class='time tcol'>"+depTimeHtml(f)+"</td>"+
+                "<td class='bayc'>"+standHtml(typ,f)+"</td></tr>";
       }
       if(detailKey === key){
         html += "<tr class='drow'><td colspan='5'><div class='ddetail'>"+detailInner(typ,f)+"</div></td></tr>";
