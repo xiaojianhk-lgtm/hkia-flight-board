@@ -736,6 +736,8 @@ try{
   }
 
   function commitNote(){
+    var ae = document.activeElement;
+    if(ae && ae.blur) ae.blur();  /* 先收鍵盤 */
     var sy = window.scrollY;
     var ni = $("noteInput"), si = $("standInput"), k = noteEditingKey;
     noteEditingKey = null;
@@ -747,8 +749,11 @@ try{
       saveWatch();
       if(!(WATCH[k] && WATCH[k].note)) detailKey = null;
     }
-    render();
-    window.scrollTo(0, sy);
+    /* 等鍵盤收完（約300ms）先 render，唔同 viewport 變化撞埋 */
+    setTimeout(function(){
+      render();
+      window.scrollTo(0, sy);
+    }, 320);
   }
   function deleteNote(typ, f){
     var k = noteEditingKey;
