@@ -325,10 +325,10 @@ try{
   </div>
   <div class="dates" id="datePills"></div>
   <div class="countrow">
-    <span class="count" id="countLine"></span>
     <label class="hidecargo"><input type="checkbox" id="hidePax"> 隱藏客機</label>
     <label class="hidecargo"><input type="checkbox" id="hideCargo" checked> 隱藏貨機</label>
     <label class="hidecargo"><input type="checkbox" id="showHas" checked> H**代理</label>
+    <label class="hidecargo"><input type="checkbox" id="hideCX"> 隱藏CX</label>
   </div>
   <div class="searchrow">
     <div class="swrap">
@@ -373,7 +373,7 @@ try{
 (function(){
   "use strict";
   var DB = null, dateIdx = 1, query = "";
-  var hideCargo = true, hidePax = false, onlyHas = true;
+  var hideCargo = true, hidePax = false, onlyHas = true, hideCX = false;
   var expanded = false, detailKey = null, lastItems = [];
   var DATE_NAMES = ["昨天","今天","明天"];
 
@@ -423,6 +423,9 @@ try{
     var code = opId(f).replace(/\s/g,"").substring(0,2).toUpperCase();
     if(!f.cargo && LCC_HIDE.indexOf(code) !== -1) return false;
     return (f.cargo ? HAS_CARGO_CODES : HAS_PAX_CODES).indexOf(code) !== -1;
+  }
+  function isCX(f){
+    return opId(f).replace(/\s/g,"").substring(0,2).toUpperCase() === "CX";
   }
 
   function $(id){ return document.getElementById(id); }
@@ -510,6 +513,7 @@ try{
     var flt = function(f){
       if(hideCargo && f.cargo) return false;
       if(hidePax && !f.cargo) return false;
+      if(hideCX && isCX(f)) return false;
       if(onlyHas && !isHasFlight(f)) return false;
       return true;
     };
@@ -668,9 +672,6 @@ try{
     }
 
     var g = getLists();
-    $("countLine").textContent = query
-      ? "「"+query+"」到港"+g.arr.length+"／離港"+g.dep.length
-      : "到港"+g.arr.length+"／離港"+g.dep.length;
     $("headCount").textContent = g.arr.length + g.dep.length;
     var total = items.length;
     if(total > showN){
@@ -865,6 +866,7 @@ try{
   $("hidePax").addEventListener("change", function(){ hidePax = !!this.checked; expanded=false; render(); });
   $("hideCargo").addEventListener("change", function(){ hideCargo = !!this.checked; expanded=false; render(); });
   $("showHas").addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); });
+  $("hideCX").addEventListener("change", function(){ hideCX = !!this.checked; expanded=false; render(); });
   function toggleExpand(){
     if(!expanded){
       /* 展開前記住「而家」線喺畫面嘅位置，render 後放返同一位置，唔跳 */
