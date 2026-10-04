@@ -553,12 +553,30 @@ try{
     });
   }
 
+  /* 生效日期：實際＞預計＞原定（est/ata 可能早過原定，落喺前一日） */
+  function effDate(f){
+    if(f.ata && f.ata !== "—" && f.ata_date) return f.ata_date;
+    if(f.est && f.est !== "—" && f.est_date) return f.est_date;
+    return f._date;
+  }
+
   function tabFlights(t){
     if(!DB || !DB.dates || !DB.days) return [];
-    /* 每日 00:00–23:59（日曆日） */
+    /* 每日 00:00–23:59（日曆日），按生效日期歸位：
+       早到（est 早過原定一日）撥入前一日；延誤過午夜撥入後一日 */
     var d0 = DB.dates[dateIdx];
-    var list = ((d0 && DB.days[d0] && DB.days[d0][t]) || []).slice();
-    tagFlightDate(list, d0);
+    if(!d0) return [];
+    var dIdx = DB.dates.indexOf(d0);
+    var list = [];
+    [dIdx-1, dIdx, dIdx+1].forEach(function(idx){
+      var d = DB.dates[idx];
+      if(!d || !DB.days[d] || !DB.days[d][t]) return;
+      var arr = DB.days[d][t];
+      for(var i=0;i<arr.length;i++){
+        tagFlightDate([arr[i]], d);  /* _date = 原定日期（資料檔日期） */
+        if(effDate(arr[i]) === d0) list.push(arr[i]);
+      }
+    });
     if(hideCargo) list = list.filter(function(f){ return !f.cargo; });
     if(hidePax) list = list.filter(function(f){ return f.cargo; });
     if(onlyHas) list = list.filter(isHasFlight);
