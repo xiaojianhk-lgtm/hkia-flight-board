@@ -737,33 +737,16 @@ try{
 
   function commitNote(){
     var ni = $("noteInput"), si = $("standInput"), k = noteEditingKey;
-    var nv = ni ? ni.value.trim() : "";
-    var sv = si ? si.value.trim().toUpperCase() : "";
-    /* 釘死個畫面先，唔俾 iOS 收鍵盤嗰陣推郁 */
-    var sy = window.scrollY;
-    var bd = document.body;
-    bd.style.position = "fixed";
-    bd.style.top = (-sy) + "px";
-    bd.style.width = "100%";
-    var ae = document.activeElement;
-    if(ae && ae.blur) ae.blur();
-    /* 等鍵盤收完（400ms）先解釘、存數據、render */
-    setTimeout(function(){
-      bd.style.position = "";
-      bd.style.top = "";
-      bd.style.width = "";
-      window.scrollTo(0, sy);
-      noteEditingKey = null;
-      if(k){
-        WATCH[k] = WATCH[k] || {t:Date.now()};
-        if(nv) WATCH[k].note = nv; else delete WATCH[k].note;
-        if(sv) WATCH[k].stand = sv; else delete WATCH[k].stand;
-        if(!WATCH[k].note && !WATCH[k].stand && !WATCH[k].insp) delete WATCH[k];
-        saveWatch();
-        if(!(WATCH[k] && WATCH[k].note)) detailKey = null;
-      }
-      render();
-    }, 400);
+    noteEditingKey = null;
+    if(k){
+      WATCH[k] = WATCH[k] || {t:Date.now()};
+      if(ni){ var v = ni.value.trim(); if(v) WATCH[k].note = v; else delete WATCH[k].note; }
+      if(si){ var s = si.value.trim().toUpperCase(); if(s) WATCH[k].stand = s; else delete WATCH[k].stand; }
+      if(!WATCH[k].note && !WATCH[k].stand && !WATCH[k].insp) delete WATCH[k];
+      saveWatch();
+      if(!(WATCH[k] && WATCH[k].note)) detailKey = null;
+    }
+    render();
   }
   function deleteNote(typ, f){
     var k = noteEditingKey;
