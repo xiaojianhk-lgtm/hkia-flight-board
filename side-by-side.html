@@ -515,10 +515,10 @@ try{
     Object.keys(DB.days).forEach(function(d){
       var day = DB.days[d];
       (day.arrival || []).forEach(function(f){
-        if((effDate(f) || d) === target) arr.push(f);
+        if((effDate(f) || d) === target){ f._sdate = d; arr.push(f); }
       });
       (day.departure || []).forEach(function(f){
-        if((effDate(f) || d) === target) dep.push(f);
+        if((effDate(f) || d) === target){ f._sdate = d; dep.push(f); }
       });
     });
     var flt = function(f){
@@ -573,12 +573,12 @@ try{
     if(t === f.est && f.est_date) return f.est_date;
     return null;
   }
-  /* 時間同航班唔同日，加 DD（單行並排） */
+  /* 原定同實際唔同日，顯示原定嘅 DD（單行並排） */
   function dateTag(f){
-    var ad = effDate(f);
+    var sd = f._sdate;  /* getLists 掃嗰陣記低嘅原定日期 */
     var fdate = DB.dates[dateIdx];
-    if(!ad || !fdate || ad === fdate) return "";
-    var p = ad.split("-");
+    if(!sd || !fdate || sd === fdate) return "";
+    var p = sd.split("-");
     return "<span class='ddate'>"+p[2]+"</span>";
   }
 
