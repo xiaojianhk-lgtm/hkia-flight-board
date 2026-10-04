@@ -228,7 +228,7 @@ try{
   .mdetail{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 4px;}
   /* ---------- 備註（長按加，有備註先喺目的地後面加 ⭐️） ---------- */
   .nst{font-size:12px; margin-left:2px;}
-  .ddate{font-size:11px; color:var(--dim); white-space:nowrap;}
+  .ddate{font-size:11px; color:var(--dim); white-space:nowrap; margin-left:4px;}
   .avgdur{font-size:11px; color:var(--dim); white-space:nowrap;}
   /* 泊位：粗體；轉位紅字 */
   .st{font-weight:700;}
@@ -728,7 +728,7 @@ try{
     if(!sched || d === sched) return "";
     if(f._date && d === f._date) return "";  /* 已經喺原定時間標咗，唔重複 */
     var p = d.split("-");
-    return " <span class='ddate'>("+p[2]+"/"+p[1]+")</span>";
+    return "<span class='ddate'>("+p[2]+"/"+p[1]+")</span>";
   }
   /* 跨日併入今天嘅航班：原定時間本身已經係聽日，後面加 (DD/MM) */
   function schedDateTag(f){
@@ -736,7 +736,7 @@ try{
     if(f._date === DB.dates[dateIdx]) return "";
     var p = String(f._date).split("-");
     if(p.length < 3) return "";
-    return " <span class='ddate'>("+p[2]+"/"+p[1]+")</span>";
+    return "<span class='ddate'>("+p[2]+"/"+p[1]+")</span>";
   }
 
   function rowHtml(f, i){
