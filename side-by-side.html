@@ -28,6 +28,7 @@ try{
     --row-line:rgba(31,58,85,.55);
     --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
     --red:#ef5350; --green:#9ccc65; --green2:#8bc34a; --blue:#4fc3f7;
+    --cxgreen:#54c1b3;
     --stN:#ffb74d; --stW:#ab47bc;
     --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72);
     --header-bg:rgba(11,28,44,.96);
@@ -40,6 +41,7 @@ try{
     --row-line:#eee;
     --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
     --red:#d32f2f; --green:#2e7d32; --green2:#1b5e20; --blue:#0288d1;
+    --cxgreen:#006b6e;
     --stN:#e65100; --stW:#8e24aa;
     --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45);
     --header-bg:rgba(255,255,255,.96);
@@ -175,7 +177,7 @@ try{
   .ddetail{font-size:12px; color:var(--text); line-height:1.8;}
   .ddetail span{color:var(--muted);}
   .adir{display:inline-block; min-width:16px; font-weight:700;}
-  tr.rw.dep td.fid{color:var(--green);}
+  tr.rw.dep td.fid{color:var(--cxgreen);}
   tr.rw.noted td{background:rgba(201,162,39,.10);}
   tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(201,162,39,.6);}
   .nst{font-size:12px; margin-left:2px;}
@@ -223,7 +225,7 @@ try{
     <h3>關於並排版</h3>
     <ul>
       <li>到港喺左、離港喺右，同一頁睇晒。</li>
-      <li>每行左緣箭頭：↓=到港、↑=離港。離港航班編號係<span style="color:var(--green)">綠色</span>。</li>
+      <li>每行左緣箭頭：↓=到港、↑=離港。離港航班編號係<span style="color:var(--cxgreen)">國泰綠</span>。</li>
       <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：已降落嘅顯示實際時間＋A、預計到達＋E、得原定時間嘅顯示<span style="color:var(--dim)">淺灰色＋S</span>。離港：未起飛顯示時間＋E（有變會變<span style="color:var(--red)">紅色</span>），已起飛嘅顯示實際時間＋A。</li>
       <li>離港時間減 50 分鐘後同到港一齊排序（對應前一班到港航機）。</li>
       <li>泊位右邊色 bar：<span style="color:var(--blue)">藍</span>=南、<span style="color:var(--stN)">橙</span>=北、<span style="color:var(--stW)">紫</span>=西、灰=R/數字。</li>
