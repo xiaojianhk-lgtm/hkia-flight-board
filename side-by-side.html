@@ -784,11 +784,13 @@ try{
   function disarmWatch(){
     watchBay = null; watchSeen = {};
     saveWatch(); $("watchpill").hidden = true;
+    setBarH();
   }
   function showWatchPill(){
     if(!watchBay) return;
     $("watchbay").textContent = watchBay;
     $("watchpill").hidden = false;
+    setBarH();
   }
   function checkBayWatch(){
     if(!watchBay || !DB) return;
@@ -885,11 +887,13 @@ try{
   function disarmFlightWatch(){
     watchFlight = null; watchFlightBay = null;
     saveFlightWatch(); $("flightpill").hidden = true;
+    setBarH();
   }
   function showFlightPill(){
     if(!watchFlight) return;
     $("watchflightid").textContent = watchFlight;
     $("flightpill").hidden = false;
+    setBarH();
   }
   function checkFlightWatch(){
     if(!watchFlight || !DB) return;
