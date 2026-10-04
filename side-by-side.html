@@ -229,6 +229,7 @@ try{
       <li>泊位右邊色 bar：<span style="color:var(--blue)">藍</span>=南、<span style="color:var(--stN)">橙</span>=北、<span style="color:var(--stW)">紫</span>=西、灰=R/數字。</li>
       <li>長按航班其他位加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
       <li>喺航班上向左滑：航班編號加<span style="color:var(--red)">紅色✓</span>（一次巡視）；再滑多下，時間都會加✓（二次巡視）。向右滑逐級取消。</li>
+      <li>連點兩下屏幕：跳返時間線；連點三下：開搜尋。</li>
       <li>長按泊位：高亮所有同區泊位（S藍／N橙／W紫／R灰）；再長按取消，長按另一區會轉過去。</li>
       <li>每 15 分鐘自動更新（閒置先會靜靜換）。</li>
     </ul>
@@ -729,7 +730,7 @@ try{
   rowsEl.addEventListener("contextmenu", function(e){ if(rowFromEvent(e)) e.preventDefault(); });
 
   /* 左右滑：左滑加紅「/」（已巡視），右滑取消 */
-  var swSX = 0, swSY = 0, swRow = null;
+  var swSX = 0, swSY = 0, swRow = null, swipedAt = 0;
   rowsEl.addEventListener("touchstart", function(e){
     var row = rowFromEvent(e);
     if(!row){ swRow = null; return; }
@@ -743,6 +744,7 @@ try{
     if(!t) return;
     var dx = t.clientX - swSX, dy = t.clientY - swSY;
     if(Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+    swipedAt = Date.now();
     var it = lastItems[+row.getAttribute("data-k")];
     if(!it) return;
     var lvl = inspLevel(it.typ, it.f);
@@ -777,19 +779,56 @@ try{
   document.addEventListener("touchend", function(){ hId = null; }, {passive:true});
   document.addEventListener("touchcancel", function(){ hId = null; }, {passive:true});
 
-  /* 連點三下開搜尋 */
+  /* 連點兩下跳返時間線，連點三下開搜尋 */
   var tapTimes = [];
+  var dblTimer = null, lastTapT = 0, lastTapX = 0, lastTapY = 0;
   document.addEventListener("touchend", function(e){
     var now = Date.now();
+    if(now - swipedAt < 500) return;
     tapTimes.push(now);
     while(tapTimes.length && now - tapTimes[0] > 800) tapTimes.shift();
-    if(tapTimes.length < 3) return;
-    tapTimes = [];
-    if($("aboutOverlay").classList.contains("open")) return;
-    if(document.activeElement === q) return;
-    e.preventDefault();
-    q.focus();
+    var tc = e.changedTouches && e.changedTouches[0];
+    var x = tc ? tc.clientX : -9999, y = tc ? tc.clientY : -9999;
+    var isDbl = (tapTimes.length === 2) && (now - lastTapT < 350) &&
+                ((x-lastTapX)*(x-lastTapX) + (y-lastTapY)*(y-lastTapY) < 900);
+    lastTapT = now; lastTapX = x; lastTapY = y;
+    if(tapTimes.length >= 3){
+      if(dblTimer){ clearTimeout(dblTimer); dblTimer = null; }
+      tapTimes = [];
+      if($("aboutOverlay").classList.contains("open")) return;
+      if(document.activeElement === q) return;
+      e.preventDefault();
+      q.focus();
+      return;
+    }
+    if(isDbl && !noteEditingKey &&
+       !$("aboutOverlay").classList.contains("open") &&
+       document.activeElement !== q &&
+       !(e.target.closest && e.target.closest("input,button"))){
+      e.preventDefault();
+      if(dblTimer) clearTimeout(dblTimer);
+      dblTimer = setTimeout(function(){ dblTimer = null; tapTimes = []; jumpToTimeline(); }, 350);
+    }
   }, {passive:false});
+  /* 雙擊後即刻再觸屏（捲動等）就取消跳轉 */
+  document.addEventListener("touchstart", function(){
+    if(dblTimer){ clearTimeout(dblTimer); dblTimer = null; }
+  }, {passive:true});
+
+  /* 雙擊跳返時間線（今日 8 上 42 下，返頂） */
+  function jumpToTimeline(){
+    if($("aboutOverlay").classList.contains("open")) return;
+    if(document.activeElement === q || noteEditingKey) return;
+    if(query){ window.scrollTo({top:0, behavior:"smooth"}); return; }
+    if(dateIdx !== 1){
+      dateIdx = 1;
+      var btns = document.querySelectorAll("#datePills button");
+      for(var i=0;i<btns.length;i++) btns[i].classList.toggle("on", i===1);
+    }
+    expanded = false; detailKey = null; noteEditingKey = null;
+    render();
+    window.scrollTo(0, 0);
+  }
 
   /* 主題 */
   var icoSun = $("icoSun"), icoMoon = $("icoMoon");
