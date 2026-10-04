@@ -681,9 +681,13 @@ try{
   q.addEventListener("input", function(){
     var m = /^([A-Za-z]?\d+)\+$/.exec(q.value.trim());
     if(m){
-      var bay = m[1].toUpperCase();
-      q.value = bay;
-      armWatch(bay);
+      /* BAY+：淨係 arm 提醒，唔過濾列表 */
+      armWatch(m[1].toUpperCase());
+      q.value = ""; query = "";
+      $("qclear").parentElement.classList.remove("hasq");
+      expanded = false; render();
+      q.blur();
+      return;
     }
     query = q.value;
     $("qclear").parentElement.classList.toggle("hasq", !!q.value);
