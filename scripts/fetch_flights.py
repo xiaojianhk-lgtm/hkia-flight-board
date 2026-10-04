@@ -293,8 +293,22 @@ def main() -> int:
     #   silently dropped stand_old whenever the API omitted the gate.)
     # - If the API drops the stand 3 times in a row (45 min), treat it as
     #   genuinely cancelled: show "—" and clear the marker.
+    # - If the old stand is now occupied by a DIFFERENT flight (aircraft
+    #   swap: the bay was reassigned), show "—" immediately.
     def _norm(k, s):
         return prefix_gate(s, prefix_map) if k == "departure" else s
+
+    # 今次所有航班佔用緊嘅泊位（用 display form）
+    current_stands = set()
+    for date in dates:
+        day = days.get(date)
+        if not day:
+            continue
+        for key in ("arrival", "departure"):
+            for fl in day.get(key, []):
+                s = fl.get("stand")
+                if s and s != "—":
+                    current_stands.add(_norm(key, s))
 
     for date in dates:
         day = days.get(date)
@@ -319,8 +333,10 @@ def main() -> int:
                 if not cur or cur == "—":
                     # API 今次冇俾泊位
                     miss = old_stand_miss.get(k, 0) + 1
-                    if miss >= 3:
-                        # 連續 3 次都冇：當真係取消咗，顯示 —，清 marker
+                    # 舊 bay 俾咗另一班機（換飛機）：即刻當取消
+                    bay_taken = bool(prev_d and prev_d != "—" and prev_d in current_stands)
+                    if bay_taken or miss >= 3:
+                        # 真係冇咗：顯示 —，清 marker
                         fl["stand"] = "—"
                         fl.pop("stand_old", None)
                         fl["stand_miss"] = miss
