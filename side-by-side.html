@@ -105,7 +105,6 @@ try{
   .dates button small{font-size:10px; opacity:.8;}
   .dates button.on{border-color:var(--accent2); color:var(--strong); font-weight:600;}
   .countrow{display:flex; justify-content:space-between; align-items:center; padding:8px 4px; gap:8px; flex-wrap:wrap;}
-  .count{font-size:12px; color:var(--muted);}
   .hidecargo{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;}
   .hidecargo input{accent-color:var(--accent2);}
   .searchrow{padding:8px 2px 10px;}
@@ -154,7 +153,6 @@ try{
   /* 手機版計數列逼埋一行：字稍細、間距收窄 */
   @media (max-width:719px){
     .countrow{gap:6px;}
-    .count{font-size:11px;}
     .hidecargo{font-size:11px;}
   }
   /* ---------- 表格 ---------- */
@@ -190,7 +188,6 @@ try{
   /* 泊位右邊色 bar */
   .st{font-weight:700;}
   .stchg{color:var(--red);}
-  .st .dim{font-weight:400;}
   .stold{font-size:11px; color:var(--dim); font-weight:400;}
   /* 取消 */
   tr.cancelled td{opacity:.5;}
@@ -800,7 +797,7 @@ try{
   /* ---------- 泊位到位提醒（隱藏功能：搜尋欄輸入 BAY+） ---------- */
   var watchBays = {};  /* bay -> {seen:{...}}，可同時 watch 多個 */
   var WB_KEY = "hkia-watchbay-v1";
-  function saveWatch(){
+  function saveBayWatch(){
     try{ localStorage.setItem(WB_KEY, JSON.stringify({bays:watchBays})); }catch(e){}
   }
   function loadWatch(){
@@ -834,13 +831,13 @@ try{
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
         flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
-        saveWatch(); showWatchPill();
+        saveBayWatch(); showWatchPill();
       })
       .catch(function(){
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
         flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
-        saveWatch(); showWatchPill();
+        saveBayWatch(); showWatchPill();
       });
     ensureAudio();
     if("Notification" in window && Notification.permission === "default"){
@@ -850,7 +847,7 @@ try{
   function disarmWatch(bay){
     if(bay){ delete watchBays[bay]; }
     else{ watchBays = {}; }
-    saveWatch(); showWatchPill();
+    saveBayWatch(); showWatchPill();
   }
   function showWatchPill(){
     var box = $("watchpills");
@@ -878,7 +875,7 @@ try{
       cur.forEach(function(it){ seen[itemKey(it)] = 1; });
       if(fresh.length) allFresh = allFresh.concat(fresh);
     });
-    saveWatch();
+    saveBayWatch();
     if(allFresh.length) bayAlert(allFresh);
   }
   function bayAlert(list){
@@ -1300,7 +1297,7 @@ try{
           watchBays[bay].seen = watchBays[bay].seen || {};
           flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
         });
-        saveWatch(); showWatchPill();
+        saveBayWatch(); showWatchPill();
       }
     })
     .catch(function(e){
