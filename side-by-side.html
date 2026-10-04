@@ -211,8 +211,10 @@ try{
   tr.rw.dep td.fid{color:var(--cxgreen);}
   tr.rw.noted td{background:rgba(201,162,39,.10);}
   tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(201,162,39,.6);}
+  tr.rw.noted td:last-child{box-shadow:inset -3px 0 0 rgba(201,162,39,.6);}
   [data-theme="light"] tr.rw.noted td{background:rgba(201,162,39,.22);}
   [data-theme="light"] tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(176,141,34,.95);}
+  [data-theme="light"] tr.rw.noted td:last-child{box-shadow:inset -3px 0 0 rgba(176,141,34,.95);}
   .nst{font-size:12px; margin-left:2px;}
   .noteinput{background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:4px 6px; font-size:16px; width:55%;}
   .nbtn{background:var(--input-bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:3px 8px; font-size:12px; cursor:pointer; margin-left:4px;}
@@ -734,6 +736,7 @@ try{
   }
 
   function commitNote(){
+    var sy = window.scrollY;
     var ni = $("noteInput"), si = $("standInput"), k = noteEditingKey;
     noteEditingKey = null;
     if(k){
@@ -745,6 +748,7 @@ try{
       if(!(WATCH[k] && WATCH[k].note)) detailKey = null;
     }
     render();
+    window.scrollTo(0, sy);
   }
   function deleteNote(typ, f){
     var k = noteEditingKey;
@@ -856,7 +860,7 @@ try{
     Object.keys(watchBays).sort().forEach(function(bay){
       var d = document.createElement("div");
       d.className = "watchpill";
-      d.innerHTML = "👁 <span>"+esc(bay)+"</span> 到位提醒 <button aria-label='取消提醒' data-unwatch='"+esc(bay)+"'>✕</button>";
+      d.innerHTML = "已關注 <span>"+esc(bay)+"</span> <button aria-label='取消提醒' data-unwatch='"+esc(bay)+"'>✕</button>";
       box.appendChild(d);
     });
     box.hidden = !watchCount();
