@@ -509,9 +509,18 @@ try{
 
   function getLists(){
     if(!DB || !DB.dates || !DB.days) return {arr:[], dep:[]};
-    var d = DB.dates[dateIdx];
-    var arr = (DB.days[d] && DB.days[d].arrival) || [];
-    var dep = (DB.days[d] && DB.days[d].departure) || [];
+    /* 按實際日期分頁：掃全部日期，取有效日期等於目標日期嘅航班 */
+    var target = DB.dates[dateIdx];
+    var arr = [], dep = [];
+    Object.keys(DB.days).forEach(function(d){
+      var day = DB.days[d];
+      (day.arrival || []).forEach(function(f){
+        if((effDate(f) || d) === target) arr.push(f);
+      });
+      (day.departure || []).forEach(function(f){
+        if((effDate(f) || d) === target) dep.push(f);
+      });
+    });
     var flt = function(f){
       if(hideCargo && f.cargo) return false;
       if(hidePax && !f.cargo) return false;
