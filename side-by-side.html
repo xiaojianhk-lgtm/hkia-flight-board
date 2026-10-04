@@ -779,9 +779,9 @@ try{
   document.addEventListener("touchend", function(){ hId = null; }, {passive:true});
   document.addEventListener("touchcancel", function(){ hId = null; }, {passive:true});
 
-  /* 連點兩下跳返時間線，連點三下開搜尋 */
+  /* 連點兩下跳返時間線，連點三下開搜尋（三下嗰陣會先跳一次，無害） */
   var tapTimes = [];
-  var dblTimer = null, lastTapT = 0, lastTapX = 0, lastTapY = 0;
+  var lastTapT = 0, lastTapX = 0, lastTapY = 0;
   document.addEventListener("touchend", function(e){
     var now = Date.now();
     if(now - swipedAt < 500) return;
@@ -789,11 +789,10 @@ try{
     while(tapTimes.length && now - tapTimes[0] > 800) tapTimes.shift();
     var tc = e.changedTouches && e.changedTouches[0];
     var x = tc ? tc.clientX : -9999, y = tc ? tc.clientY : -9999;
-    var isDbl = (tapTimes.length === 2) && (now - lastTapT < 350) &&
-                ((x-lastTapX)*(x-lastTapX) + (y-lastTapY)*(y-lastTapY) < 900);
+    var isDbl = (tapTimes.length === 2) && (now - lastTapT < 400) &&
+                ((x-lastTapX)*(x-lastTapX) + (y-lastTapY)*(y-lastTapY) < 1600);
     lastTapT = now; lastTapX = x; lastTapY = y;
     if(tapTimes.length >= 3){
-      if(dblTimer){ clearTimeout(dblTimer); dblTimer = null; }
       tapTimes = [];
       if($("aboutOverlay").classList.contains("open")) return;
       if(document.activeElement === q) return;
@@ -806,14 +805,18 @@ try{
        document.activeElement !== q &&
        !(e.target.closest && e.target.closest("input,button"))){
       e.preventDefault();
-      if(dblTimer) clearTimeout(dblTimer);
-      dblTimer = setTimeout(function(){ dblTimer = null; tapTimes = []; jumpToTimeline(); }, 350);
+      jumpToTimeline();
     }
   }, {passive:false});
-  /* 雙擊後即刻再觸屏（捲動等）就取消跳轉 */
-  document.addEventListener("touchstart", function(){
-    if(dblTimer){ clearTimeout(dblTimer); dblTimer = null; }
-  }, {passive:true});
+  /* dblclick 做後備：上面 touchend 漏咗（冇 preventDefault）嗰陣先會觸發 */
+  document.addEventListener("dblclick", function(e){
+    if(noteEditingKey) return;
+    if($("aboutOverlay").classList.contains("open")) return;
+    if(document.activeElement === q) return;
+    if(e.target.closest && e.target.closest("input,button")) return;
+    e.preventDefault();
+    jumpToTimeline();
+  });
 
   /* 雙擊跳返時間線：未展開就返頂；展開緊就唔收起，淨係將 nowline 捲返時間線位置附近 */
   function jumpToTimeline(){
