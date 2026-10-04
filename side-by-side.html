@@ -316,7 +316,6 @@ try{
       <button id="qclear" class="qclear" aria-label="清除">✕</button>
     </div>
     <div id="watchpill" class="watchpill" hidden>👁 <span id="watchbay"></span> 到位提醒 <button id="watchx" aria-label="取消提醒">✕</button></div>
-    <div id="flightpill" class="watchpill" hidden>👁 <span id="watchflightid"></span> 有 bay 提醒 <button id="flightx" aria-label="取消提醒">✕</button></div>
   </div>
 </div></div>
 
@@ -713,19 +712,9 @@ try{
   q.addEventListener("input", function(){
     var v = q.value.trim();
     var mBay = /^([A-Za-z]?\d+)\+$/.exec(v);
-    var mFlight = /^([A-Za-z]{2,3}\d{1,4})\+$/.exec(v);
     if(mBay){
       /* BAY+：淨係 arm 泊位提醒，唔過濾列表 */
       armWatch(mBay[1].toUpperCase());
-      q.value = ""; query = "";
-      $("qclear").parentElement.classList.remove("hasq");
-      expanded = false; render();
-      q.blur();
-      return;
-    }
-    if(mFlight){
-      /* FLIGHT+：淨係 arm 航班提醒，唔過濾列表 */
-      armFlightWatch(mFlight[1]);
       q.value = ""; query = "";
       $("qclear").parentElement.classList.remove("hasq");
       expanded = false; render();
@@ -823,100 +812,6 @@ try{
   $("waOk").addEventListener("click", function(){ $("watchalert").hidden = true; });
   $("watchx").addEventListener("click", function(){ disarmWatch(); });
 
-  /* ---------- 航班有 bay 提醒（隱藏功能：搜尋欄輸入 FLIGHT+，例如 CX138+） ---------- */
-  var watchFlight = null, watchFlightBay = null;
-  var WF_KEY = "hkia-watchflight-v1";
-  function saveFlightWatch(){
-    try{ localStorage.setItem(WF_KEY, JSON.stringify({flight:watchFlight, bay:watchFlightBay})); }catch(e){}
-  }
-  function loadFlightWatch(){
-    try{
-      var wf = JSON.parse(localStorage.getItem(WF_KEY) || "null");
-      if(wf && wf.flight){ watchFlight = wf.flight; watchFlightBay = wf.bay || "—"; }
-    }catch(e){}
-  }
-  function findFlight(fid){
-    if(!DB) return null;
-    var norm = String(fid).toUpperCase().replace(/\s+/g, "");
-    var g = getLists();
-    var all = g.arr.concat(g.dep);
-    for(var i=0;i<all.length;i++){
-      var first = String(all[i].flight_id || "").split(" / ")[0].replace(/\s+/g, "").toUpperCase();
-      if(first === norm) return all[i];
-    }
-    return null;
-  }
-  function armFlightWatch(fid){
-    fid = String(fid).toUpperCase();
-    var oldF = findFlight(fid);
-    var oldBay = oldF ? (oldF.stand || "—") : "—";
-    /* arm 即刻拉一次新數據，唔使用戶等 15 分鐘 */
-    fetch("data.json?_="+Date.now(), {cache:"no-store"})
-      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(d){
-        if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
-          DB = d;
-          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
-          buildDates(); render();
-        }
-        var f = findFlight(fid);
-        var newBay = f ? (f.stand || "—") : "—";
-        watchFlight = fid;
-        watchFlightBay = newBay;
-        saveFlightWatch(); showFlightPill();
-        if(oldBay === "—" && newBay !== "—" && f){
-          /* arm 嗰陣未有，拉完即刻有 → 立即通知 */
-          flightAlert(f, newBay);
-        }else if(newBay !== "—"){
-          /* 已經有 bay，話俾用戶知，唔係靜靜無嘢 */
-          $("waBay").textContent = fid;
-          $("waList").innerHTML = "<div><b>"+esc(fid)+"</b> 而家個 bay 係：<b>"+esc(newBay)+"</b></div>";
-          $("watchalert").hidden = false;
-        }
-      })
-      .catch(function(){
-        var f2 = findFlight(fid);
-        watchFlight = fid;
-        watchFlightBay = f2 ? (f2.stand || "—") : "—";
-        saveFlightWatch(); showFlightPill();
-      });
-    if("Notification" in window && Notification.permission === "default"){
-      try{ Notification.requestPermission(); }catch(e){}
-    }
-  }
-  function disarmFlightWatch(){
-    watchFlight = null; watchFlightBay = null;
-    saveFlightWatch(); $("flightpill").hidden = true;
-    setBarH();
-  }
-  function showFlightPill(){
-    if(!watchFlight) return;
-    $("watchflightid").textContent = watchFlight;
-    $("flightpill").hidden = false;
-    setBarH();
-  }
-  function checkFlightWatch(){
-    if(!watchFlight || !DB) return;
-    var f = findFlight(watchFlight);
-    if(!f) return;
-    var curBay = f.stand || "—";
-    if(curBay !== "—" && curBay !== watchFlightBay){
-      flightAlert(f, curBay);
-    }
-    watchFlightBay = curBay;
-    saveFlightWatch();
-  }
-  function flightAlert(f, bay){
-    $("waBay").textContent = watchFlight;
-    $("waList").innerHTML = "<div><b>"+esc(f.flight_id)+"</b> 已有 bay：<b>"+esc(bay)+"</b></div>";
-    $("watchalert").hidden = false;
-    /* 唔響唔震，淨係彈通知 */
-    if("Notification" in window && Notification.permission === "granted"){
-      try{ new Notification("🔔 "+watchFlight+" 已有 bay", {body: bay}); }catch(e){}
-    }
-  }
-  $("flightx").addEventListener("click", function(){ disarmFlightWatch(); });
-  loadFlightWatch();
   var audioCtx = null;
   function ensureAudio(){
     try{
@@ -1177,7 +1072,7 @@ try{
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
           buildDates();
-          checkBayWatch(); checkFlightWatch();
+          checkBayWatch();
           done("updated");
         }else{
           done("latest");
@@ -1304,11 +1199,6 @@ try{
         flightsAt(watchBay).forEach(function(it){ watchSeen[itemKey(it)] = 1; });
         saveWatch(); showWatchPill();
       }
-      if(watchFlight){
-        var ff = findFlight(watchFlight);
-        watchFlightBay = ff ? (ff.stand || "—") : "—";
-        saveFlightWatch(); showFlightPill();
-      }
     })
     .catch(function(e){
       $("rows").innerHTML = "<tr><td colspan='5' style='text-align:center;color:var(--red);padding:24px;'>載入失敗："+esc(e.message)+"</td></tr>";
@@ -1321,7 +1211,7 @@ try{
   });
   setInterval(function(){
     if(!DB || document.visibilityState !== "visible") return;
-    if(Date.now() - lastActive < 60000) return;
+    if(Date.now() - lastActive < 60000 && !watchBay) return;
     if(detailKey || noteEditingKey) return;
     if(document.activeElement === q) return;
     if(overlay.classList.contains("open")) return;
@@ -1334,7 +1224,7 @@ try{
           $("headTs").textContent = d.generated_at;
           buildDates(); render();
           if(keepEx){ expanded = true; render(); }
-          checkBayWatch(); checkFlightWatch();
+          checkBayWatch();
           /* 展開／搜尋緊就還原舊位，否則停返時間線（上面8班，下面42班） */
           if(keepEx || query){ if(sy) window.scrollTo(0, sy); }
           else window.scrollTo(0, 0);
