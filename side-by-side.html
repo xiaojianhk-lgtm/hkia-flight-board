@@ -250,6 +250,8 @@ try{
     max-height:84vh; overflow-y:auto;
   }
   .about-card h3{margin:0 0 10px; font-size:17px;}
+  .about-card h4{margin:14px 0 6px; font-size:12px; letter-spacing:2px; color:var(--accent2); font-weight:700;}
+  .about-card h4:first-of-type{margin-top:2px;}
   .about-card ul{margin:0 0 10px; padding-left:20px; font-size:13px;}
   .about-card li{margin-bottom:7px;}
   .about-card button{
@@ -267,17 +269,29 @@ try{
 <div id="aboutOverlay" role="dialog" aria-modal="true" aria-label="關於">
   <div class="about-card">
     <h3>關於並排版</h3>
+    <h4>識讀</h4>
     <ul>
-      <li>到港喺左、離港喺右，同一頁睇晒。</li>
-      <li>每行左緣箭頭：↓=到港、↑=離港。離港航班編號係<span style="color:var(--cxgreen)">國泰綠</span>。</li>
-      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：已降落嘅顯示實際時間＋A、預計到達＋E、得原定時間嘅顯示<span style="color:var(--dim)">淺灰色＋S</span>。離港：未起飛顯示時間＋E（有變會變<span style="color:var(--red)">紅色</span>），已起飛嘅顯示實際時間＋A。</li>
+      <li>到港喺左、離港喺右，同一版睇晒。</li>
+      <li>行首箭頭：↓=到港、↑=離港。離港航班編號係<span style="color:var(--cxgreen)">國泰綠</span>。</li>
+      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：<b>A</b>=已降落、<b>E</b>=預計到達、<span style="color:var(--dim)"><b>S</b>=淨得原定時間</span>。離港：<b>E</b>=未起飛（有變會轉<span style="color:var(--red)">紅色</span>）、<b>A</b>=已起飛。</li>
       <li>離港時間減 50 分鐘後同到港一齊排序（對應前一班到港航機）。</li>
-      <li>泊位右邊色 bar：<span style="color:var(--blue)">藍</span>=南、<span style="color:var(--stN)">橙</span>=北、<span style="color:var(--stW)">紫</span>=西、灰=R/數字。</li>
-      <li>長按航班其他位加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
-      <li>喺航班上向左滑：航班編號加<span style="color:var(--red)">紅色✓</span>（一次巡視）；再滑多下，時間都會加✓（二次巡視）。向右滑逐級取消。</li>
-      <li>連點兩下屏幕：跳返時間線；連點三下：開搜尋。</li>
-      <li>長按泊位：高亮所有同區泊位（S藍／N橙／W紫／R灰）；再長按取消，長按另一區會轉過去。</li>
-      <li>每 15 分鐘自動更新（閒置先會靜靜換）。</li>
+    </ul>
+    <h4>操作</h4>
+    <ul>
+      <li>喺航班上向左滑：加<span style="color:var(--red)">紅色✓</span>巡視標記（一次編號、兩次連時間）；向右滑逐級取消。</li>
+      <li>長按航班：加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
+      <li>長按泊位：高亮所有同區泊位（再長按取消，長按另一區轉過去）。</li>
+      <li>連點兩下：跳返時間線；連點三下：開搜尋。</li>
+    </ul>
+    <h4>泊位提醒</h4>
+    <ul>
+      <li>搜尋欄輸入 <b>W63+</b>：之後有新航班入該泊位，就彈通知＋響三聲＋震動。</li>
+      <li>提醒 arm 咗之後，每 15 分鐘自動檢查（碌緊 page 都會）。page 要開住先會響。</li>
+    </ul>
+    <h4>數據</h4>
+    <ul>
+      <li>每 15 分鐘自動更新（閒置先會靜靜換）；亦可向下拉手動更新。</li>
+    </ul>
     </ul>
     <button id="aboutClose">關閉</button>
   </div>
@@ -287,7 +301,7 @@ try{
   <div class="row1">
     <svg class="plane-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
     <h2>航班資訊</h2>
-    <span class="caps">FLIGHT INFORMATION · HKG · 到港離港並排</span>
+    <span class="caps">FLIGHT INFORMATION · HKG</span>
     <button id="aboutBtn" class="linkbtn">關於</button>
   </div>
 </header>
