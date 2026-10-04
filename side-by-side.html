@@ -815,7 +815,7 @@ try{
     if(dblTimer){ clearTimeout(dblTimer); dblTimer = null; }
   }, {passive:true});
 
-  /* 雙擊跳返時間線（今日 8 上 42 下，返頂） */
+  /* 雙擊跳返時間線：未展開就返頂；展開緊就唔收起，淨係將 nowline 捲返時間線位置附近 */
   function jumpToTimeline(){
     if($("aboutOverlay").classList.contains("open")) return;
     if(document.activeElement === q || noteEditingKey) return;
@@ -824,10 +824,22 @@ try{
       dateIdx = 1;
       var btns = document.querySelectorAll("#datePills button");
       for(var i=0;i<btns.length;i++) btns[i].classList.toggle("on", i===1);
+      expanded = false; detailKey = null; noteEditingKey = null;
+      render();
+      window.scrollTo(0, 0);
+      return;
     }
-    expanded = false; detailKey = null; noteEditingKey = null;
     render();
-    window.scrollTo(0, 0);
+    if(!expanded){ window.scrollTo(0, 0); return; }
+    var nl = document.querySelector("tr.nowline");
+    if(!nl){ window.scrollTo(0, 0); return; }
+    var rw = document.querySelector("tr.rw");
+    var rowH = rw ? rw.getBoundingClientRect().height : 34;
+    var xr = document.querySelector("tr.xrow");
+    var xH = xr ? xr.getBoundingClientRect().height : 0;
+    var thr = document.querySelector("thead").getBoundingClientRect();
+    var wantTop = thr.top + thr.height + xH + 8 * rowH;
+    window.scrollTo(0, window.scrollY + (nl.getBoundingClientRect().top - wantTop));
   }
 
   /* 主題 */
