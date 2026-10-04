@@ -736,6 +736,11 @@ try{
   }
 
   function commitNote(){
+    /* 釘死個畫面，唔俾 iOS 收鍵盤嗰陣推郁 */
+    var sy = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = (-sy) + "px";
+    document.body.style.width = "100%";
     var ae = document.activeElement;
     if(ae && ae.blur) ae.blur();
     var ni = $("noteInput"), si = $("standInput"), k = noteEditingKey;
@@ -749,6 +754,13 @@ try{
       if(!(WATCH[k] && WATCH[k].note)) detailKey = null;
     }
     render();
+    /* 等鍵盤收完先解釘 */
+    setTimeout(function(){
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, sy);
+    }, 400);
   }
   function deleteNote(typ, f){
     var k = noteEditingKey;
