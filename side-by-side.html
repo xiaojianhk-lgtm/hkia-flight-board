@@ -180,6 +180,8 @@ try{
   tr.rw.dep td.fid{color:var(--cxgreen);}
   tr.rw.noted td{background:rgba(201,162,39,.10);}
   tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(201,162,39,.6);}
+  [data-theme="light"] tr.rw.noted td{background:rgba(201,162,39,.22);}
+  [data-theme="light"] tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(176,141,34,.95);}
   .nst{font-size:12px; margin-left:2px;}
   .noteinput{background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:4px 6px; font-size:16px; width:55%;}
   .nbtn{background:var(--input-bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:3px 8px; font-size:12px; cursor:pointer; margin-left:4px;}
@@ -194,6 +196,20 @@ try{
     background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
     padding:8px 18px; font-size:13px; cursor:pointer;
   }
+  /* 下拉更新 */
+  #ptr{
+    position:fixed; top:10px; left:50%; z-index:45; pointer-events:none;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    transform:translate(-50%,-80px); opacity:0;
+    transition:transform .22s ease-out, opacity .22s;
+  }
+  #ptr .ptrspin{
+    width:26px; height:26px; border-radius:50%;
+    border:3px solid var(--line); border-top-color:var(--accent);
+  }
+  #ptr.refreshing .ptrspin{ animation:ptrspin .7s linear infinite; }
+  @keyframes ptrspin{ to{ transform:rotate(360deg); } }
+  #ptr .ptrlabel{ font-size:11px; color:var(--muted); white-space:nowrap; }
   /* 關於 */
   #aboutOverlay{
     position:fixed; inset:0; z-index:60; background:var(--overlay-bg);
@@ -275,6 +291,7 @@ try{
 </div></div>
 
 <main>
+  <div id="ptr" aria-hidden="true"><div class="ptrspin"></div><div class="ptrlabel">下拉更新</div></div>
   <table>
     <colgroup>
       <col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%">
@@ -781,10 +798,95 @@ try{
   document.addEventListener("touchend", function(){ hId = null; }, {passive:true});
   document.addEventListener("touchcancel", function(){ hId = null; }, {passive:true});
 
+  /* 下拉更新：在頂部向下拉，鬆手更新數據＋跳返時間線 */
+  var ptrEl = $("ptr"), ptrSpin = ptrEl.querySelector(".ptrspin"), ptrLabel = ptrEl.querySelector(".ptrlabel");
+  var pId = null, pSX = 0, pSY = 0, pPull = 0, pActive = false, pRefreshing = false, ptrAteTap = false;
+  function ptrShow(dy, refreshing){
+    if(refreshing){
+      ptrEl.classList.add("refreshing");
+      ptrEl.style.transition = "";
+      ptrEl.style.transform = "translate(-50%,0px)";
+      ptrEl.style.opacity = 1;
+      ptrSpin.style.transform = "";
+      ptrLabel.textContent = "更新中…";
+      return;
+    }
+    ptrEl.classList.remove("refreshing");
+    var show = Math.min(dy * 0.55, 58);
+    ptrEl.style.transition = "none";
+    ptrEl.style.transform = "translate(-50%," + (show - 80) + "px)";
+    ptrEl.style.opacity = Math.min(1, dy / 48);
+    ptrSpin.style.transform = "rotate(" + Math.min(dy * 4, 360) + "deg)";
+    ptrLabel.textContent = dy > 70 ? "放開更新" : "下拉更新";
+  }
+  function ptrHide(){
+    ptrEl.classList.remove("refreshing");
+    ptrEl.style.transition = "";
+    ptrEl.style.transform = "translate(-50%,-80px)";
+    ptrEl.style.opacity = 0;
+  }
+  document.addEventListener("touchstart", function(e){
+    if(pRefreshing || pActive) return;
+    if(e.touches.length !== 1) return;
+    if(window.scrollY > 0) return;
+    if($("aboutOverlay").classList.contains("open")) return;
+    if(document.activeElement === q) return;
+    var t = e.touches[0];
+    pId = t.identifier; pSX = t.clientX; pSY = t.clientY; pPull = 0; pActive = true;
+  }, {passive:true});
+  document.addEventListener("touchmove", function(e){
+    if(!pActive || pRefreshing) return;
+    var t = null;
+    for(var i=0;i<e.touches.length;i++) if(e.touches[i].identifier === pId) t = e.touches[i];
+    if(!t){ pActive = false; return; }
+    var dx = t.clientX - pSX, dy = t.clientY - pSY;
+    if(dy <= 0 || Math.abs(dx) > dy * 1.2){ pActive = false; pPull = 0; ptrHide(); return; }
+    e.preventDefault();
+    pPull = Math.min(dy, 150);
+    ptrShow(pPull, false);
+  }, {passive:false});
+  document.addEventListener("touchend", function(e){
+    if(!pActive) return;
+    pActive = false;
+    var pulled = pPull; pPull = 0;
+    if(pulled > 12){
+      ptrAteTap = true;
+      tapTimes.length = 0; lastTapT = 0;
+      suppressClick = true;
+      setTimeout(function(){ suppressClick = false; }, 800);
+    }
+    if(pRefreshing){ ptrHide(); return; }
+    if(pulled > 70){
+      pRefreshing = true;
+      ptrShow(0, true);
+      doPullRefresh(function(){
+        pRefreshing = false;
+        ptrHide();
+        jumpToTimeline();
+      });
+    }else{
+      ptrHide();
+    }
+  }, {passive:true});
+  function doPullRefresh(done){
+    fetch("data.json?_="+Date.now(), {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(d){
+        if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
+          DB = d;
+          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
+          buildDates();
+        }
+        done();
+      })
+      .catch(function(){ done(); });
+  }
+
   /* 連點兩下跳返時間線，連點三下開搜尋（三下嗰陣會先跳一次，無害） */
   var tapTimes = [];
   var lastTapT = 0, lastTapX = 0, lastTapY = 0;
   document.addEventListener("touchend", function(e){
+    if(ptrAteTap){ ptrAteTap = false; return; }
     var now = Date.now();
     if(now - swipedAt < 500) return;
     tapTimes.push(now);
