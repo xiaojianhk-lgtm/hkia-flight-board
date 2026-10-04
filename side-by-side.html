@@ -662,11 +662,11 @@ try{
       var tj = eff(items[j].f);
       if(tj && tj !== "—" && items[j].sk >= nowMin){ divPos = j; break; }
     }
-    /* 今日：時間線之前 8 班開始顯示 50 班（上面8班，下面42班） */
-    var start = 0, showN = 50;
+    /* 今日：時間線之前 18 班開始顯示 60 班（上面18班，下面42班）；開頁／雙擊停喺上8班位置 */
+    var start = 0, showN = 60;
     if(!expanded && !query && dateIdx === 1 && items.length){
-      showN = Math.min(50, items.length);
-      start = Math.max(0, Math.min(divPos - 8, items.length - showN));
+      showN = Math.min(60, items.length);
+      start = Math.max(0, Math.min(divPos - 18, items.length - showN));
     }
     var list = expanded ? items : items.slice(start, start + showN);
     lastItems = list;
@@ -677,8 +677,9 @@ try{
     var nowLabel = showNow ? now2 : "";
     divPos = Math.max(0, divPos - start);
 
+    var xrowShow = (window.scrollY < 60) ? "" : " style='display:none'";
     var html = (items.length > showN)
-      ? "<tr class='xrow'><td colspan='5'><button class='xrowbtn'>"+(expanded?"收起":"展開全部 "+items.length+" 班航班")+"</button></td></tr>"
+      ? "<tr class='xrow'"+xrowShow+"><td colspan='5'><button class='xrowbtn'>"+(expanded?"收起":"展開全部 "+items.length+" 班航班")+"</button></td></tr>"
       : "";
     for(var i=0;i<list.length;i++){
       if(showNow && i === divPos){
@@ -1227,13 +1228,13 @@ try{
       for(var i=0;i<btns.length;i++) btns[i].classList.toggle("on", i===1);
       expanded = false; detailKey = null; noteEditingKey = null;
       render();
-      window.scrollTo(0, 0);
+      scrollToEightAbove();
       return;
     }
     render();
-    if(!expanded){ window.scrollTo(0, 0); return; }
+    if(!expanded){ scrollToEightAbove(); return; }
     var nl = document.querySelector("tr.nowline");
-    if(!nl){ window.scrollTo(0, 0); return; }
+    if(!nl){ scrollToEightAbove(); return; }
     var rw = document.querySelector("tr.rw");
     var rowH = rw ? rw.getBoundingClientRect().height : 34;
     var xr = document.querySelector("tr.xrow");
@@ -1242,6 +1243,27 @@ try{
     var wantTop = thr.top + thr.height + xH + 8 * rowH;
     window.scrollTo(0, window.scrollY + (nl.getBoundingClientRect().top - wantTop));
   }
+
+  /* 捲到「時間線上 8 班」嘅位置（上面仲有 10 班，要碌上去先見到） */
+  function scrollToEightAbove(){
+    var rows = document.querySelectorAll("#rows tr.rw");
+    /* 時間線喺 list index 18，要第 10 班（index 10）置頂，即係上面留 8 班 */
+    var target = rows[10];
+    var thr = document.querySelector("thead th");
+    if(target && thr){
+      var thRect = thr.getBoundingClientRect();
+      var top = thRect.top + thRect.height;
+      window.scrollTo(0, window.scrollY + target.getBoundingClientRect().top - top);
+    }else{
+      window.scrollTo(0, 0);
+    }
+  }
+
+  /* 頂部「展開全部」掣：碌到最頂先出現 */
+  window.addEventListener("scroll", function(){
+    var xr = document.querySelector("tr.xrow");
+    if(xr) xr.style.display = (window.scrollY < 60) ? "" : "none";
+  }, {passive:true});
 
   /* 主題 */
   var icoSun = $("icoSun"), icoMoon = $("icoMoon");
@@ -1287,8 +1309,8 @@ try{
       $("headTs").textContent = d.generated_at || "—";
       buildDates();
       render();
-      /* 開頁停喺時間線：上面8班，下面42班 */
-      window.scrollTo(0, 0);
+      /* 開頁停喺時間線上 8 班（上面仲有 10 班，要碌上去先見） */
+      scrollToEightAbove();
       /* 還原提醒（唔響，淨係同步狀態） */
       if(watchCount()){
         Object.keys(watchBays).forEach(function(bay){
@@ -1323,9 +1345,9 @@ try{
           buildDates(); render();
           if(keepEx){ expanded = true; render(); }
           checkBayWatch();
-          /* 展開／搜尋緊就還原舊位，否則停返時間線（上面8班，下面42班） */
+          /* 展開／搜尋緊就還原舊位，否則停返時間線上 8 班 */
           if(keepEx || query){ if(sy) window.scrollTo(0, sy); }
-          else window.scrollTo(0, 0);
+          else scrollToEightAbove();
         }
       })
       .catch(function(){});
