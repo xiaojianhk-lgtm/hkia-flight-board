@@ -623,7 +623,10 @@ try{
     }else{
       mark = (f.ata && f.ata !== "—") ? "A" : "E";
     }
-    var txt = opId(f) + " " + t + mark + " · " + (f.stand || "—");
+    var txt = opId(f) + " " + t + mark + " · " + (manualStand(typ, f) || f.stand || "—");
+    var w = WATCH[watchKey(typ, f)];
+    var note = w ? (w.note || "") : "";
+    if(note) txt += " (" + note + ")";
     var done = function(){ showToast("已複製：" + txt); };
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt); done(); });
