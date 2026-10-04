@@ -445,20 +445,18 @@ try{
   function arrTimeHtml(f){
     var noAta = !(f.ata && f.ata !== "—");
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
-    var dt = dateTag(f);
-    if(!noAta) return esc(f.ata)+"<span class='tmark'>A</span>"+dt;
-    if(estShown) return esc(f.est)+"<span class='tmark'>E</span>"+dt;
+    if(!noAta) return esc(f.ata)+"<span class='tmark'>A</span>";
+    if(estShown) return esc(f.est)+"<span class='tmark'>E</span>";
     return "<span class='tsta'>"+esc(f.eta || "—")+"<span class='tmark'>S</span></span>";
   }
   /* 離港時間顯示：已起飛正常顯示＋A、有變（預計同原定唔同）就紅色，否則原色 */
   function depTimeHtml(f){
     var t = eff(f);
-    var dt = dateTag(f);
     var flown = f.ata && f.ata !== "—";
-    if(flown) return esc(t)+"<span class='tmark'>A</span>"+dt;
+    if(flown) return esc(t)+"<span class='tmark'>A</span>";
     var changed = f.est && f.est !== "—" && f.est !== f.eta;
-    if(changed) return "<span class='tchg'>"+esc(t)+"</span><span class='tmark'>E</span>"+dt;
-    return esc(t)+"<span class='tmark'>E</span>"+dt;
+    if(changed) return "<span class='tchg'>"+esc(t)+"</span><span class='tmark'>E</span>";
+    return esc(t)+"<span class='tmark'>E</span>";
   }
   function toMin(t){
     var m = /^(\d{1,2}):(\d{2})/.exec(t || "");
@@ -692,7 +690,7 @@ try{
       var key = itemKey(it);
       var ilv = inspLevel(typ, f);
       var adir = "<span class='adir'>"+(typ==="arrival"?"↓":"↑")+"</span>";
-      var fidCell = "<td class='fid'>"+(typ==="arrival"?adir:"")+esc(opId(f))+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
+      var fidCell = "<td class='fid'>"+(typ==="arrival"?adir:"")+esc(opId(f))+dateTag(f)+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
       var tMark2 = ilv>=2 ? "<span class='tmark inspk'>✓</span>" : "";
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
