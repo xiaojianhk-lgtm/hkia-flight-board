@@ -198,10 +198,11 @@ try{
     vertical-align:1px; font-weight:400;
   }
   .cbadge.cancel{background:rgba(211,47,47,.14); color:var(--red); border-color:var(--red); font-weight:700;}
-  /* 而家分隔線 */
+  /* 而家分隔線：時間對準 ETA 欄中心（21+20+9.5=50.5%） */
   tr.nowline td{padding:6px 3px; border-bottom:1px solid var(--line);}
   .nl{display:flex; align-items:center; gap:8px; color:var(--accent); font-size:13px; font-weight:700; letter-spacing:2px; white-space:nowrap;}
-  .nl::before,.nl::after{content:""; flex:1; height:2px; background:var(--accent); opacity:.45;}
+  .nl::before{content:""; flex:505; height:2px; background:var(--accent); opacity:.45;}
+  .nl::after{content:""; flex:495; height:2px; background:var(--accent); opacity:.45;}
   /* 詳情 */
   tr.rw{cursor:pointer; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;}
   tr.drow td{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 12px; white-space:normal;}
@@ -342,7 +343,7 @@ try{
   <div id="ptr" aria-hidden="true"><div class="ptrspin"></div><div class="ptrlabel">下拉更新</div></div>
   <table>
     <colgroup>
-      <col style="width:23%"><col style="width:21%"><col style="width:19%"><col style="width:19%"><col style="width:18%">
+      <col style="width:21%"><col style="width:20%"><col style="width:19%"><col style="width:19%"><col style="width:21%">
     </colgroup>
     <thead>
       <tr>
