@@ -64,16 +64,18 @@ try{
     border-bottom:1px solid var(--line);
     padding:10px 16px 10px 24px; padding-right:104px;
   }
-  header .row1{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  .plane-ico{width:24px; height:24px; color:var(--accent2); flex:none;}
-  header h2{font-size:19px; margin:0; letter-spacing:4px;}
+  header .row1{display:flex; align-items:center; gap:10px;}
+  .plane-ico{width:26px; height:26px; color:var(--accent2); flex:none;}
+  .titleblock{display:flex; flex-direction:column; gap:3px;}
+  header h2{font-size:19px; margin:0; letter-spacing:4px; line-height:1.1;}
   header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
-  #aboutBtn{margin-left:auto;}
+  header .caps .hkg{color:var(--accent2); font-weight:800;}
+  #aboutBtn{margin-left:auto; align-self:flex-start; margin-top:2px;}
   .linkbtn{
-    background:none; border:1px solid var(--line); border-radius:14px;
-    color:var(--accent2); font-size:12px; cursor:pointer; padding:5px 12px; letter-spacing:2px;
+    background:none; border:0;
+    color:var(--muted); font-size:12px; cursor:pointer; padding:6px 2px; letter-spacing:2px;
   }
-  .linkbtn:active{transform:scale(.95);}
+  .linkbtn:active{opacity:.55;}
   /* ---------- sticky 頂部 ---------- */
   .stickybar{
     position:-webkit-sticky; position:sticky; top:0; z-index:10;
@@ -300,8 +302,10 @@ try{
 <header>
   <div class="row1">
     <svg class="plane-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
-    <h2>航班資訊</h2>
-    <span class="caps">FLIGHT INFORMATION · HKG</span>
+    <div class="titleblock">
+      <h2>航班資訊</h2>
+      <span class="caps">FLIGHT INFORMATION · <span class="hkg">HKG</span></span>
+    </div>
     <button id="aboutBtn" class="linkbtn">關於</button>
   </div>
 </header>
