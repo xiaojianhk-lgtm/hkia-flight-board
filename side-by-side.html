@@ -840,7 +840,7 @@ try{
     var rowH = rw ? rw.getBoundingClientRect().height : 34;
     var xr = document.querySelector("tr.xrow");
     var xH = xr ? xr.getBoundingClientRect().height : 0;
-    var thr = document.querySelector("thead").getBoundingClientRect();
+    var thr = document.querySelector("thead th").getBoundingClientRect();
     var wantTop = thr.top + thr.height + xH + 8 * rowH;
     window.scrollTo(0, window.scrollY + (nl.getBoundingClientRect().top - wantTop));
   }
