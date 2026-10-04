@@ -758,9 +758,24 @@ try{
     return out;
   }
   function armWatch(bay){
-    watchBay = bay; watchSeen = {};
-    flightsAt(bay).forEach(function(it){ watchSeen[itemKey(it)] = 1; });
-    saveWatch(); showWatchPill();
+    /* arm 即刻拉一次新數據 */
+    fetch("data.json?_="+Date.now(), {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(d){
+        if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
+          DB = d;
+          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
+          buildDates(); render();
+        }
+        watchBay = bay; watchSeen = {};
+        flightsAt(bay).forEach(function(it){ watchSeen[itemKey(it)] = 1; });
+        saveWatch(); showWatchPill();
+      })
+      .catch(function(){
+        watchBay = bay; watchSeen = {};
+        flightsAt(bay).forEach(function(it){ watchSeen[itemKey(it)] = 1; });
+        saveWatch(); showWatchPill();
+      });
     ensureAudio();
     if("Notification" in window && Notification.permission === "default"){
       try{ Notification.requestPermission(); }catch(e){}
@@ -831,10 +846,38 @@ try{
   }
   function armFlightWatch(fid){
     fid = String(fid).toUpperCase();
-    var f = findFlight(fid);
-    watchFlight = fid;
-    watchFlightBay = f ? (f.stand || "—") : "—";
-    saveFlightWatch(); showFlightPill();
+    var oldF = findFlight(fid);
+    var oldBay = oldF ? (oldF.stand || "—") : "—";
+    /* arm 即刻拉一次新數據，唔使用戶等 15 分鐘 */
+    fetch("data.json?_="+Date.now(), {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(d){
+        if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
+          DB = d;
+          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
+          buildDates(); render();
+        }
+        var f = findFlight(fid);
+        var newBay = f ? (f.stand || "—") : "—";
+        watchFlight = fid;
+        watchFlightBay = newBay;
+        saveFlightWatch(); showFlightPill();
+        if(oldBay === "—" && newBay !== "—" && f){
+          /* arm 嗰陣未有，拉完即刻有 → 立即通知 */
+          flightAlert(f, newBay);
+        }else if(newBay !== "—"){
+          /* 已經有 bay，話俾用戶知，唔係靜靜無嘢 */
+          $("waBay").textContent = fid;
+          $("waList").innerHTML = "<div><b>"+esc(fid)+"</b> 而家個 bay 係：<b>"+esc(newBay)+"</b></div>";
+          $("watchalert").hidden = false;
+        }
+      })
+      .catch(function(){
+        var f2 = findFlight(fid);
+        watchFlight = fid;
+        watchFlightBay = f2 ? (f2.stand || "—") : "—";
+        saveFlightWatch(); showFlightPill();
+      });
     if("Notification" in window && Notification.permission === "default"){
       try{ Notification.requestPermission(); }catch(e){}
     }
