@@ -109,6 +109,8 @@ try{
   .hidecargo{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;}
   .hidecargo input{accent-color:var(--accent2);}
   .searchrow{padding:8px 2px 10px;}
+  #watchpills{display:flex; flex-wrap:wrap; gap:6px;}
+  #watchpills[hidden]{display:none;}
   .watchpill{
     display:inline-flex; align-items:center; gap:6px;
     margin-top:6px; padding:4px 6px 4px 10px; border-radius:14px;
@@ -335,7 +337,7 @@ try{
       <input id="q" type="search" placeholder="搜尋 Flight ID／來往地／泊位／備註…" autocomplete="off">
       <button id="qclear" class="qclear" aria-label="清除">✕</button>
     </div>
-    <div id="watchpill" class="watchpill" hidden>👁 <span id="watchbay"></span> 到位提醒 <button id="watchx" aria-label="取消提醒">✕</button></div>
+    <div id="watchpills" hidden></div>
   </div>
 </div></div>
 
@@ -603,7 +605,46 @@ try{
     if(f.stand_old && f.stand_old !== f.stand){
       h += "<div><span>"+(typ==="arrival"?"泊位變動：":"閘口變動：")+"</span>"+esc(f.stand_old)+" → "+esc(f.stand)+"</div>";
     }
+    h += "<div style='margin-top:6px'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button></div>";
     return h;
+  }
+
+  function copyFlight(typ, f){
+    var t = eff(f) || "—";
+    var mark = "";
+    if(typ === "arrival"){
+      if(f.ata && f.ata !== "—") mark = "A";
+      else if(f.est && f.est !== "—") mark = "E";
+      else mark = "S";
+    }else{
+      mark = (f.ata && f.ata !== "—") ? "A" : "E";
+    }
+    var txt = opId(f) + " " + t + mark + " · " + (f.stand || "—");
+    var done = function(){ showToast("已複製：" + txt); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt); done(); });
+    }else{ fallbackCopy(txt); done(); }
+  }
+  function fallbackCopy(txt){
+    try{
+      var ta = document.createElement("textarea");
+      ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+    }catch(e){}
+  }
+  var toastTimer = null;
+  function showToast(msg){
+    var el = $("toast");
+    if(!el){
+      el = document.createElement("div");
+      el.id = "toast";
+      el.style.cssText = "position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:99;white-space:nowrap;";
+      document.body.appendChild(el);
+    }
+    el.textContent = msg; el.style.display = "block";
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.style.display = "none"; }, 1800);
   }
 
   var noteEditingKey = null, noteFocus = false;
@@ -748,17 +789,21 @@ try{
     render();
   });
   /* ---------- 泊位到位提醒（隱藏功能：搜尋欄輸入 BAY+） ---------- */
-  var watchBay = null, watchSeen = {};
+  var watchBays = {};  /* bay -> {seen:{...}}，可同時 watch 多個 */
   var WB_KEY = "hkia-watchbay-v1";
   function saveWatch(){
-    try{ localStorage.setItem(WB_KEY, JSON.stringify({bay:watchBay, seen:watchSeen})); }catch(e){}
+    try{ localStorage.setItem(WB_KEY, JSON.stringify({bays:watchBays})); }catch(e){}
   }
   function loadWatch(){
     try{
       var wb = JSON.parse(localStorage.getItem(WB_KEY) || "null");
-      if(wb && wb.bay){ watchBay = wb.bay; watchSeen = {}; }
+      if(wb){
+        if(wb.bays){ watchBays = wb.bays; }
+        else if(wb.bay){ watchBays[wb.bay] = {seen:{}}; }  /* 舊單一格式遷移 */
+      }
     }catch(e){}
   }
+  function watchCount(){ return Object.keys(watchBays).length; }
   function flightsAt(bay){
     var out = [];
     if(!DB) return out;
@@ -777,13 +822,15 @@ try{
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
           buildDates(); render();
         }
-        watchBay = bay; watchSeen = {};
-        flightsAt(bay).forEach(function(it){ watchSeen[itemKey(it)] = 1; });
+        if(!watchBays[bay]) watchBays[bay] = {seen:{}};
+        watchBays[bay].seen = {};
+        flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
         saveWatch(); showWatchPill();
       })
       .catch(function(){
-        watchBay = bay; watchSeen = {};
-        flightsAt(bay).forEach(function(it){ watchSeen[itemKey(it)] = 1; });
+        if(!watchBays[bay]) watchBays[bay] = {seen:{}};
+        watchBays[bay].seen = {};
+        flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
         saveWatch(); showWatchPill();
       });
     ensureAudio();
@@ -791,47 +838,68 @@ try{
       try{ Notification.requestPermission(); }catch(e){}
     }
   }
-  function disarmWatch(){
-    watchBay = null; watchSeen = {};
-    saveWatch(); $("watchpill").hidden = true;
-    setBarH();
+  function disarmWatch(bay){
+    if(bay){ delete watchBays[bay]; }
+    else{ watchBays = {}; }
+    saveWatch(); showWatchPill();
   }
   function showWatchPill(){
-    if(!watchBay) return;
-    $("watchbay").textContent = watchBay;
-    $("watchpill").hidden = false;
+    var box = $("watchpills");
+    box.innerHTML = "";
+    Object.keys(watchBays).sort().forEach(function(bay){
+      var d = document.createElement("div");
+      d.className = "watchpill";
+      d.innerHTML = "👁 <span>"+esc(bay)+"</span> 到位提醒 <button aria-label='取消提醒' data-unwatch='"+esc(bay)+"'>✕</button>";
+      box.appendChild(d);
+    });
+    box.hidden = !watchCount();
     setBarH();
   }
   function checkBayWatch(){
-    if(!watchBay || !DB) return;
-    var cur = flightsAt(watchBay), curKeys = {}, fresh = [];
-    cur.forEach(function(it){
-      var k = itemKey(it); curKeys[k] = 1;
-      if(!watchSeen[k]) fresh.push(it);
+    if(!watchCount() || !DB) return;
+    var allFresh = [];
+    Object.keys(watchBays).forEach(function(bay){
+      var seen = watchBays[bay].seen || (watchBays[bay].seen = {});
+      var cur = flightsAt(bay), curKeys = {}, fresh = [];
+      cur.forEach(function(it){
+        var k = itemKey(it); curKeys[k] = 1;
+        if(!seen[k]) fresh.push({bay:bay, typ:it.typ, f:it.f});
+      });
+      Object.keys(seen).forEach(function(k){ if(!curKeys[k]) delete seen[k]; });
+      cur.forEach(function(it){ seen[itemKey(it)] = 1; });
+      if(fresh.length) allFresh = allFresh.concat(fresh);
     });
-    Object.keys(watchSeen).forEach(function(k){ if(!curKeys[k]) delete watchSeen[k]; });
-    cur.forEach(function(it){ watchSeen[itemKey(it)] = 1; });
     saveWatch();
-    if(fresh.length) bayAlert(fresh);
+    if(allFresh.length) bayAlert(allFresh);
   }
   function bayAlert(list){
-    $("waBay").textContent = watchBay;
-    $("waList").innerHTML = list.map(function(it){
-      return "<div><b>"+esc(it.f.flight_id)+"</b> "+(it.typ === "arrival" ? "到港" : "離港")+" · "+esc(eff(it.f))+"</div>";
+    /* 按 bay 分組顯示 */
+    var byBay = {};
+    list.forEach(function(it){
+      (byBay[it.bay] = byBay[it.bay] || []).push(it);
+    });
+    $("waBay").textContent = Object.keys(byBay).sort().join("、");
+    $("waList").innerHTML = Object.keys(byBay).sort().map(function(bay){
+      return "<div style='margin-bottom:4px'><b>"+esc(bay)+"</b></div>" + byBay[bay].map(function(it){
+        return "<div><b>"+esc(it.f.flight_id)+"</b> "+(it.typ === "arrival" ? "到港" : "離港")+" · "+esc(eff(it.f))+"</div>";
+      }).join("");
     }).join("");
     $("watchalert").hidden = false;
     beep3();
     try{ if(navigator.vibrate) navigator.vibrate([200, 100, 200]); }catch(e){}
     if("Notification" in window && Notification.permission === "granted"){
       try{
-        new Notification("🔔 "+watchBay+" 有航班到位", {
-          body: list.map(function(it){ return it.f.flight_id+" "+(it.typ === "arrival" ? "到港" : "離港"); }).join("\n")
+        new Notification("🔔 "+Object.keys(byBay).sort().join("、")+" 有航班到位", {
+          body: list.map(function(it){ return it.bay+" "+it.f.flight_id; }).join("\n")
         });
       }catch(e){}
     }
   }
   $("waOk").addEventListener("click", function(){ $("watchalert").hidden = true; });
-  $("watchx").addEventListener("click", function(){ disarmWatch(); });
+  document.addEventListener("click", function(e){
+    var b = e.target.closest && e.target.closest("[data-unwatch]");
+    if(b){ disarmWatch(b.getAttribute("data-unwatch")); }
+  });
 
   var audioCtx = null;
   function ensureAudio(){
@@ -907,6 +975,7 @@ try{
       }
       if(act === "note-save"){ commitNote(); }
       else if(act === "note-cancel" && it2){ deleteNote(it2.typ, it2.f); }
+      else if(act === "copy-flight" && it2){ copyFlight(it2.typ, it2.f); }
       return;
     }
 
@@ -1217,8 +1286,11 @@ try{
       /* 開頁停喺時間線：上面8班，下面42班 */
       window.scrollTo(0, 0);
       /* 還原提醒（唔響，淨係同步狀態） */
-      if(watchBay){
-        flightsAt(watchBay).forEach(function(it){ watchSeen[itemKey(it)] = 1; });
+      if(watchCount()){
+        Object.keys(watchBays).forEach(function(bay){
+          watchBays[bay].seen = watchBays[bay].seen || {};
+          flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
+        });
         saveWatch(); showWatchPill();
       }
     })
@@ -1233,7 +1305,7 @@ try{
   });
   setInterval(function(){
     if(!DB || document.visibilityState !== "visible") return;
-    if(Date.now() - lastActive < 60000 && !watchBay) return;
+    if(Date.now() - lastActive < 60000 && !watchCount()) return;
     if(detailKey || noteEditingKey) return;
     if(document.activeElement === q) return;
     if(overlay.classList.contains("open")) return;
