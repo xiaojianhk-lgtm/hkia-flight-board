@@ -867,10 +867,18 @@ try{
     if(pulled > 70){
       pRefreshing = true;
       ptrShow(0, true);
-      doPullRefresh(function(){
+      doPullRefresh(function(status){
         pRefreshing = false;
-        ptrHide();
-        jumpToTimeline();
+        ptrEl.classList.remove("refreshing");
+        ptrSpin.style.transform = "";
+        ptrLabel.textContent = status === "updated" ? "已更新 ✓" : (status === "failed" ? "更新失敗" : "已是最新");
+        ptrEl.style.transition = "";
+        ptrEl.style.transform = "translate(-50%,0px)";
+        ptrEl.style.opacity = 1;
+        setTimeout(function(){
+          ptrHide();
+          jumpToTimeline();
+        }, 800);
       });
     }else{
       ptrHide();
@@ -884,10 +892,12 @@ try{
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
           buildDates();
+          done("updated");
+        }else{
+          done("latest");
         }
-        done();
       })
-      .catch(function(){ done(); });
+      .catch(function(){ done("failed"); });
   }
 
   /* 連點兩下跳返時間線，連點三下開搜尋（三下嗰陣會先跳一次，無害） */
