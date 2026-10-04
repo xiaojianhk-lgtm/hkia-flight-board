@@ -84,6 +84,26 @@ def parse_status_date(status: str) -> str:
     return f"{m.group(3)}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
 
 
+def infer_actual_date(flight_date: str, eta: str, actual: str) -> str:
+    """Infer the date of an actual (ata/atd) time when the API gives no date.
+    If actual is >12h earlier than scheduled by clock, it's the previous day
+    (early arrival crossing midnight); if >12h later, it's the next day."""
+    def _tm(t):
+        m = re.match(r"(\d{1,2}):(\d{2})", t or "")
+        return int(m.group(1)) * 60 + int(m.group(2)) if m else None
+    em, am = _tm(eta), _tm(actual)
+    if em is None or am is None:
+        return flight_date
+    try:
+        base = datetime.strptime(flight_date, "%Y-%m-%d")
+    except Exception:
+        return flight_date
+    if am > em + 720:
+        return (base - timedelta(days=1)).strftime("%Y-%m-%d")
+    if am < em - 720:
+        return (base + timedelta(days=1)).strftime("%Y-%m-%d")
+    return flight_date
+
 def fetch(url: str):
     req = urllib.request.Request(url, headers={"User-Agent": "hkia-flight-board/1.0"})
     with urllib.request.urlopen(req, timeout=TIMEOUT_SECS) as resp:
@@ -224,19 +244,28 @@ def main() -> int:
                 flights.sort(key=lambda fl: fl["ata"] if fl["ata"] != "—" else (fl["est"] if fl["est"] != "—" else fl["eta"]))
                 for i, fl in enumerate(flights, start=1):
                     fl["no"] = i
-                # Sanity: 實際時間唔可以係未來（API 間中會俾錯 instance 嘅 ata，
-                # 例如今日 00:10 嘅機俾咗 23:39）。用航班日期組成 datetime 檢查。
+                # 實際時間嘅日期推斷：API 好多時唔俾日期，得個鐘數。
+                # 如果實際比原定早／遲超過 12 小時，好可能係前一日／後一日
+                #（例如 00:10 嘅機 23:39 到，係前一晚早到，唔係今日未來）。
                 for fl in flights:
-                    for ak in ("ata", "atd"):
+                    for ak, dk in (("ata", "ata_date"), ("atd", "atd_date")):
                         t = fl.get(ak)
+                        if t and t != "—" and not fl.get(dk):
+                            fl[dk] = infer_actual_date(date, fl.get("eta"), t)
+                # Sanity: 實際時間（連正確日期）唔可以係未來超過 30 分鐘
+                for fl in flights:
+                    for ak, dk in (("ata", "ata_date"), ("atd", "atd_date")):
+                        t = fl.get(ak)
+                        d = fl.get(dk) or date
                         if t and t != "—":
                             m = re.match(r"(\d{1,2}):(\d{2})", t)
                             if m:
                                 try:
-                                    adt = datetime.strptime(f"{date} {t}", "%Y-%m-%d %H:%M").replace(tzinfo=HKT)
+                                    adt = datetime.strptime(f"{d} {t}", "%Y-%m-%d %H:%M").replace(tzinfo=HKT)
                                     if adt > now + timedelta(minutes=30):
-                                        print(f"  WARN: {fl['flight_id'][:24]} {ak}={t} 係未來，清除", file=sys.stderr)
+                                        print(f"  WARN: {fl['flight_id'][:24]} {ak}={t} ({d}) 係未來，清除", file=sys.stderr)
                                         fl[ak] = "—"
+                                        fl[dk] = ""
                                 except Exception:
                                     pass
                 day[key] = flights
