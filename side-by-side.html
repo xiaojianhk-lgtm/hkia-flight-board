@@ -677,9 +677,8 @@ try{
     var nowLabel = showNow ? now2 : "";
     divPos = Math.max(0, divPos - start);
 
-    var xrowShow = (window.scrollY < 60) ? "" : " style='display:none'";
     var html = (items.length > showN)
-      ? "<tr class='xrow'"+xrowShow+"><td colspan='5'><button class='xrowbtn'>"+(expanded?"收起":"展開全部 "+items.length+" 班航班")+"</button></td></tr>"
+      ? "<tr class='xrow'><td colspan='5'><button class='xrowbtn'>"+(expanded?"收起":"展開全部 "+items.length+" 班航班")+"</button></td></tr>"
       : "";
     for(var i=0;i<list.length;i++){
       if(showNow && i === divPos){
@@ -1259,11 +1258,7 @@ try{
     }
   }
 
-  /* 頂部「展開全部」掣：碌到最頂先出現 */
-  window.addEventListener("scroll", function(){
-    var xr = document.querySelector("tr.xrow");
-    if(xr) xr.style.display = (window.scrollY < 60) ? "" : "none";
-  }, {passive:true});
+  /* 頂部「展開全部」掣：永遠喺頂，碌上去就見到（唔做顯示／隱藏，避免卡頓） */
 
   /* 主題 */
   var icoSun = $("icoSun"), icoMoon = $("icoMoon");
