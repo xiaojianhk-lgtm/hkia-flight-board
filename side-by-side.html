@@ -181,6 +181,7 @@ try{
   .tchg{color:var(--red); font-weight:700;}
   .tsta{color:var(--dim);}
   .tmark{font-size:12px; font-weight:700; margin-left:2px; letter-spacing:.5px; opacity:.85;}
+  .ddate{font-size:10px; color:var(--muted); margin-left:2px; white-space:nowrap;}
   /* 泊位右邊色 bar */
   .st{font-weight:700;}
   .stchg{color:var(--red);}
@@ -422,18 +423,20 @@ try{
   function arrTimeHtml(f){
     var noAta = !(f.ata && f.ata !== "—");
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
-    if(!noAta) return esc(f.ata)+"<span class='tmark'>A</span>";
-    if(estShown) return esc(f.est)+"<span class='tmark'>E</span>";
+    var dt = dateTag(f);
+    if(!noAta) return esc(f.ata)+"<span class='tmark'>A</span>"+dt;
+    if(estShown) return esc(f.est)+"<span class='tmark'>E</span>"+dt;
     return "<span class='tsta'>"+esc(f.eta || "—")+"<span class='tmark'>S</span></span>";
   }
   /* 離港時間顯示：已起飛正常顯示＋A、有變（預計同原定唔同）就紅色，否則原色 */
   function depTimeHtml(f){
     var t = eff(f);
+    var dt = dateTag(f);
     var flown = f.ata && f.ata !== "—";
-    if(flown) return esc(t)+"<span class='tmark'>A</span>";
+    if(flown) return esc(t)+"<span class='tmark'>A</span>"+dt;
     var changed = f.est && f.est !== "—" && f.est !== f.eta;
-    if(changed) return "<span class='tchg'>"+esc(t)+"</span><span class='tmark'>E</span>";
-    return esc(t)+"<span class='tmark'>E</span>";
+    if(changed) return "<span class='tchg'>"+esc(t)+"</span><span class='tmark'>E</span>"+dt;
+    return esc(t)+"<span class='tmark'>E</span>"+dt;
   }
   function toMin(t){
     var m = /^(\d{1,2}):(\d{2})/.exec(t || "");
@@ -510,10 +513,38 @@ try{
   function merged(){
     var g = getLists();
     var items = [];
-    g.arr.forEach(function(f){ items.push({sk:toMin(eff(f)), typ:'arrival', f:f}); });
-    g.dep.forEach(function(f){ items.push({sk:toMin(eff(f))-50, typ:'departure', f:f}); });
+    var fdate = DB.dates[dateIdx];
+    g.arr.forEach(function(f){ items.push({sk:skDate(f, fdate, false), typ:'arrival', f:f}); });
+    g.dep.forEach(function(f){ items.push({sk:skDate(f, fdate, true), typ:'departure', f:f}); });
     items.sort(function(a,b){ return a.sk-b.sk; });
     return items;
+  }
+  /* 排序鍵（認日期）：實際／預計時間若同航班日期唔同，加減 1440；離港減 50 分鐘 */
+  function skDate(f, fdate, isDep){
+    var t = eff(f);
+    var m = toMin(t);
+    if(m > 90000) return m;
+    var ad = effDate(f);
+    if(ad && fdate && ad !== fdate){
+      var diff = Math.round((new Date(ad+"T00:00:00") - new Date(fdate+"T00:00:00")) / 86400000);
+      m += diff * 1440;
+    }
+    return isDep ? m - 50 : m;
+  }
+  /* 有效時間嘅日期（ata/atd/est 有 date 就用佢） */
+  function effDate(f){
+    var t = eff(f);
+    if(t === f.ata && f.ata_date) return f.ata_date;
+    if(t === f.est && f.est_date) return f.est_date;
+    return null;
+  }
+  /* 時間同航班唔同日，加 (DD/MM) */
+  function dateTag(f){
+    var ad = effDate(f);
+    var fdate = DB.dates[dateIdx];
+    if(!ad || !fdate || ad === fdate) return "";
+    var p = ad.split("-");
+    return " <span class='ddate'>("+p[2]+"/"+p[1]+")</span>";
   }
 
   function itemKey(it){ return watchKey(it.typ, it.f); }
