@@ -167,6 +167,7 @@ def main() -> int:
     old_stands = {}
     old_ests = {}
     old_stand_olds = {}
+    old_stand_miss = {}
     if os.path.exists(out_path):
         try:
             with open(out_path, encoding="utf-8") as fh:
@@ -177,6 +178,8 @@ def main() -> int:
                         old_stands[(d, tk, f.get("flight_id"))] = f.get("stand")
                         if f.get("stand_old"):
                             old_stand_olds[(d, tk, f.get("flight_id"))] = f.get("stand_old")
+                        if f.get("stand_miss"):
+                            old_stand_miss[(d, tk, f.get("flight_id"))] = f.get("stand_miss")
                         if f.get("est") and f.get("est") != "—":
                             old_ests[(d, tk, f.get("flight_id"))] = (f.get("est"), f.get("est_date") or "")
         except (json.JSONDecodeError, OSError) as exc:
@@ -288,6 +291,8 @@ def main() -> int:
     # - If the API temporarily drops the stand, the last known stand and
     #   marker are kept instead of showing "—". (The old `continue` here
     #   silently dropped stand_old whenever the API omitted the gate.)
+    # - If the API drops the stand 3 times in a row (45 min), treat it as
+    #   genuinely cancelled: show "—" and clear the marker.
     def _norm(k, s):
         return prefix_gate(s, prefix_map) if k == "departure" else s
 
@@ -312,12 +317,24 @@ def main() -> int:
                     fl.pop("stand_old", None)
                     continue
                 if not cur or cur == "—":
-                    # API 今次冇俾泊位：沿用上次已知嘅泊位＋變動標記
-                    if prev_d and prev_d != "—":
+                    # API 今次冇俾泊位
+                    miss = old_stand_miss.get(k, 0) + 1
+                    if miss >= 3:
+                        # 連續 3 次都冇：當真係取消咗，顯示 —，清 marker
+                        fl["stand"] = "—"
+                        fl.pop("stand_old", None)
+                        fl["stand_miss"] = miss
+                    elif prev_d and prev_d != "—":
+                        # 暫時甩：沿用上次已知嘅泊位＋變動標記
                         fl["stand"] = prev_d
                         if prev_old_d and prev_old_d != "—" and prev_old_d != prev_d:
                             fl["stand_old"] = prev_old_d
+                        fl["stand_miss"] = miss
+                    else:
+                        fl["stand_miss"] = miss
                     continue
+                # 有泊位：reset miss count
+                fl.pop("stand_miss", None)
                 if prev_d and prev_d != "—" and prev_d != cur:
                     # 泊位變咗：上次嘅新（prev）變成今次嘅舊
                     fl["stand_old"] = prev_d
