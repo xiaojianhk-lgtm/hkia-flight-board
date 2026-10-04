@@ -2,8 +2,7 @@
 """Fetch HKIA flights for yesterday/today/tomorrow/day-after (Asia/Hong_Kong).
 
 Covers arrival + departure, passenger + cargo. Writes data.json.
-The extra 4th day supports 04:00->03:59 display windows
-(e.g. "tomorrow" view runs until 03:59 of the day after).
+Days are calendar days (00:00-23:59) as returned by the API.
 
 Idempotent: rewrites data.json only when the flight data changed; on any
 API failure exits non-zero and leaves the existing file untouched.
@@ -225,6 +224,21 @@ def main() -> int:
                 flights.sort(key=lambda fl: fl["ata"] if fl["ata"] != "—" else (fl["est"] if fl["est"] != "—" else fl["eta"]))
                 for i, fl in enumerate(flights, start=1):
                     fl["no"] = i
+                # Sanity: 實際時間唔可以係未來（API 間中會俾錯 instance 嘅 ata，
+                # 例如今日 00:10 嘅機俾咗 23:39）。用航班日期組成 datetime 檢查。
+                for fl in flights:
+                    for ak in ("ata", "atd"):
+                        t = fl.get(ak)
+                        if t and t != "—":
+                            m = re.match(r"(\d{1,2}):(\d{2})", t)
+                            if m:
+                                try:
+                                    adt = datetime.strptime(f"{date} {t}", "%Y-%m-%d %H:%M").replace(tzinfo=HKT)
+                                    if adt > now + timedelta(minutes=30):
+                                        print(f"  WARN: {fl['flight_id'][:24]} {ak}={t} 係未來，清除", file=sys.stderr)
+                                        fl[ak] = "—"
+                                except Exception:
+                                    pass
                 day[key] = flights
                 n_cargo = sum(1 for fl in flights if fl["cargo"])
                 print(f"  {date} {key}: {len(flights)} flights ({n_cargo} cargo)")
