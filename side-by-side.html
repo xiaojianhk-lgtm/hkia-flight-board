@@ -510,17 +510,10 @@ try{
   function merged(){
     var g = getLists();
     var items = [];
-    g.arr.forEach(function(f){ items.push({sk:skOf(eff(f), false), typ:'arrival', f:f}); });
-    g.dep.forEach(function(f){ items.push({sk:skOf(eff(f), true), typ:'departure', f:f}); });
+    g.arr.forEach(function(f){ items.push({sk:toMin(eff(f)), typ:'arrival', f:f}); });
+    g.dep.forEach(function(f){ items.push({sk:toMin(eff(f))-50, typ:'departure', f:f}); });
     items.sort(function(a,b){ return a.sk-b.sk; });
     return items;
-  }
-  /* 排序鍵：日界 04:00→翌日 03:59，00:00–03:59 撥去日尾；離港減 50 分鐘 */
-  function skOf(t, isDep){
-    var m = toMin(t);
-    if(m > 90000) return m;
-    if(m < 240) m += 1440;
-    return isDep ? m - 50 : m;
   }
 
   function itemKey(it){ return watchKey(it.typ, it.f); }
@@ -564,7 +557,6 @@ try{
     var items = merged();
     /* 而家位置（sk 時間軸，同排序一致；時間線同 50 班 window 都用佢） */
     var now2 = nowHHMM(), nowMin = toMin(now2);
-    if(nowMin < 240) nowMin += 1440;  /* 00:00–03:59 係日尾，同 skOf 一致 */
     var divPos = items.length;
     for(var j=0;j<items.length;j++){
       var tj = eff(items[j].f);
