@@ -107,6 +107,33 @@ try{
   .hidecargo{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;}
   .hidecargo input{accent-color:var(--accent2);}
   .searchrow{padding:8px 2px 10px;}
+  .watchpill{
+    display:inline-flex; align-items:center; gap:6px;
+    margin-top:6px; padding:4px 6px 4px 10px; border-radius:14px;
+    background:var(--card); border:1px solid var(--accent);
+    color:var(--text); font-size:12px;
+  }
+  .watchpill[hidden]{display:none;}
+  .watchpill button{
+    background:none; border:none; color:var(--muted);
+    font-size:14px; cursor:pointer; padding:0 4px; line-height:1;
+  }
+  /* 泊位到位提醒 */
+  #watchalert{
+    position:fixed; left:50%; top:16%; transform:translateX(-50%);
+    z-index:200; width:min(92vw, 420px);
+  }
+  #watchalert[hidden]{display:none;}
+  .wa-box{
+    background:var(--card); border:2px solid var(--accent);
+    border-radius:14px; padding:16px; box-shadow:0 8px 32px rgba(0,0,0,.45);
+  }
+  .wa-title{font-size:16px; font-weight:700; color:var(--accent); margin-bottom:8px;}
+  .wa-list{font-size:14px; line-height:1.9; margin-bottom:12px;}
+  .wa-ok{
+    background:var(--accent); color:#fff; border:none; border-radius:20px;
+    padding:8px 24px; font-size:14px; cursor:pointer; width:100%;
+  }
   .swrap{position:relative;}
   .swrap input{
     width:100%; background:var(--input-bg); border:1px solid var(--line); border-radius:8px;
@@ -287,6 +314,7 @@ try{
       <input id="q" type="search" placeholder="搜尋 Flight ID／來往地／泊位／備註…" autocomplete="off">
       <button id="qclear" class="qclear" aria-label="清除">✕</button>
     </div>
+    <div id="watchpill" class="watchpill" hidden>👁 <span id="watchbay"></span> 到位提醒 <button id="watchx" aria-label="取消提醒">✕</button></div>
   </div>
 </div></div>
 
@@ -651,11 +679,109 @@ try{
   /* ---------- 事件 ---------- */
   var q = $("q");
   q.addEventListener("input", function(){
+    var m = /^([A-Za-z]?\d+)\+$/.exec(q.value.trim());
+    if(m){
+      var bay = m[1].toUpperCase();
+      q.value = bay;
+      armWatch(bay);
+    }
     query = q.value;
     $("qclear").parentElement.classList.toggle("hasq", !!q.value);
     expanded = false;
     render();
   });
+  /* ---------- 泊位到位提醒（隱藏功能：搜尋欄輸入 BAY+） ---------- */
+  var watchBay = null, watchSeen = {};
+  var WB_KEY = "hkia-watchbay-v1";
+  function saveWatch(){
+    try{ localStorage.setItem(WB_KEY, JSON.stringify({bay:watchBay, seen:watchSeen})); }catch(e){}
+  }
+  function loadWatch(){
+    try{
+      var wb = JSON.parse(localStorage.getItem(WB_KEY) || "null");
+      if(wb && wb.bay){ watchBay = wb.bay; watchSeen = {}; }
+    }catch(e){}
+  }
+  function flightsAt(bay){
+    var out = [];
+    if(!DB) return out;
+    var g = getLists();
+    g.arr.forEach(function(f){ if((f.stand || "").toUpperCase() === bay) out.push({typ:"arrival", f:f}); });
+    g.dep.forEach(function(f){ if((f.stand || "").toUpperCase() === bay) out.push({typ:"departure", f:f}); });
+    return out;
+  }
+  function armWatch(bay){
+    watchBay = bay; watchSeen = {};
+    flightsAt(bay).forEach(function(it){ watchSeen[itemKey(it)] = 1; });
+    saveWatch(); showWatchPill();
+    ensureAudio();
+    if("Notification" in window && Notification.permission === "default"){
+      try{ Notification.requestPermission(); }catch(e){}
+    }
+  }
+  function disarmWatch(){
+    watchBay = null; watchSeen = {};
+    saveWatch(); $("watchpill").hidden = true;
+  }
+  function showWatchPill(){
+    if(!watchBay) return;
+    $("watchbay").textContent = watchBay;
+    $("watchpill").hidden = false;
+  }
+  function checkBayWatch(){
+    if(!watchBay || !DB) return;
+    var cur = flightsAt(watchBay), curKeys = {}, fresh = [];
+    cur.forEach(function(it){
+      var k = itemKey(it); curKeys[k] = 1;
+      if(!watchSeen[k]) fresh.push(it);
+    });
+    Object.keys(watchSeen).forEach(function(k){ if(!curKeys[k]) delete watchSeen[k]; });
+    cur.forEach(function(it){ watchSeen[itemKey(it)] = 1; });
+    saveWatch();
+    if(fresh.length) bayAlert(fresh);
+  }
+  function bayAlert(list){
+    $("waBay").textContent = watchBay;
+    $("waList").innerHTML = list.map(function(it){
+      return "<div><b>"+esc(it.f.flight_id)+"</b> "+(it.typ === "arrival" ? "到港" : "離港")+" · "+esc(eff(it.f))+"</div>";
+    }).join("");
+    $("watchalert").hidden = false;
+    beep3();
+    try{ if(navigator.vibrate) navigator.vibrate([200, 100, 200]); }catch(e){}
+    if("Notification" in window && Notification.permission === "granted"){
+      try{
+        new Notification("🔔 "+watchBay+" 有航班到位", {
+          body: list.map(function(it){ return it.f.flight_id+" "+(it.typ === "arrival" ? "到港" : "離港"); }).join("\n")
+        });
+      }catch(e){}
+    }
+  }
+  $("waOk").addEventListener("click", function(){ $("watchalert").hidden = true; });
+  $("watchx").addEventListener("click", function(){ disarmWatch(); });
+  var audioCtx = null;
+  function ensureAudio(){
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === "suspended") audioCtx.resume();
+    }catch(e){}
+  }
+  function beep3(){
+    if(!audioCtx) return;
+    try{
+      [0, 0.28, 0.56].forEach(function(dt){
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.type = "sine"; o.frequency.value = 880;
+        var t0 = audioCtx.currentTime + dt;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.24);
+        o.start(t0); o.stop(t0 + 0.26);
+      });
+    }catch(e){}
+  }
+  loadWatch();
+
   // 共用同一個 localStorage key 做搜尋框同步（舊版 q/qm）
   $("qclear").addEventListener("click", function(){
     q.value = ""; query = "";
@@ -892,6 +1018,7 @@ try{
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
           buildDates();
+          checkBayWatch();
           done("updated");
         }else{
           done("latest");
@@ -1013,6 +1140,11 @@ try{
       render();
       /* 開頁停喺時間線：上面8班，下面42班 */
       window.scrollTo(0, 0);
+      /* 還原泊位提醒（唔響，淨係記住而家邊啲喺度） */
+      if(watchBay){
+        flightsAt(watchBay).forEach(function(it){ watchSeen[itemKey(it)] = 1; });
+        saveWatch(); showWatchPill();
+      }
     })
     .catch(function(e){
       $("rows").innerHTML = "<tr><td colspan='5' style='text-align:center;color:var(--red);padding:24px;'>載入失敗："+esc(e.message)+"</td></tr>";
@@ -1038,6 +1170,7 @@ try{
           $("headTs").textContent = d.generated_at;
           buildDates(); render();
           if(keepEx){ expanded = true; render(); }
+          checkBayWatch();
           /* 展開／搜尋緊就還原舊位，否則停返時間線（上面8班，下面42班） */
           if(keepEx || query){ if(sy) window.scrollTo(0, sy); }
           else window.scrollTo(0, 0);
@@ -1052,5 +1185,12 @@ try{
   });
 })();
 </script>
+<div id="watchalert" hidden>
+  <div class="wa-box">
+    <div class="wa-title">🔔 <span id="waBay"></span> 有航班到位</div>
+    <div id="waList" class="wa-list"></div>
+    <button id="waOk" class="wa-ok">知道了</button>
+  </div>
+</div>
 </body>
 </html>
