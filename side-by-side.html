@@ -10,6 +10,42 @@
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <title>航班並排 · 香港國際機場</title>
 <script>
+/* 密碼門：新設備第一次要入密碼，啱咗記喺 localStorage */
+(function(){
+  var HASH = "19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896";
+  var KEY = "hkia-auth-v1";
+  var gate = document.getElementById("gate");
+  try{ if(localStorage.getItem(KEY) === "1"){ return; } }catch(e){}
+  gate.hidden = false;
+  var pw = document.getElementById("gatePw"), err = document.getElementById("gateErr");
+  function sha256(s){
+    if(crypto.subtle && crypto.subtle.digest){
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function(b){
+        return Array.from(new Uint8Array(b)).map(function(x){ return ("0"+x.toString(16)).slice(-2); }).join("");
+      });
+    }
+    return Promise.resolve("UNSUPPORTED");
+  }
+  function go(){
+    err.textContent = "";
+    sha256(pw.value).then(function(h){
+      if(h === HASH){
+        try{ localStorage.setItem(KEY, "1"); }catch(e){}
+        gate.hidden = true;
+        window.dispatchEvent(new Event("hkia-unlocked"));
+      }else{
+        err.textContent = "密碼錯誤";
+        pw.value = ""; pw.focus();
+      }
+    });
+  }
+  document.getElementById("gateGo").addEventListener("click", go);
+  pw.addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
+  /* 擋住後面嘅 data load，等解鎖先繼續 */
+  window.__hkiaLocked = true;
+  window.addEventListener("hkia-unlocked", function(){ window.__hkiaLocked = false; });
+  setTimeout(function(){ pw.focus(); }, 300);
+})();
 /* 日／夜模式：盡早套用，避免閃爍 */
 try{
   var _t = localStorage.getItem("hkia-theme");
@@ -269,9 +305,25 @@ try{
     background:none; border:1px solid var(--line); border-radius:14px;
     color:var(--accent2); font-size:12px; cursor:pointer; padding:5px 12px;
   }
+  /* 密碼門 */
+  #gate{position:fixed; inset:0; z-index:9999; background:var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px;}
+  #gate[hidden]{display:none;}
+  #gate .gtitle{font-size:18px; font-weight:700;}
+  #gate input{font-size:18px; padding:10px 14px; border:1px solid var(--line); border-radius:10px;
+    background:var(--bg); color:var(--fg); text-align:center; width:160px; letter-spacing:6px;}
+  #gate button{font-size:15px; padding:10px 28px; border:0; border-radius:10px;
+    background:var(--accent2); color:#fff; font-weight:700; cursor:pointer;}
+  #gate .gerr{color:var(--red); font-size:13px; min-height:18px;}
 </style>
 </head>
 <body>
+<div id="gate" hidden>
+  <div class="gtitle">航班資訊</div>
+  <input id="gatePw" type="password" inputmode="numeric" placeholder="密碼" autocomplete="off">
+  <button id="gateGo">進入</button>
+  <div class="gerr" id="gateErr"></div>
+</div>
 
 <div id="aboutOverlay" role="dialog" aria-modal="true" aria-label="關於">
   <div class="about-card">
@@ -1266,7 +1318,12 @@ try{
   try{ history.scrollRestoration = "manual"; }catch(e){}
   setBarH();
 
-  /* 載入 */
+  /* 載入（如果鎖住咗，等解鎖先行） */
+  function bootLoad(){
+    if(window.__hkiaLocked){
+      window.addEventListener("hkia-unlocked", function h(){ window.removeEventListener("hkia-unlocked", h); bootLoad(); });
+      return;
+    }
   fetch("data.json?_="+Date.now(), {cache:"no-store"})
     .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
     .then(function(d){
@@ -1287,6 +1344,8 @@ try{
     .catch(function(e){
       $("rows").innerHTML = "<tr><td colspan='5' style='text-align:center;color:var(--red);padding:24px;'>載入失敗："+esc(e.message)+"</td></tr>";
     });
+  }
+  bootLoad();
 
   /* 靜默更新 */
   var lastActive = Date.now();
