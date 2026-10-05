@@ -233,6 +233,8 @@ try{
   /* 泊位：粗體；轉位紅字 */
   .st{font-weight:700;}
   .stchg{color:var(--red);}
+  /* 舊泊位（轉位前）：細字＋紅色刪除線；新泊位用正常顏色 */
+  .stold, .mstandold{font-size:11px; color:var(--dim); font-weight:400; text-decoration:line-through; text-decoration-color:var(--red); text-decoration-thickness:1px;}
   /* 長按泊位嘅區域高亮：統一螢光黃底＋深色字 */
   .hizone{background:#ffff00; border-radius:3px; padding:0 3px;}
   .hizone .mstand, .hizone .stchg{color:#111;}
@@ -280,7 +282,6 @@ try{
     .mtime-est.arr{color:var(--green2);}
     .msep{color:var(--dim); font-size:13px; margin:0 2px;}
     .mstand{font-size:16px; font-weight:700; color:var(--text);}
-    .mstandold{font-size:11px; color:var(--dim); font-weight:400;}
     .mline2{font-size:11px; color:var(--dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
     #q{max-width:none;}
     .searchrow{padding:8px 2px 10px;}
@@ -670,7 +671,7 @@ try{
     var ms = manualStand(f);
     if(ms) return standSpan(ms);  /* 手動泊位優先 */
     if(f.stand_old && f.stand_old !== f.stand){
-      return "<span class='stchg'>"+esc(f.stand)+"</span> <span class='dim'>("+esc(f.stand_old)+")</span>";
+      return "<span class='st'>"+esc(f.stand)+"</span> <span class='stold'>("+esc(f.stand_old)+")</span>";
     }
     return standSpan(f.stand);
   }
@@ -681,7 +682,7 @@ try{
     if(ms){
       inner = "<span class='mstand'>"+standSpan(ms)+"</span>";
     }else if(f.stand_old && f.stand_old !== f.stand){
-      inner = "<span class='mstand stchg'>"+esc(f.stand)+"</span> <span class='mstandold'>("+esc(f.stand_old)+")</span>";
+      inner = "<span class='mstand'>"+esc(f.stand)+"</span> <span class='mstandold'>("+esc(f.stand_old)+")</span>";
     }else{
       inner = "<span class='mstand'>"+standSpan(f.stand||"—")+"</span>";
     }
