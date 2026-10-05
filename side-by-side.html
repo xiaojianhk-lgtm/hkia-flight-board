@@ -339,7 +339,7 @@ try{
     <ul>
       <li>到港喺左、離港喺右，同一版睇晒。</li>
       <li>行首箭頭：↓=到港、↑=離港。離港航班編號係<span style="color:var(--cxgreen)">國泰綠</span>。</li>
-      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：<b>A</b>=已降落、<b>E</b>=預計到達、<span style="color:var(--dim)"><b>S</b>=淨得原定時間</span>。離港：<b>E</b>=未起飛（有變會轉<span style="color:var(--red)">紅色</span>）、<b>A</b>=已起飛。</li>
+      <li>每班機淨顯示一個時間（實際＞預計＞原定）。到港：<b>L</b>=已落地、<b>A</b>=已到閘口、<b>E</b>=預計到達、<span style="color:var(--dim)"><b>S</b>=淨得原定時間</span>。離港：<b>E</b>=未起飛（有變會轉<span style="color:var(--red)">紅色</span>）、<b>A</b>=已起飛。</li>
       <li>離港時間減 50 分鐘後同到港一齊排序（對應前一班到港航機）。</li>
     </ul>
     <h4>操作</h4>
@@ -351,7 +351,7 @@ try{
     </ul>
     <h4>泊位提醒</h4>
     <ul>
-      <li>搜尋欄輸入 <b>W63+</b>：之後有新航班入該泊位，就彈通知＋響三聲＋震動。</li>
+      <li>搜尋欄輸入 <b>W63+</b>：之後有新航班入該泊位，就彈 banner 通知。</li>
       <li>提醒 arm 咗之後，每 15 分鐘自動檢查（碌緊 page 都會）。page 要開住先會響。</li>
     </ul>
     <h4>數據</h4>
@@ -508,7 +508,12 @@ try{
   function arrTimeHtml(f){
     var noAta = !(f.ata && f.ata !== "—");
     var estShown = f.est && f.est !== "—" && f.est !== f.eta;
-    if(!noAta) return esc(f.ata)+"<span class='tmark'>A</span>";
+    if(!noAta){
+      /* L=落地（Landed），A=到閘口（At gate） */
+      var landed = /^landed/i.test(f.status_raw || "");
+      var mk = landed ? "L" : "A";
+      return esc(f.ata)+"<span class='tmark'>"+mk+"</span>";
+    }
     if(estShown) return esc(f.est)+"<span class='tmark'>E</span>";
     return "<span class='tsta'>"+esc(f.eta || "—")+"<span class='tmark'>S</span></span>";
   }
@@ -680,7 +685,7 @@ try{
     var t = eff(f) || "—";
     var mark = "";
     if(typ === "arrival"){
-      if(f.ata && f.ata !== "—") mark = "A";
+      if(f.ata && f.ata !== "—") mark = /^landed/i.test(f.status_raw || "") ? "L" : "A";
       else if(f.est && f.est !== "—") mark = "E";
       else mark = "S";
     }else{
