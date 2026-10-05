@@ -1070,20 +1070,10 @@ try{
   });
 
   function toggleExpanded(){
-    var anchor = lastStart;
     expanded = !expanded;
     render();
-    if(expanded && anchor >= 0){
-      /* 展開後停留喺原本 50 班嘅第 50 班（最後一班）附近，唔跳去頂 */
-      var rows = isMobile() ? cardsEl.children : rowsEl.children;
-      var el = rows[anchor + 49] || rows[rows.length - 1];
-      if(el){
-        var bar = document.querySelector(".stickybar");
-        var barH = bar ? bar.offsetHeight : 0;
-        var y = el.getBoundingClientRect().top + window.scrollY - barH - 8;
-        window.scrollTo({top: Math.max(0, y)});
-      }
-    }else if(!expanded){
+    /* 展開時唔郁個畫面，停留喺撳掣嗰位；收起先捲返去頂 */
+    if(!expanded){
       window.scrollTo({top:0, behavior:"smooth"});
     }
   }
