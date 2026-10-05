@@ -842,10 +842,6 @@ try{
         flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
         saveBayWatch(); showWatchPill();
       });
-    ensureAudio();
-    if("Notification" in window && Notification.permission === "default"){
-      try{ Notification.requestPermission(); }catch(e){}
-    }
   }
   function disarmWatch(bay){
     if(bay){ delete watchBays[bay]; }
@@ -864,7 +860,7 @@ try{
     box.hidden = !watchCount();
     setBarH();
   }
-  function checkBayWatch(quiet){
+  function checkBayWatch(){
     if(!watchCount() || !DB) return;
     var allFresh = [];
     Object.keys(watchBays).forEach(function(bay){
@@ -879,10 +875,10 @@ try{
       if(fresh.length) allFresh = allFresh.concat(fresh);
     });
     saveBayWatch();
-    if(allFresh.length) bayAlert(allFresh, quiet);
+    if(allFresh.length) bayAlert(allFresh);
   }
-  function bayAlert(list, quiet){
-    /* 按 bay 分組顯示；quiet 嗰陣淨彈 banner，唔響唔震 */
+  function bayAlert(list){
+    /* 按 bay 分組顯示；淨彈 banner，唔響唔震 */
     var byBay = {};
     list.forEach(function(it){
       (byBay[it.bay] = byBay[it.bay] || []).push(it);
@@ -894,16 +890,6 @@ try{
       }).join("");
     }).join("");
     $("watchalert").hidden = false;
-    if(quiet) return;
-    beep3();
-    try{ if(navigator.vibrate) navigator.vibrate([200, 100, 200]); }catch(e){}
-    if("Notification" in window && Notification.permission === "granted"){
-      try{
-        new Notification("🔔 "+Object.keys(byBay).sort().join("、")+" 有航班到位", {
-          body: list.map(function(it){ return it.bay+" "+it.f.flight_id; }).join("\n")
-        });
-      }catch(e){}
-    }
   }
   $("waOk").addEventListener("click", function(){ $("watchalert").hidden = true; });
   document.addEventListener("click", function(e){
@@ -911,28 +897,6 @@ try{
     if(b){ disarmWatch(b.getAttribute("data-unwatch")); }
   });
 
-  var audioCtx = null;
-  function ensureAudio(){
-    try{
-      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if(audioCtx.state === "suspended") audioCtx.resume();
-    }catch(e){}
-  }
-  function beep3(){
-    if(!audioCtx) return;
-    try{
-      [0, 0.28, 0.56].forEach(function(dt){
-        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.connect(g); g.connect(audioCtx.destination);
-        o.type = "sine"; o.frequency.value = 880;
-        var t0 = audioCtx.currentTime + dt;
-        g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.03);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.24);
-        o.start(t0); o.stop(t0 + 0.26);
-      });
-    }catch(e){}
-  }
   loadWatch();
 
   // 共用同一個 localStorage key 做搜尋框同步（舊版 q/qm）
@@ -1312,9 +1276,9 @@ try{
       render();
       /* 開頁停喺時間線上 8 班（上面仲有 10 班，要碌上去先見） */
       scrollToEightAbove();
-      /* 還原提醒：同上次見過嘅比較，有新航班入 bay 就彈 banner（唔響唔震） */
+      /* 還原提醒：同上次見過嘅比較，有新航班入 bay 就彈 banner */
       if(watchCount()){
-        checkBayWatch(true);
+        checkBayWatch();
         showWatchPill();
       }
     })
