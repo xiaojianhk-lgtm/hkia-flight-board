@@ -276,9 +276,21 @@ try{
   .error{padding:24px; text-align:center; color:var(--error-fg);}
   /* ---------- mobile compact rows ---------- */
   #cards{display:none;}
+  .mhead{display:none;} /* 桌面版唔用手機標題 */
   @media (max-width:719px), (orientation:landscape) and (max-height:500px){
     .tablewrap{display:none;}
     #cards{display:block;}
+    /* 手機版固定標題（抄新版 thead 概念） */
+    .mhead{
+      display:grid; grid-template-columns:1fr 120px 1fr; gap:7px;
+      position:sticky; top:var(--barH,0px); z-index:5;
+      background:var(--bg); padding:8px 2px;
+      font-size:11px; color:var(--muted); letter-spacing:1px; white-space:nowrap;
+      border-bottom:2px solid var(--line);
+    }
+    .mhead span:nth-child(1){text-align:left;}
+    .mhead span:nth-child(2){text-align:center;}
+    .mhead span:nth-child(3){text-align:right;}
     .mrow{padding:6px 2px; border-bottom:1px solid var(--line);}
     .mline1{display:grid; grid-template-columns:1fr 120px 1fr; align-items:baseline; gap:7px;}
     .mleft{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -432,6 +444,7 @@ try{
       <tbody id="rows"></tbody>
     </table>
   </div>
+  <div class="mhead" id="mhead"><span>Flight ID</span><span id="mheadTime">STA/ETA</span><span id="mheadStand">STAND</span></div>
   <div id="cards"></div>
   <div class="expandbar" id="expandBar" style="display:none">
     <button id="expandBtn"></button>
@@ -884,6 +897,11 @@ try{
       document.getElementById("thEta").textContent = l.eta;
       document.getElementById("thAta").textContent = l.ata;
     }
+    /* 手機版標題：到港 STA/ETA，離港 STD/ETD */
+    var mht = document.getElementById("mheadTime");
+    var mhs = document.getElementById("mheadStand");
+    if(mht) mht.textContent = isCross ? "時間" : (tab === "arrival" ? "STA/ETA" : "STD/ETD");
+    if(mhs) mhs.textContent = isCross ? "泊位" : l.stand;
     document.getElementById("capsLine").innerHTML = esc(l.caps).replace(/HKG/, "<span class='hkg'>HKG</span>");
     document.getElementById("flightTable").setAttribute("aria-label", l.name+"航班");
 
