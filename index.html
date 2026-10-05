@@ -1072,10 +1072,7 @@ try{
   function toggleExpanded(){
     expanded = !expanded;
     render();
-    /* 展開時唔郁個畫面，停留喺撳掣嗰位；收起先捲返去頂 */
-    if(!expanded){
-      window.scrollTo({top:0, behavior:"smooth"});
-    }
+    /* 展開／收起都唔郁個畫面，停留喺撳掣嗰位 */
   }
   expandBtn.addEventListener("click", toggleExpanded);
   expandBtnTop.addEventListener("click", toggleExpanded);
