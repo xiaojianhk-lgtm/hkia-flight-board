@@ -410,6 +410,9 @@ try{
 </div></div>
 
 <main>
+  <div class="expandbar" id="expandBarTop" style="display:none">
+    <button id="expandBtnTop"></button>
+  </div>
   <div class="tablewrap">
     <table id="flightTable" aria-label="航班">
       <thead>
@@ -523,6 +526,8 @@ try{
   var cardsEl = document.getElementById("cards");
   var expandBar = document.getElementById("expandBar");
   var expandBtn = document.getElementById("expandBtn");
+  var expandBarTop = document.getElementById("expandBarTop");
+  var expandBtnTop = document.getElementById("expandBtnTop");
   var countLine = document.getElementById("countLine");
   var headCount = document.getElementById("headCount");
   var q = document.getElementById("q"), qm = document.getElementById("qm");
@@ -951,17 +956,21 @@ try{
         : dlabel+"共 "+total+" 班";
     }
     headCount.textContent = currentFlights().length;
-    if(isCross){
-      expandBar.style.display = "none";
-    }else if(total > showN && !expanded){
-      expandBar.style.display = "";
-      expandBtn.textContent = "展開全部 "+total+" 班航班";
-    }else if(total > showN && expanded){
-      expandBar.style.display = "";
-      expandBtn.textContent = "收起";
-    }else{
-      expandBar.style.display = "none";
-    }
+    /* 上下兩個展開按鈕同步 */
+    [ [expandBar, expandBtn], [expandBarTop, expandBtnTop] ].forEach(function(pair){
+      var bar = pair[0], btn = pair[1];
+      if(isCross){
+        bar.style.display = "none";
+      }else if(total > showN && !expanded){
+        bar.style.display = "";
+        btn.textContent = "展開全部 "+total+" 班航班";
+      }else if(total > showN && expanded){
+        bar.style.display = "";
+        btn.textContent = "收起";
+      }else{
+        bar.style.display = "none";
+      }
+    });
     setBarH();
   }
 
@@ -1060,7 +1069,7 @@ try{
     applyFilter();
   });
 
-  expandBtn.addEventListener("click", function(){
+  function toggleExpanded(){
     var anchor = lastStart;
     expanded = !expanded;
     render();
@@ -1077,7 +1086,9 @@ try{
     }else if(!expanded){
       window.scrollTo({top:0, behavior:"smooth"});
     }
-  });
+  }
+  expandBtn.addEventListener("click", toggleExpanded);
+  expandBtnTop.addEventListener("click", toggleExpanded);
 
   function onType(v){ query = v; applyFilter(); }
   q.addEventListener("input", function(){ qm.value = q.value; syncQclear(); onType(q.value); });
@@ -1213,6 +1224,16 @@ try{
       document.getElementById("splashTs").textContent = "資料擷取時間："+(d.generated_at||"—");
       buildDates();
       applyFilter();
+      /* 首次載入：捲去時間線附近 */
+      setTimeout(function(){
+        var el = document.querySelector(".mnowline") || document.querySelector("tr.nowline");
+        if(el){
+          var bar = document.querySelector(".stickybar");
+          var barH = bar ? bar.offsetHeight : 0;
+          var y = el.getBoundingClientRect().top + window.scrollY - barH - 8;
+          window.scrollTo({top: Math.max(0, y)});
+        }
+      }, 150);
     })
     .catch(function(e){
       var eb = document.getElementById("errBox");
