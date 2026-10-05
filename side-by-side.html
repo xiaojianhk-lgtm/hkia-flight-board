@@ -219,6 +219,8 @@ try{
   @media (hover:hover){ tbody tr.rw:hover td{background:rgba(128,128,128,.12);} }
   td.fid{font-weight:700; overflow:visible;} /* 隔籬航班欄永遠係空嘅，★✓ 唔夠位可以借用 */
   .tmark.inspk{color:var(--red); opacity:1; font-size:14px;}
+  .twrap{position:relative; display:inline-block;}
+  .twrap .tmark.inspk.ab{position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:2px;}
   /* 同區泊位高亮：實色 pill */
   .sthl{border-radius:4px; padding:1px 7px; color:#fff; font-weight:700; white-space:nowrap;}
   .sthl.stS{background:var(--blue);}
@@ -762,14 +764,14 @@ try{
       var ilv = inspLevel(typ, f);
       var adir = "<span class='adir'>"+(typ==="arrival"?"↓":"↑")+"</span>";
       var fidCell = "<td class='fid'>"+(typ==="arrival"?adir:"")+esc(opId(f))+dateTag(f)+badge(f)+(hn?" <span class='nst'>★</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
-      var tMark2 = ilv>=2 ? "<span class='tmark inspk'>✓</span>" : "";
+      var tMark2 = ilv>=2 ? "<span class='tmark inspk ab'>✓</span>" : "";
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
-                "<td class='time tcol'>"+arrTimeHtml(f)+tMark2+"</td><td class='tcol'></td>"+
+                "<td class='time tcol'><span class='twrap'>"+arrTimeHtml(f)+tMark2+"</span></td><td class='tcol'></td>"+
                 "<td class='bayc'>"+standHtml(typ,f)+"</td></tr>";
       }else{
         html += "<tr class='"+cls+"' data-k='"+i+"'><td>"+adir+"</td>"+fidCell+
-                "<td class='tcol'></td><td class='time tcol'>"+depTimeHtml(f)+tMark2+"</td>"+
+                "<td class='tcol'></td><td class='time tcol'><span class='twrap'>"+depTimeHtml(f)+tMark2+"</span></td>"+
                 "<td class='bayc'>"+standHtml(typ,f)+"</td></tr>";
       }
       if(detailKey === key){
