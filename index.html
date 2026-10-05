@@ -231,6 +231,7 @@ try{
   /* ---------- 備註（長按加，有備註先喺目的地後面加 ⭐️） ---------- */
   .nst{font-size:12px; margin-left:2px;}
   .ddate{font-size:11px; color:var(--dim); white-space:nowrap; margin-left:4px;}
+  .fdate{font-size:11px; color:var(--dim); white-space:nowrap; margin-left:4px; font-weight:400;}
   .avgdur{font-size:11px; color:var(--dim); white-space:nowrap;}
   /* 泊位：粗體；轉位紅字 */
   .st{font-weight:700;}
@@ -734,19 +735,20 @@ try{
     var p = d.split("-");
     return "<span class='ddate'>("+p[2]+"/"+p[1]+")</span>";
   }
-  /* 跨日併入今天嘅航班：原定時間本身已經係聽日，後面加 (DD/MM) */
-  function schedDateTag(f){
+  /* 跨日航班：原定日期標喺航班編號後面（如 CX289 05），唔再放時間後面 */
+  function flightDateTag(f){
     if(!f._date || !DB || !DB.dates || !DB.dates[dateIdx]) return "";
     if(f._date === DB.dates[dateIdx]) return "";
     var p = String(f._date).split("-");
     if(p.length < 3) return "";
-    return "<span class='ddate'>("+p[2]+"/"+p[1]+")</span>";
+    return " <span class='fdate'>"+p[2]+"</span>";
   }
+  function schedDateTag(f){ return ""; }
 
   function rowHtml(f, i){
     var hn = hasNote(f);
     var cls = 'rw'+(hn?" noted":"")+(f.cancelled?" cancelled":"");
-    return "<tr class='"+cls+"' data-i='"+i+"'><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
+    return "<tr class='"+cls+"' data-i='"+i+"'><td class='fid'>"+esc(opId(f))+flightDateTag(f)+badge(f)+"</td>"+
       "<td class='viacell'>"+esc(f.via)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>"+
       "<td class='eta'>"+etaCell(f)+"</td>"+
       "<td class='ata'>"+esc(f.ata)+ataMark(f)+dateTag(f,"ata")+"</td><td class='standcell"+hiCls(f)+"'>"+dstandHtml(f)+"</td></tr>";
@@ -777,7 +779,7 @@ try{
     var mcls = 'mrow'+(hn?" noted":"")+(f.cancelled?" cancelled":"");
     /* 得一個光禿禿時間嗰陣置中，唔係睇落縮埋一邊 */
     var twrapCls = multi ? "mtimewrap" : "mtimewrap single";
-    return "<div class='"+mcls+"' data-i='"+i+"'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span> "+badge(f)+
+    return "<div class='"+mcls+"' data-i='"+i+"'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span>"+flightDateTag(f)+" "+badge(f)+
       " <span class='mdest'>"+esc(f.via)+"</span>"+(hn?"<span class='nst'>⭐️</span>":"")+"</span><span class='"+twrapCls+"'>"+timeHtml+"</span><span class='mright'>"+standRight+"</span></div></div>";
   }
 
