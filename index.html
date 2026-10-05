@@ -200,6 +200,8 @@ try{
     tbody tr:nth-child(even):hover td{background:rgba(79,195,247,.06);}
     td.fid{font-size:15px; font-weight:800; letter-spacing:.5px;}
     td.standcell, th.standth{text-align:right;}
+    /* 隱藏目的地欄顯示（搜尋照用 f.via） */
+    #thVia, td.viacell{display:none;}
     /* 工具列：緊湊儀表板風 */
     .controls{flex-direction:row; align-items:center; gap:12px; padding:12px 4px 4px;}
     .dates{flex:0 0 auto;}
@@ -265,9 +267,10 @@ try{
     .tablewrap{display:none;}
     #cards{display:block;}
     .mrow{padding:6px 2px; border-bottom:1px solid var(--line);}
-    .mline1{display:grid; grid-template-columns:1fr 120px 0.65fr; align-items:baseline; gap:7px;}
+    .mline1{display:grid; grid-template-columns:1fr 120px 1fr; align-items:baseline; gap:7px;}
     .mleft{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
     .mright{min-width:0; text-align:right; white-space:nowrap;}
+    .mdest{display:none;} /* 隱藏目的地顯示，搜尋照用 f.via */
     .mflight{font-weight:700; font-size:16px; white-space:nowrap; font-variant-numeric:tabular-nums;}
     .mdest{font-size:10px; color:var(--dim); white-space:nowrap; opacity:.75;}
     .mstandwrap{text-align:center; white-space:nowrap;}
@@ -744,7 +747,7 @@ try{
     var hn = hasNote(f);
     var cls = 'rw'+(hn?" noted":"")+(f.cancelled?" cancelled":"");
     return "<tr class='"+cls+"' data-i='"+i+"'><td class='fid'>"+esc(opId(f))+badge(f)+"</td>"+
-      "<td>"+esc(f.via)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>"+
+      "<td class='viacell'>"+esc(f.via)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>"+
       "<td class='eta'>"+etaCell(f)+"</td>"+
       "<td class='ata'>"+esc(f.ata)+ataMark(f)+dateTag(f,"ata")+"</td><td class='standcell"+hiCls(f)+"'>"+dstandHtml(f)+"</td></tr>";
   }
