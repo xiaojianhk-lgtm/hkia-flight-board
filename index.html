@@ -582,6 +582,11 @@ try{
         if(effDate(arr[i]) === d0) list.push(arr[i]);
       }
     });
+    /* 按生效時間排序（實際＞預計＞原定），時間線先擺得啱位 */
+    list.sort(function(a,b){
+      var ta = effTime(a), tb = effTime(b);
+      return ta < tb ? -1 : (ta > tb ? 1 : 0);
+    });
     if(hideCargo) list = list.filter(function(f){ return !f.cargo; });
     if(hidePax) list = list.filter(function(f){ return f.cargo; });
     if(onlyHas) list = list.filter(isHasFlight);
@@ -755,7 +760,11 @@ try{
   }
 
   /* effective time: estimated if available, else scheduled — matches server sort */
-  function effTime(f){ return (f.est && f.est !== "—") ? f.est : (f.eta || "—"); }
+  function effTime(f){
+    if(f.ata && f.ata !== "—") return f.ata;
+    if(f.est && f.est !== "—") return f.est;
+    return f.eta || "—";
+  }
 
   /* status text without the time (time moves to the right side) */
   function mrowHtml(f, i){
