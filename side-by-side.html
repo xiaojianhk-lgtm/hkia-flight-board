@@ -215,7 +215,7 @@ try{
   [data-theme="light"] tr.rw.noted td{background:rgba(201,162,39,.22);}
   [data-theme="light"] tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(176,141,34,.95);}
   [data-theme="light"] tr.rw.noted td:last-child{box-shadow:inset -3px 0 0 rgba(176,141,34,.95);}
-  .nst{font-size:12px; margin-left:2px;}
+  .nst{font-size:14px; margin-left:2px; color:#b08d22;}
   .noteinput{background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:4px 6px; font-size:16px; width:55%;}
   .nbtn{background:var(--input-bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:3px 8px; font-size:12px; cursor:pointer; margin-left:4px;}
   .notewrap{display:flex; align-items:center; flex-wrap:wrap; gap:4px;}
@@ -695,7 +695,7 @@ try{
       var key = itemKey(it);
       var ilv = inspLevel(typ, f);
       var adir = "<span class='adir'>"+(typ==="arrival"?"↓":"↑")+"</span>";
-      var fidCell = "<td class='fid'>"+(typ==="arrival"?adir:"")+esc(opId(f))+dateTag(f)+badge(f)+(hn?" <span class='nst'>⭐️</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
+      var fidCell = "<td class='fid'>"+(typ==="arrival"?adir:"")+esc(opId(f))+dateTag(f)+badge(f)+(hn?" <span class='nst'>★</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
       var tMark2 = ilv>=2 ? "<span class='tmark inspk'>✓</span>" : "";
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
