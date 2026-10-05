@@ -261,6 +261,17 @@ try{
     padding:8px 18px; font-size:13px; cursor:pointer; letter-spacing:1px;
   }
   .expandbar button:active{transform:scale(.96);}
+  /* 列表內頂部展開掣（抄新版 tr.xrow） */
+  tr.xrow td{padding:8px 4px; text-align:center;}
+  tr.xrow .xrowbtn{
+    background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
+    padding:8px 18px; font-size:13px; cursor:pointer;
+  }
+  div.xrowdiv{padding:8px 4px; text-align:center;}
+  div.xrowdiv .xrowbtn{
+    background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
+    padding:8px 18px; font-size:13px; cursor:pointer;
+  }
   .error{padding:24px; text-align:center; color:var(--error-fg);}
   /* ---------- mobile compact rows ---------- */
   #cards{display:none;}
@@ -410,9 +421,6 @@ try{
 </div></div>
 
 <main>
-  <div class="expandbar" id="expandBarTop" style="display:none">
-    <button id="expandBtnTop"></button>
-  </div>
   <div class="tablewrap">
     <table id="flightTable" aria-label="航班">
       <thead>
@@ -527,8 +535,6 @@ try{
   var cardsEl = document.getElementById("cards");
   var expandBar = document.getElementById("expandBar");
   var expandBtn = document.getElementById("expandBtn");
-  var expandBarTop = document.getElementById("expandBarTop");
-  var expandBtnTop = document.getElementById("expandBtnTop");
   var countLine = document.getElementById("countLine");
   var headCount = document.getElementById("headCount");
   var q = document.getElementById("q"), qm = document.getElementById("qm");
@@ -884,13 +890,13 @@ try{
     document.getElementById("capsLine").innerHTML = esc(l.caps).replace(/HKG/, "<span class='hkg'>HKG</span>");
     document.getElementById("flightTable").setAttribute("aria-label", l.name+"航班");
 
-    var ps = isMobile() ? 50 : PAGE;
-    /* 今天：由現時之前 8 班（已完成）開始，顯示 50 班；昨天/明天/搜尋維持由頭顯示 */
+    var ps = isMobile() ? 60 : PAGE;
+    /* 今天：由現時之前 18 班開始，顯示 60 班（上18／下42，抄新版）；昨天/明天/搜尋維持由頭顯示 */
     /* 跨表搜尋：顯示全部，唔分頁 */
     var start = 0, showN = ps, centered = false;
     if(!isCross && !expanded && !query && dateIdx === 1 && filtered.length){
-      var w = 50, ai = timeAnchorIndex(filtered);
-      start = Math.max(0, Math.min(ai - 8, filtered.length - w));
+      var w = 60, ai = timeAnchorIndex(filtered);
+      start = Math.max(0, Math.min(ai - 18, filtered.length - w));
       showN = Math.min(w, filtered.length);
       centered = true;
     }
@@ -912,6 +918,13 @@ try{
 
     var mobile = isMobile();
     var htmlArr = [];
+    /* 頂部「展開全部」掣放喺列表入面做第一行（抄新版） */
+    if(!isCross && filtered.length > showN){
+      var xbtn = "<button class='xrowbtn'>"+(expanded?"收起":"展開全部 "+filtered.length+" 班航班")+"</button>";
+      htmlArr.push(mobile
+        ? "<div class='xrowdiv'>"+xbtn+"</div>"
+        : "<tr class='xrow'><td colspan='5'>"+xbtn+"</td></tr>");
+    }
     var savedTab = tab;
     for(var i = 0; i < list.length; i++){
       if(isCross){
@@ -940,6 +953,9 @@ try{
       rowsEl.innerHTML = html;
       cardsEl.innerHTML = "";
     }
+    /* 列表內頂部展開掣綁定 */
+    var xb = document.querySelector("#cards .xrowbtn, #rows .xrowbtn");
+    if(xb) xb.addEventListener("click", toggleExpanded);
     /* 備註／泊位輸入框：Enter 存檔，剛進入編輯時自動聚焦 */
     var ni = document.getElementById("noteInput") || document.getElementById("standInput");
     if(ni){
@@ -957,21 +973,17 @@ try{
         : dlabel+"共 "+total+" 班";
     }
     headCount.textContent = currentFlights().length;
-    /* 上下兩個展開按鈕同步 */
-    [ [expandBar, expandBtn], [expandBarTop, expandBtnTop] ].forEach(function(pair){
-      var bar = pair[0], btn = pair[1];
-      if(isCross){
-        bar.style.display = "none";
-      }else if(total > showN && !expanded){
-        bar.style.display = "";
-        btn.textContent = "展開全部 "+total+" 班航班";
-      }else if(total > showN && expanded){
-        bar.style.display = "";
-        btn.textContent = "收起";
-      }else{
-        bar.style.display = "none";
-      }
-    });
+    if(isCross){
+      expandBar.style.display = "none";
+    }else if(total > showN && !expanded){
+      expandBar.style.display = "";
+      expandBtn.textContent = "展開全部 "+total+" 班航班";
+    }else if(total > showN && expanded){
+      expandBar.style.display = "";
+      expandBtn.textContent = "收起";
+    }else{
+      expandBar.style.display = "none";
+    }
     setBarH();
   }
 
@@ -1020,21 +1032,79 @@ try{
     })(tabBtns[ti]);
   }
 
-  /* 連點三下開搜尋欄（focus 要喺 touchend 入面同步做，iOS 先會彈鍵盤；
+  /* 連點兩下跳返時間線、三下開搜尋欄（抄新版；focus 要喺 touchend 入面同步做，iOS 先會彈鍵盤；
      第三下 preventDefault 唔俾佢變 click，否則 iOS 當「點咗出面」即刻收起鍵盤） */
   var tapTimes = [];
+  var lastTapT = 0, lastTapX = -9999, lastTapY = -9999;
   document.addEventListener("touchend", function(e){
     var now = Date.now();
     tapTimes.push(now);
     while(tapTimes.length && now - tapTimes[0] > 800) tapTimes.shift();
-    if(tapTimes.length < 3) return;
-    tapTimes = [];
+    var tc = e.changedTouches && e.changedTouches[0];
+    var x = tc ? tc.clientX : -9999, y = tc ? tc.clientY : -9999;
+    var isDbl = (tapTimes.length === 2) && (now - lastTapT < 400) &&
+                ((x-lastTapX)*(x-lastTapX) + (y-lastTapY)*(y-lastTapY) < 1600);
+    lastTapT = now; lastTapX = x; lastTapY = y;
+    if(tapTimes.length >= 3){
+      tapTimes = [];
+      if(overlay.classList.contains("open")) return;
+      var input3 = isMobile() ? qm : q;
+      if(!input3 || document.activeElement === input3) return;
+      e.preventDefault();
+      input3.focus();
+      return;
+    }
+    var input = isMobile() ? qm : q;
+    if(isDbl && !noteEditingKey &&
+       !overlay.classList.contains("open") &&
+       document.activeElement !== input &&
+       !(e.target.closest && e.target.closest("input,button"))){
+      e.preventDefault();
+      jumpToTimeline();
+    }
+  }, {passive:false});
+  /* dblclick 做後備：上面 touchend 漏咗（冇 preventDefault）嗰陣先會觸發 */
+  document.addEventListener("dblclick", function(e){
+    if(noteEditingKey) return;
     if(overlay.classList.contains("open")) return;
     var input = isMobile() ? qm : q;
-    if(!input || document.activeElement === input) return;
+    if(document.activeElement === input) return;
+    if(e.target.closest && e.target.closest("input,button")) return;
     e.preventDefault();
-    input.focus();
-  }, {passive:false});
+    jumpToTimeline();
+  });
+
+  /* 雙擊跳返時間線（抄新版）：搜尋緊就返頂；唔係今日就跳返今日；
+     未展開就停上 8 班位；展開緊就唔收起，淨係將 nowline 捲返時間線位置附近 */
+  function jumpToTimeline(){
+    if(overlay.classList.contains("open")) return;
+    var input = isMobile() ? qm : q;
+    if(document.activeElement === input || noteEditingKey) return;
+    if(query){ window.scrollTo({top:0, behavior:"smooth"}); return; }
+    if(dateIdx !== 1){
+      dateIdx = 1;
+      var btns = document.querySelectorAll("#datePills button");
+      for(var i=0;i<btns.length;i++) btns[i].classList.toggle("on", i===1);
+      expanded = false; detailFlight = null; noteEditingKey = null;
+      applyFilter();
+      scrollToEightAbove();
+      return;
+    }
+    render();
+    if(!expanded){ scrollToEightAbove(); return; }
+    /* 展開緊：將 nowline 放返上 8 班位置 */
+    var mobile = isMobile();
+    var nl = mobile ? document.querySelector(".mnowline") : document.querySelector("tr.nowline");
+    if(!nl){ scrollToEightAbove(); return; }
+    var row = mobile ? document.querySelector("#cards div.mrow") : document.querySelector("#rows tr.rw");
+    var rowH = row ? row.getBoundingClientRect().height : (mobile ? 60 : 34);
+    var xr = mobile ? document.querySelector("#cards .xrowdiv") : document.querySelector("#rows tr.xrow");
+    var xH = xr ? xr.getBoundingClientRect().height : 0;
+    var bar = document.querySelector(".stickybar");
+    var barH = bar ? bar.offsetHeight : 0;
+    var wantTop = barH + xH + 8 * rowH;
+    window.scrollTo(0, window.scrollY + (nl.getBoundingClientRect().top - wantTop));
+  }
 
   /* 手機左右滑動切換到港／離港（向左→離港，向右→到港） */
   var swipeX = 0, swipeY = 0, swipeOn = false;
@@ -1070,17 +1140,41 @@ try{
     applyFilter();
   });
 
+  /* 捲到「時間線上 8 班」嘅位置（抄新版：上面留 8 班，下面見到時間線） */
+  function scrollToEightAbove(){
+    var mobile = isMobile();
+    var items = mobile
+      ? document.querySelectorAll("#cards div.mrow")
+      : document.querySelectorAll("#rows tr.rw");
+    /* 時間線喺 list index 18，要第 10 班（index 10）置頂，即係上面留 8 班 */
+    var target = items[10];
+    var bar = document.querySelector(".stickybar");
+    if(target && bar){
+      var barH = bar.offsetHeight;
+      window.scrollTo(0, window.scrollY + target.getBoundingClientRect().top - barH);
+    }else{
+      window.scrollTo(0, 0);
+    }
+  }
+
   function toggleExpanded(){
     /* 如果載入嗰陣個自動捲去時間線未執行，用戶撳掣就取消佢 */
     if(nowlineTimer){ clearTimeout(nowlineTimer); nowlineTimer = null; }
-    /* 記住家下個捲位，render 完強制返去，防止瀏覽器自己跳位 */
-    var sy = window.scrollY || window.pageYOffset || 0;
-    expanded = !expanded;
-    render();
-    window.scrollTo(0, sy);
+    if(!expanded){
+      /* 展開前記住「而家」線喺畫面嘅位置，render 後放返同一位置，唔跳（抄新版） */
+      var nl = document.querySelector(".mnowline") || document.querySelector("tr.nowline");
+      var top = nl ? nl.getBoundingClientRect().top : null;
+      expanded = true;
+      render();
+      var nl2 = document.querySelector(".mnowline") || document.querySelector("tr.nowline");
+      if(nl2 && top !== null) window.scrollTo(0, window.scrollY + nl2.getBoundingClientRect().top - top);
+    }else{
+      expanded = false;
+      render();
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
   }
   expandBtn.addEventListener("click", toggleExpanded);
-  expandBtnTop.addEventListener("click", toggleExpanded);
 
   function onType(v){ query = v; applyFilter(); }
   q.addEventListener("input", function(){ qm.value = q.value; syncQclear(); onType(q.value); });
@@ -1205,6 +1299,9 @@ try{
   document.getElementById("aboutClose").addEventListener("click", closeAbout);
   overlay.addEventListener("click", function(e){ if(e.target===overlay) closeAbout(); });
 
+  /* 瀏覽器唔好自動還原舊 scroll 位，定位由我哋控制（抄新版） */
+  try{ history.scrollRestoration = "manual"; }catch(e){}
+
   var t0 = Date.now();
   fetch("data.json?_="+Date.now(), {cache:"no-store"})
     .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
@@ -1216,16 +1313,10 @@ try{
       document.getElementById("splashTs").textContent = "資料擷取時間："+(d.generated_at||"—");
       buildDates();
       applyFilter();
-      /* 首次載入：捲去時間線附近（用戶手動操作會取消） */
+      /* 首次載入：停喺時間線上 8 班位置（抄新版；用戶手動操作會取消） */
       nowlineTimer = setTimeout(function(){
         nowlineTimer = null;
-        var el = document.querySelector(".mnowline") || document.querySelector("tr.nowline");
-        if(el){
-          var bar = document.querySelector(".stickybar");
-          var barH = bar ? bar.offsetHeight : 0;
-          var y = el.getBoundingClientRect().top + window.scrollY - barH - 8;
-          window.scrollTo({top: Math.max(0, y)});
-        }
+        scrollToEightAbove();
       }, 150);
     })
     .catch(function(e){
