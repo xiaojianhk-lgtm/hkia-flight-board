@@ -14,37 +14,44 @@
 (function(){
   var HASH = "19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896";
   var KEY = "hkia-auth-v1";
-  var gate = document.getElementById("gate");
   try{ if(localStorage.getItem(KEY) === "1"){ return; } }catch(e){}
-  gate.hidden = false;
-  var pw = document.getElementById("gatePw"), err = document.getElementById("gateErr");
-  function sha256(s){
-    if(crypto.subtle && crypto.subtle.digest){
-      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function(b){
-        return Array.from(new Uint8Array(b)).map(function(x){ return ("0"+x.toString(16)).slice(-2); }).join("");
+  window.__hkiaLocked = true;
+  function initGate(){
+    var gate = document.getElementById("gate");
+    if(!gate) return;
+    gate.hidden = false;
+    var pw = document.getElementById("gatePw"), err = document.getElementById("gateErr");
+    function sha256(s){
+      if(crypto.subtle && crypto.subtle.digest){
+        return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function(b){
+          return Array.from(new Uint8Array(b)).map(function(x){ return ("0"+x.toString(16)).slice(-2); }).join("");
+        });
+      }
+      return Promise.resolve("UNSUPPORTED");
+    }
+    function go(){
+      err.textContent = "";
+      sha256(pw.value).then(function(h){
+        if(h === HASH){
+          try{ localStorage.setItem(KEY, "1"); }catch(e){}
+          gate.hidden = true;
+          window.__hkiaLocked = false;
+          window.dispatchEvent(new Event("hkia-unlocked"));
+        }else{
+          err.textContent = "密碼錯誤";
+          pw.value = ""; pw.focus();
+        }
       });
     }
-    return Promise.resolve("UNSUPPORTED");
+    document.getElementById("gateGo").addEventListener("click", go);
+    pw.addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
+    setTimeout(function(){ pw.focus(); }, 300);
   }
-  function go(){
-    err.textContent = "";
-    sha256(pw.value).then(function(h){
-      if(h === HASH){
-        try{ localStorage.setItem(KEY, "1"); }catch(e){}
-        gate.hidden = true;
-        window.dispatchEvent(new Event("hkia-unlocked"));
-      }else{
-        err.textContent = "密碼錯誤";
-        pw.value = ""; pw.focus();
-      }
-    });
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", initGate);
+  }else{
+    initGate();
   }
-  document.getElementById("gateGo").addEventListener("click", go);
-  pw.addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
-  /* 擋住後面嘅 data load，等解鎖先繼續 */
-  window.__hkiaLocked = true;
-  window.addEventListener("hkia-unlocked", function(){ window.__hkiaLocked = false; });
-  setTimeout(function(){ pw.focus(); }, 300);
 })();
 /* 日／夜模式：盡早套用，避免閃爍 */
 try{
