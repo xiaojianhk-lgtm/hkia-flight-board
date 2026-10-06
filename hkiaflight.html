@@ -354,6 +354,27 @@ try{
 </style>
 <script data-goatcounter="https://xiaojian.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
+<script>
+/* 訪問記錄：只記時間+瀏覽器+OS，不記 IP */
+try{(function(){
+  var ua=navigator.userAgent||'';
+  var b='?',o='?';
+  if(/Edg\//.test(ua))b='Edge';
+  else if(/OPR\//.test(ua))b='Opera';
+  else if(/Chrome\//.test(ua))b='Chrome';
+  else if(/Safari\//.test(ua))b='Safari';
+  else if(/Firefox\//.test(ua))b='Firefox';
+  if(/iPhone|iPad|iPod/.test(ua))o='iOS';
+  else if(/Android/.test(ua))o='Android';
+  else if(/Mac OS/.test(ua))o='macOS';
+  else if(/Windows/.test(ua))o='Windows';
+  else if(/Linux/.test(ua))o='Linux';
+  fetch('https://xiaojian-visit-log.xiaojian-hk.workers.dev/log?token=lt8ZHWKRVAip4ASDOhZ5Qzgk8I7I-RMl',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({browser:b,os:o,page:location.pathname})
+  }).catch(function(){});
+})();}catch(e){}
+</script>
 </head>
 <body>
 <div id="gate" hidden>
