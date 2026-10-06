@@ -765,7 +765,7 @@ try{(function(){
       h += "<div><span>"+(typ==="arrival"?"泊位變動：":"閘口變動：")+"</span>"+esc(f.stand_old)+" → "+esc(f.stand)+"</div>";
     }
     h += "<div style='margin-top:6px'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button> "+
-         "<a class='nbtn' style='text-decoration:none;display:inline-block;' href='https://www.flightradar24.com/"+opId(f).toLowerCase()+"' target='_blank' rel='noopener'>✈️ Flightradar24</a></div>";
+         "<a class='nbtn' style='text-decoration:none;display:inline-block;' href='https://www.flightradar24.com/"+opId(f).toLowerCase()+"' rel='noopener'>✈️ Flightradar24</a></div>";
     return h;
   }
 
@@ -1315,7 +1315,7 @@ try{(function(){
     if(pressTimer) clearTimeout(pressTimer);
     var row = rowFromEvent(e);
     if(!row) return;
-    if(e.target.closest && (e.target.closest("[data-act]") || e.target.closest("a[target='_blank']"))) return;
+    if(e.target.closest && (e.target.closest("[data-act]") || e.target.closest("a[href*='flightradar24']"))) return;
     var it = lastItems[+row.getAttribute("data-k")];
     if(!it) return;
     pressItem = it;
