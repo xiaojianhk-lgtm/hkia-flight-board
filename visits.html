@@ -34,7 +34,7 @@
 <div id="main" hidden>
   <h1>訪問記錄</h1>
   <div class="sub">只記時間、瀏覽器、系統，不記 IP · 保留 90 日</div>
-  <div id="box"><button onclick="load()">載入記錄</button></div>
+  <div id="box">載入中…</div>
 </div>
 <script>
 /* visits 專用密碼門 (同主頁分開) */
@@ -83,7 +83,8 @@ function load(){
     return r.json();
   }).then(function(rows){
     if(!rows.length){document.getElementById('box').innerHTML='暫無記錄';return;}
-    var h='<table><tr><th>時間 (HKT)</th><th>設備</th><th>系統</th><th>瀏覽器</th><th>頁面</th></tr>';
+    var h='<div style="color:#8fa8bd;font-size:12px;margin-bottom:8px;">共 '+rows.length+' 條 · 更新於 '+fmt(new Date().toISOString())+'</div>';
+    h+='<table><tr><th>時間 (HKT)</th><th>設備</th><th>系統</th><th>瀏覽器</th><th>頁面</th></tr>';
     rows.forEach(function(v){
       h+='<tr><td>'+esc(fmt(v.t))+'</td><td>'+esc((v.device||'—').slice(0,8))+'</td><td>'+esc(v.os)+'</td><td>'+esc(v.browser)+'</td><td>'+esc(v.page)+'</td></tr>';
     });
@@ -92,6 +93,14 @@ function load(){
     document.getElementById('box').innerHTML='<span class="err">載入失敗：'+esc(e.message)+'</span> <button onclick="load()">重試</button>';
   });
 }
+/* 入密碼後自動載入；已登入就即載 */
+(function(){
+  function tryLoad(){
+    if(!document.getElementById('main').hidden) load();
+    else setTimeout(tryLoad, 500);
+  }
+  tryLoad();
+})();
 </script>
 </body>
 </html>
