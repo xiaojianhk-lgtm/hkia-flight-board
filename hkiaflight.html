@@ -404,7 +404,7 @@ try{(function(){
     <h4>泊位提醒</h4>
     <ul>
       <li>搜尋欄輸入 <b>W63+</b>：之後有新航班入該泊位，就彈 banner 通知。</li>
-      <li>搜尋欄輸入 <b>CX123@</b>：嗰班機一有泊位，就彈 banner 通知。</li>
+      <li>搜尋欄輸入 <b>CX123+</b>：嗰班機一有泊位，就彈 banner 通知。</li>
       <li>撳 <b>🌧</b>：機場未來 3 小時降雨機率 ≥50% 就彈 banner 通知（Open-Meteo 預報）。</li>
       <li>提醒 arm 咗之後，每 15 分鐘自動檢查（碌緊 page 都會）。page 要開住先會響。</li>
     </ul>
@@ -938,9 +938,9 @@ try{(function(){
       q.blur();
       return;
     }
-    var mFlight = /^([A-Za-z]+\d+)@$/i.exec(v);
+    var mFlight = /^([A-Za-z]{2,}\d+)\+$/i.exec(v);
     if(mFlight){
-      /* FLIGHT@：arm 指定航班泊位提醒，嗰班機一有 Bay 就彈 banner */
+      /* FLIGHT+：arm 指定航班泊位提醒，嗰班機一有 Bay 就彈 banner */
       armFlightWatch(mFlight[1].toUpperCase());
       q.value = ""; query = "";
       $("qclear").parentElement.classList.remove("hasq");
@@ -1148,7 +1148,9 @@ try{(function(){
   function flightAlert(list){
     document.querySelector("#watchalert .wa-title").innerHTML = "🔔 指定航班已有泊位";
     $("waList").innerHTML = list.map(function(it){
-      return "<div><b>"+esc(it.fid)+"</b> "+(it.typ === "arrival" ? "到港" : "離港")+" · "+esc(eff(it.f))+"<br>泊位：<b>"+esc(it.bay)+"</b></div>";
+      return "<div style='margin-bottom:6px'><b>"+esc(it.fid)+"</b> "+(it.typ === "arrival" ? "到港" : "離港")+"</div>"+
+        "<div>時間：<b>"+esc(eff(it.f))+"</b></div>"+
+        "<div>泊位：<b>"+esc(it.bay)+"</b></div>";
     }).join("");
     $("watchalert").hidden = false;
   }
