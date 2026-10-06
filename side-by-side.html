@@ -237,7 +237,6 @@ try{
   /* 泊位右邊色 bar */
   .st{font-weight:600;}
   .stchg{color:var(--red);}
-  .stold{font-size:11px; color:var(--dim); font-weight:400; text-decoration:line-through;}
   /* 取消 */
   tr.cancelled td{opacity:.5;}
   .cbadge{
@@ -545,7 +544,7 @@ try{
     var flown = f.ata && f.ata !== "—";
     if(flown) return esc(t)+"<span class='tmark'>A</span>";
     var changed = f.est && f.est !== "—" && f.est !== f.eta;
-    if(changed) return "<span class='tchg'>"+esc(t)+"</span><span class='tmark'>E</span>";
+    if(changed) return "<span class='tchg'>"+esc(t)+"</span><span class='tmark tchg'>E</span>";
     return esc(t)+"<span class='tmark'>E</span>";
   }
   function toMin(t){
@@ -1195,7 +1194,14 @@ try{
   document.addEventListener("touchstart", function(e){
     if(pRefreshing || pActive) return;
     if(e.touches.length !== 1) return;
-    if(window.scrollY > 0) return;
+    var t0 = e.touches[0];
+    var inSticky = false;
+    var sb = document.querySelector(".stickybar");
+    if(sb){
+      var r = sb.getBoundingClientRect();
+      if(t0.clientY >= r.top && t0.clientY <= r.bottom) inSticky = true;
+    }
+    if(window.scrollY > 0 && !inSticky) return;
     if($("aboutOverlay").classList.contains("open")) return;
     if(document.activeElement === q) return;
     var t = e.touches[0];
