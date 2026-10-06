@@ -860,28 +860,6 @@ try{
   var q = $("q");
   q.addEventListener("input", function(){
     var v = q.value.trim();
-    if(v === "watchdebug"){
-      /* 臨時 debug：顯示 watch snapshot 狀態 */
-      var dbg = "=== WATCH DEBUG ===\n";
-      dbg += "watchCount: " + watchCount() + "\n";
-      Object.keys(watchBays).forEach(function(bay){
-        dbg += "\nBay: " + bay + "\n";
-        var seen = watchBays[bay].seen || {};
-        var keys = Object.keys(seen);
-        dbg += "seen keys (" + keys.length + "):\n";
-        keys.sort().forEach(function(k){ dbg += "  " + k + "\n"; });
-        dbg += "current flightsAt(" + bay + "):\n";
-        flightsAt(bay).forEach(function(it){
-          dbg += "  " + itemKey(it) + " [" + (seen[itemKey(it)] ? "seen" : "NEW!") + "]\n";
-        });
-      });
-      dbg += "\ndateIdx: " + dateIdx + ", DB.dates[dateIdx]: " + (DB && DB.dates && DB.dates[dateIdx]);
-      alert(dbg);
-      q.value = ""; query = "";
-      $("qclear").parentElement.classList.remove("hasq");
-      render();
-      return;
-    }
     var mBay = /^([A-Za-z]?\d+)\+$/.exec(v);
     if(mBay){
       /* BAY+：淨係 arm 泊位提醒，唔過濾列表 */
@@ -914,11 +892,25 @@ try{
   }
   function watchCount(){ return Object.keys(watchBays).length; }
   function flightsAt(bay){
+    /* 注意：唔用 getLists()，因為嗰個會受搜尋 query／filter 影響；
+       watch 要睇原始數據，唔理顯示緊咩 */
     var out = [];
-    if(!DB) return out;
-    var g = getLists();
-    g.arr.forEach(function(f){ if((f.stand || "").toUpperCase() === bay) out.push({typ:"arrival", f:f}); });
-    g.dep.forEach(function(f){ if((f.stand || "").toUpperCase() === bay) out.push({typ:"departure", f:f}); });
+    if(!DB || !DB.dates || !DB.days) return out;
+    var target = DB.dates[dateIdx];
+    var b = (bay || "").toUpperCase();
+    Object.keys(DB.days).forEach(function(d){
+      var day = DB.days[d];
+      (day.arrival || []).forEach(function(f){
+        if((effDate(f) || d) !== target) return;
+        var st = (manualStand("arrival", f) || f.stand || "").toUpperCase();
+        if(st === b || (f.stand_old || "").toUpperCase() === b) out.push({typ:"arrival", f:f});
+      });
+      (day.departure || []).forEach(function(f){
+        if((effDate(f) || d) !== target) return;
+        var st = (manualStand("departure", f) || f.stand || "").toUpperCase();
+        if(st === b || (f.stand_old || "").toUpperCase() === b) out.push({typ:"departure", f:f});
+      });
+    });
     return out;
   }
   function armWatch(bay){
