@@ -860,6 +860,28 @@ try{
   var q = $("q");
   q.addEventListener("input", function(){
     var v = q.value.trim();
+    if(v === "watchdebug"){
+      /* 臨時 debug：顯示 watch snapshot 狀態 */
+      var dbg = "=== WATCH DEBUG ===\n";
+      dbg += "watchCount: " + watchCount() + "\n";
+      Object.keys(watchBays).forEach(function(bay){
+        dbg += "\nBay: " + bay + "\n";
+        var seen = watchBays[bay].seen || {};
+        var keys = Object.keys(seen);
+        dbg += "seen keys (" + keys.length + "):\n";
+        keys.sort().forEach(function(k){ dbg += "  " + k + "\n"; });
+        dbg += "current flightsAt(" + bay + "):\n";
+        flightsAt(bay).forEach(function(it){
+          dbg += "  " + itemKey(it) + " [" + (seen[itemKey(it)] ? "seen" : "NEW!") + "]\n";
+        });
+      });
+      dbg += "\ndateIdx: " + dateIdx + ", DB.dates[dateIdx]: " + (DB && DB.dates && DB.dates[dateIdx]);
+      alert(dbg);
+      q.value = ""; query = "";
+      $("qclear").parentElement.classList.remove("hasq");
+      render();
+      return;
+    }
     var mBay = /^([A-Za-z]?\d+)\+$/.exec(v);
     if(mBay){
       /* BAY+：淨係 arm 泊位提醒，唔過濾列表 */
