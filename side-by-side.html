@@ -212,7 +212,7 @@ try{
   thead th .hen{font-size:10px; font-weight:400; opacity:.7; margin-left:4px; letter-spacing:1px;}
   thead th.tcol, tbody td.tcol{text-align:center;}
   thead th.bayh, tbody td.bayc{text-align:right; padding-right:8px; border-right:1px solid var(--row-line);}
-  thead th.apth, tbody td.apc{text-align:center; color:var(--muted); font-size:12px; letter-spacing:1px;}
+  thead th.apth, tbody td.apc{text-align:center; font-size:12px; letter-spacing:1px;}
   thead th:first-child, tbody td:first-child{border-left:1px solid var(--row-line);}
   tbody td{padding:7px 4px; white-space:nowrap; border-bottom:1px solid var(--row-line); overflow:hidden; text-overflow:ellipsis;}
   tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
@@ -257,12 +257,9 @@ try{
   .ddetail{font-size:12px; color:var(--text); line-height:1.8;}
   .ddetail span{color:var(--muted);}
   .adir{display:inline-block; min-width:16px; font-weight:700;}
-  /* 表身：粗體；時間＋標記用紫藍色 */
-  tbody td{color:#444; font-weight:600;}
-  [data-theme="dark"] tbody td{color:#b0b8c0;}
-  tbody td.fid{color:#444;}
-  [data-theme="dark"] tbody td.fid{color:#b0b8c0;}
-  tr.rw.dep td.fid{color:var(--cxgreen);}
+  /* 表身：航班編號／航點／Bay 統一黑色；時間＋標記用深藍色 */
+  tbody td{color:var(--strong); font-weight:600;}
+  [data-theme="dark"] tbody td{color:var(--strong);}
   td.time{color:#1a3f85;}
   [data-theme="dark"] td.time{color:#7f9fd8;}
   .tmark{color:#1a3f85;}
@@ -575,10 +572,7 @@ try{
     var ms = manualStand(typ, f);
     var inner, c;
     if(ms){ inner = esc(ms); c = standColorCls(ms); }
-    else if(f.stand_old && f.stand_old !== f.stand){
-      inner = "<span class='stchg'>"+esc(f.stand)+"</span> <span class='stold'>("+esc(f.stand_old)+")</span>";
-      c = standColorCls(f.stand);
-    } else { inner = esc(f.stand); c = standColorCls(f.stand); }
+    else { inner = esc(f.stand); c = standColorCls(f.stand); }
     if(!c) return inner;
     if(hlArea && standArea(typ, f) === hlArea) return "<span class='sthl "+c+"'>"+inner+"</span>";
     return "<span class='st "+c+"'>"+inner+"</span>";
