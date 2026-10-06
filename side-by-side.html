@@ -585,7 +585,8 @@ try{
     var inner, c;
     if(ms){ inner = esc(ms); c = standColorCls(ms); }
     else if(f.stand_old && f.stand_old !== f.stand){
-      inner = esc(f.stand)+" <span class='stold'>"+esc(f.stand_old)+"</span>";
+      /* bay 轉過：淨顯示新 bay，紅色提示；舊 bay 撳入詳情先見 */
+      inner = "<span class='stchg'>"+esc(f.stand)+"</span>";
       c = standColorCls(f.stand);
     } else { inner = esc(f.stand); c = standColorCls(f.stand); }
     if(!c) return inner;
