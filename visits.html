@@ -14,12 +14,56 @@
   th{color:#8fa8bd;font-weight:600;font-size:11px;}
   .err{color:#ff6b6b;}
   button{background:#006b6e;color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:14px;}
+  #gate{position:fixed;inset:0;z-index:9999;background:#0b1c2c;display:flex;align-items:center;justify-content:center;}
+  #gate[hidden]{display:none;}
+  #gate .gcard{background:#12293d;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:28px 24px;text-align:center;max-width:300px;}
+  #gate input{width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:#0b1c2c;color:#e8f1f8;font-size:16px;margin:12px 0;}
+  #gate .gerr{color:#ff6b6b;font-size:13px;min-height:18px;}
 </style>
 </head>
 <body>
-<h1>訪問記錄</h1>
-<div class="sub">只記時間、瀏覽器、系統，不記 IP · 保留 90 日</div>
-<div id="box"><button onclick="load()">載入記錄</button></div>
+<div id="gate" hidden>
+  <div class="gcard">
+    <div style="font-size:16px;font-weight:700;">訪問記錄</div>
+    <div style="color:#8fa8bd;font-size:12px;margin-top:4px;">請輸入密碼</div>
+    <input type="password" id="gatePw" placeholder="密碼" autocomplete="off">
+    <div class="gerr" id="gateErr"></div>
+    <button id="gateGo" style="width:100%;">進入</button>
+  </div>
+</div>
+<div id="main" hidden>
+  <h1>訪問記錄</h1>
+  <div class="sub">只記時間、瀏覽器、系統，不記 IP · 保留 90 日</div>
+  <div id="box"><button onclick="load()">載入記錄</button></div>
+</div>
+<script>
+/* 同主頁共用同一個密碼門 (hkia-auth-v1) */
+(function(){
+  var HASH="19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896";
+  var KEY="hkia-auth-v1";
+  var gate=document.getElementById("gate"), main=document.getElementById("main");
+  try{ if(localStorage.getItem(KEY)==="1"){ main.hidden=false; return; } }catch(e){}
+  gate.hidden=false;
+  var pw=document.getElementById("gatePw"), err=document.getElementById("gateErr");
+  function sha256(s){
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function(b){
+      return Array.from(new Uint8Array(b)).map(function(x){return ("0"+x.toString(16)).slice(-2);}).join("");
+    });
+  }
+  function go(){
+    err.textContent="";
+    sha256(pw.value).then(function(h){
+      if(h===HASH){
+        try{ localStorage.setItem(KEY,"1"); }catch(e){}
+        gate.hidden=true; main.hidden=false;
+      }else{ err.textContent="密碼錯誤"; pw.value=""; pw.focus(); }
+    });
+  }
+  document.getElementById("gateGo").addEventListener("click",go);
+  pw.addEventListener("keydown",function(e){ if(e.key==="Enter")go(); });
+  setTimeout(function(){ pw.focus(); },300);
+})();
+</script>
 <script>
 var TOKEN='lt8ZHWKRVAip4ASDOhZ5Qzgk8I7I-RMl';
 var API='https://xiaojian-visit-log.xiaojian-hk.workers.dev/logs?token='+TOKEN;
@@ -27,7 +71,6 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;
 function fmt(iso){
   try{
     var d=new Date(iso);
-    // 轉做 HKT (UTC+8) 手動格式化，避開 toLocaleString 相容問題
     var hkt=new Date(d.getTime()+8*3600*1000);
     function p(n){return (n<10?'0':'')+n;}
     return p(hkt.getUTCMonth()+1)+'/'+p(hkt.getUTCDate())+' '+p(hkt.getUTCHours())+':'+p(hkt.getUTCMinutes());
