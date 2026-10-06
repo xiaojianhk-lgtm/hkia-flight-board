@@ -1,7 +1,7 @@
 /* HKIA Flight Board PWA service worker */
 var CACHE = "hkia-v1";
 var ASSETS = [
-  "./side-by-side.html",
+  "./hkiaflight.html",
   "./manifest.json",
   "./plane-icon.png",
   "./apple-touch-icon.png",
@@ -30,6 +30,6 @@ self.addEventListener("fetch", function(e){
         caches.open(CACHE).then(function(c){ c.put(e.request, copy); });
         return resp;
       });
-    }).catch(function(){ return caches.match("./side-by-side.html"); })
+    }).catch(function(){ return caches.match("./hkiaflight.html"); })
   );
 });
