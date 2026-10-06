@@ -584,7 +584,10 @@ try{
     var ms = manualStand(typ, f);
     var inner, c;
     if(ms){ inner = esc(ms); c = standColorCls(ms); }
-    else { inner = esc(f.stand); c = standColorCls(f.stand); }
+    else if(f.stand_old && f.stand_old !== f.stand){
+      inner = esc(f.stand)+" <span class='stold'>"+esc(f.stand_old)+"</span>";
+      c = standColorCls(f.stand);
+    } else { inner = esc(f.stand); c = standColorCls(f.stand); }
     if(!c) return inner;
     if(hlArea && standArea(typ, f) === hlArea) return "<span class='sthl "+c+"'>"+inner+"</span>";
     return "<span class='st "+c+"'>"+inner+"</span>";
