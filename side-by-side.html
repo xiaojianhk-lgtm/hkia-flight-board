@@ -399,6 +399,7 @@ try{
 </header>
 
 <div class="stickybar"><div class="stickyinner">
+  <div id="staleWarn" hidden style="background:#fff3e0; color:#e65100; font-size:12px; padding:6px 12px; border-radius:6px; margin-bottom:6px; text-align:center;">⚠️ 數據已超過 <b id="staleAge">—</b> 未更新，自動更新可能已停止</div>
   <div class="ts" id="stickyTs"><span>資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</span><span class="tsbtns">
       <button id="themeBtn" class="tsbtn" title="日／夜模式" aria-label="切換日夜模式">
         <svg id="icoSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/></svg>
@@ -556,6 +557,20 @@ try{
     var changed = f.est && f.est !== "—" && f.est !== f.eta;
     if(changed) return "<span class='tchg'>"+esc(t)+"</span><span class='tmark tchg'>E</span>";
     return esc(t)+"<span class='tmark'>E</span>";
+  }
+  function checkStale(genAt){
+    var el = $("staleWarn"); if(!el) return;
+    var m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/.exec(genAt || "");
+    if(!m){ el.hidden = true; return; }
+    var gen = new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5]);
+    var ageMin = (Date.now() - gen.getTime()) / 60000;
+    if(ageMin > 60){
+      var h = Math.floor(ageMin / 60);
+      $("staleAge").textContent = h > 0 ? ("約 " + h + " 小時") : ("約 " + Math.floor(ageMin) + " 分鐘");
+      el.hidden = false;
+    } else {
+      el.hidden = true;
+    }
   }
   function toMin(t){
     var m = /^(\d{1,2}):(\d{2})/.exec(t || "");
@@ -942,7 +957,7 @@ try{
       .then(function(d){
         if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
           DB = d;
-          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
+          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
           buildDates(); render();
         }
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
@@ -1265,7 +1280,7 @@ try{
       .then(function(d){
         if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
           DB = d;
-          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
+          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
           buildDates();
           checkBayWatch();
           done("updated");
@@ -1407,6 +1422,7 @@ try{
       if(!DB.dates || !DB.days) throw new Error("bad data");
       dateIdx = 1;
       $("headTs").textContent = d.generated_at || "—";
+      checkStale(d.generated_at);
       buildDates();
       render();
       /* 開頁停喺時間線上 8 班（上面仲有 10 班，要碌上去先見） */
@@ -1441,6 +1457,7 @@ try{
           var sy = window.scrollY, keepEx = expanded;
           DB = d;
           $("headTs").textContent = d.generated_at;
+          checkStale(d.generated_at);
           buildDates(); render();
           if(keepEx){ expanded = true; render(); }
           checkBayWatch();
