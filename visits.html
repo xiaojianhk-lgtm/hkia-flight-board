@@ -83,9 +83,9 @@ function load(){
     return r.json();
   }).then(function(rows){
     if(!rows.length){document.getElementById('box').innerHTML='暫無記錄';return;}
-    var h='<table><tr><th>時間 (HKT)</th><th>系統</th><th>瀏覽器</th><th>頁面</th></tr>';
+    var h='<table><tr><th>時間 (HKT)</th><th>設備</th><th>系統</th><th>瀏覽器</th><th>頁面</th></tr>';
     rows.forEach(function(v){
-      h+='<tr><td>'+esc(fmt(v.t))+'</td><td>'+esc(v.os)+'</td><td>'+esc(v.browser)+'</td><td>'+esc(v.page)+'</td></tr>';
+      h+='<tr><td>'+esc(fmt(v.t))+'</td><td>'+esc((v.device||'—').slice(0,8))+'</td><td>'+esc(v.os)+'</td><td>'+esc(v.browser)+'</td><td>'+esc(v.page)+'</td></tr>';
     });
     document.getElementById('box').innerHTML=h+'</table>';
   }).catch(function(e){
