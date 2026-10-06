@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1c2c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1c2c'/%3E%3Cg transform='translate(10 10) scale(1.833)'%3E%3Cpath d='M21.5 15.5v-2l-8.5-5v-5.6c0-.8-.7-1.4-1.5-1.4s-1.5.6-1.5 1.4v5.6l-8.5 5v2l8.5-2.6v5.3l-2.4 1.7v1.6l3.9-1 3.9 1v-1.6l-2.4-1.7v-5.3l8.5 2.6z' fill='%234fc3f7'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1c2c'/%3E%3Cg transform='translate(10 10) scale(1.833)'%3E%3Cpath d='M21.5 15.5v-2l-8.5-5v-5.6c0-.8-.7-1.4-1.5-1.4s-1.5.6-1.5 1.4v5.6l-8.5 5v2l8.5-2.6v5.3l-2.4 1.7v1.6l3.9-1 3.9 1v-1.6l-2.4-1.7v-5.3l8.5 2.6z' fill='%234fc3f7'/%3E%3C/g%3E%3C/svg%3E">
+<title>航班資訊 · 香港國際機場</title>
+<script>
+/* 日／夜模式：盡早套用，避免閃爍（localStorage > 系統偏好 > 預設夜晚） */
+try{
+  var _t = localStorage.getItem("hkia-theme");
+  if(_t !== "light" && _t !== "dark"){
+    _t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+  }
+  document.documentElement.setAttribute("data-theme", _t);
+  var _mc = document.querySelector('meta[name="theme-color"]');
+  if(_mc) _mc.setAttribute("content", _t === "light" ? "#eef2f6" : "#0b1c2c");
+}catch(e){ document.documentElement.setAttribute("data-theme", "dark"); }
+</script>
+<style>
+  :root{
+    --bg:#0b1c2c; --bg2:#10263c; --card:#132c44; --line:#1f3a55;
+    --text:#e8f1f8; --muted:#8fa8bd; --dim:#8fa8bd; --strong:#ffffff;
+    --accent:#ffb300; --accent2:#4fc3f7;
+    --input-bg:#0a1928; --placeholder:#5b748c;
+    --header-bg:rgba(11,28,44,.96); --header-bg-solid:rgb(11,28,44);
+    --row-line:rgba(31,58,85,.55); --row-alt:rgba(255,255,255,.018);
+    --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
+    --red:#ef5350; --green:#9ccc65; --green2:#8bc34a; --blue:#4fc3f7;
+    --sched:#ffffff;
+    --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72); --error-fg:#ef9a9a;
+  }
+  /* 白天模式 */
+  [data-theme="light"]{
+    --bg:#eef2f6; --bg2:#ffffff; --card:#ffffff; --line:#d8e2ec;
+    --text:#16283a; --muted:#5f7a93; --dim:#5f7a93; --strong:#0f1e2e;
+    --accent:#b97a00; --accent2:#0288d1;
+    --input-bg:#e6edf4; --placeholder:#8fa0b3;
+    --header-bg:rgba(255,255,255,.96); --header-bg-solid:#ffffff;
+    --row-line:#e3eaf1; --row-alt:rgba(0,0,0,.028);
+    --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
+    --red:#d32f2f; --green:#558b2f; --green2:#33691e; --blue:#0288d1;
+    --sched:#16283a;
+    --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45); --error-fg:#c62828;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  button{transition:transform .12s ease;}
+  button:active{transform:scale(.96);}
+  html,body{margin:0; padding:0;}
+  html{scrollbar-gutter:stable;}  /* 桌面版篩選行數變化時，預留 scrollbar 位，版面唔會橫跳 */
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","PingFang TC","Microsoft JhengHei",sans-serif;
+    font-size:14px; line-height:1.45;
+    touch-action:pan-y pinch-zoom; /* 停用雙擊放大，等頁面接管雙擊（抄新版） */
+  }
+  /* ---------- splash ---------- */
+  #splash{
+    position:fixed; inset:0; z-index:50; background:radial-gradient(120% 100% at 50% 0%, var(--bg2), var(--bg));
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    transition:opacity .45s ease; padding:24px; text-align:center;
+  }
+  #splash.hide{opacity:0; pointer-events:none;}
+  #splash .plane{width:64px; height:64px; color:var(--accent2);}
+  #splash h1{font-size:44px; margin:6px 0 0; letter-spacing:12px; text-indent:12px; font-weight:700;}
+  #splash .sub{font-size:18px; color:var(--muted); letter-spacing:6px; text-indent:6px;}
+  #splash .caps{font-size:11px; letter-spacing:4px; color:var(--muted); opacity:.8;}
+  #splash .ts{font-size:12px; color:var(--muted); margin-top:8px;}
+  #splash .bar{width:min(280px,70vw); height:3px; background:var(--line); border-radius:2px; overflow:hidden; margin-top:14px;}
+  #splash .bar i{display:block; height:100%; width:0; background:var(--accent2); border-radius:2px; animation:load 1.4s ease forwards;}
+  @keyframes load{to{width:100%;}}
+  #splashAbout{margin-top:10px;}
+  /* ---------- header（碌走唔固定） ---------- */
+  header{
+    background:var(--header-bg);
+    border-bottom:1px solid var(--line);
+    padding:10px 16px 10px 24px; padding-right:104px;
+  }
+  /* ---------- sticky 控制列：tab＋日期＋搜尋固定頂部 ---------- */
+  .stickybar{
+    position:-webkit-sticky; position:sticky; top:0; z-index:10;
+    background:rgba(11,28,44,.85);
+    -webkit-backdrop-filter:blur(14px) saturate(1.3);
+    backdrop-filter:blur(14px) saturate(1.3);
+    border-bottom:1px solid var(--line);
+  }
+  [data-theme="light"] .stickybar{ background:rgba(255,255,255,.85); }
+  .stickyinner{max-width:1100px; margin:0 auto; padding:0 8px;}
+  #stickyTs{padding:6px 0 4px; font-size:11px; display:flex; align-items:center; gap:8px;}
+  .tsbtns{margin-left:auto; display:flex; gap:14px; align-items:center; flex:0 0 auto;}
+  .tsbtn{
+    width:38px; height:38px; border-radius:50%; flex:0 0 auto;
+    border:1px solid var(--line); background:var(--card); color:var(--text);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .tsbtn:active{transform:scale(.92);}
+  .tsbtn svg{width:19px; height:19px;}
+  header .row1{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .plane-ico{width:24px; height:24px; color:var(--accent2); flex:none;}
+  #capsLine .hkg{color:var(--text); font-weight:800; letter-spacing:2px;}
+  header h2{font-size:19px; margin:0; letter-spacing:4px;}
+  header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
+  .ts{font-size:12px; color:var(--muted); margin-top:2px;}
+  .ts b{color:var(--accent); font-weight:600;}
+  #headAbout{margin-left:auto;}
+
+  .linkbtn{
+    background:none; border:1px solid var(--line); border-radius:14px;
+    color:var(--accent2); font-size:12px; cursor:pointer; padding:5px 12px; letter-spacing:2px;
+  }
+  .linkbtn:active{transform:scale(.95);}
+  /* ---------- controls ---------- */
+  main{padding:8px 8px 32px; max-width:1100px; margin:0 auto;}
+  .controls{padding:10px 2px 0; display:flex; flex-direction:column; gap:8px;}
+  .tabs{display:flex; background:var(--input-bg); border:1px solid var(--line); border-radius:10px; padding:3px;}
+  .tabs button{
+    flex:1; border:0; background:transparent; color:var(--muted);
+    font-size:15px; padding:9px; border-radius:7px; cursor:pointer; letter-spacing:3px;
+  }
+  .tabs button.on{background:var(--accent2); color:var(--tab-on-fg); font-weight:700;}
+  .dates{display:flex; gap:8px;}
+  .dates button{
+    flex:1; background:var(--input-bg); border:1px solid var(--line); color:var(--muted);
+    border-radius:10px; padding:3px 4px; font-size:11px; cursor:pointer; line-height:1.3; letter-spacing:1px;
+  }
+  .dates button small{font-size:10px; opacity:.8;}
+  .dates button.on{border-color:var(--accent2); color:var(--strong); font-weight:600;}
+  .countrow{display:flex; justify-content:space-between; align-items:center; padding:8px 4px; gap:8px;}
+  .count{font-size:12px; color:var(--muted);}
+  .hidecargo{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;}
+  .hidecargo input{accent-color:var(--accent2);}
+  .cbadge{
+    display:inline-block; font-size:10px; background:var(--badge-bg); color:var(--badge-fg);
+    border:1px solid var(--badge-bd); border-radius:4px; padding:0 4px; margin-left:5px;
+    vertical-align:1px; font-weight:400; letter-spacing:1px;
+  }
+  .cbadge.cancel{
+    background:rgba(211,47,47,.14); color:var(--red); border-color:var(--red);
+    font-weight:700;
+  }
+  /* 取消航班：成行淡啲 */
+  tr.rw.cancelled td{opacity:.55;}
+  .mrow.cancelled{opacity:.55;}
+  .mrow.cancelled .cbadge.cancel, tr.rw.cancelled .cbadge.cancel{opacity:1;}
+  /* ---------- table ---------- */
+  .tablewrap{overflow-x:clip; border:1px solid var(--line); border-radius:8px; background:var(--bg2);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px; font-variant-numeric:tabular-nums;}
+  thead th{
+    position:sticky; top:var(--barH,0px); background:var(--card);
+    padding:7px 6px; text-align:left; font-size:11px; letter-spacing:1px; color:var(--muted);
+    border-bottom:1px solid var(--line); white-space:nowrap;
+  }
+  thead th .lbl{display:block; margin-bottom:4px;}
+  #q{
+    width:100%; min-width:110px; max-width:190px;
+    background:var(--input-bg); border:1px solid var(--line); border-radius:6px; color:var(--text);
+    font-size:13px; padding:5px 8px; outline:none;
+  }
+  #q:focus{border-color:var(--accent2);}
+  #q::placeholder{color:var(--placeholder);}
+  tbody td{padding:6px; border-bottom:1px solid var(--row-line); white-space:nowrap;}
+  tbody tr:nth-child(even){background:var(--row-alt);}
+  td.fid{font-weight:600; color:var(--strong);}
+  td.eta{color:var(--sched);} td.ata{color:var(--sched);}
+  td.fid{font-weight:600;}
+  @media (min-width:720px){
+    td.fid{font-size:14px;}
+    .st{font-size:14px;}
+  }
+  .estchg{color:var(--green); font-weight:700;}
+  /* 到港預計：加深綠色 */
+  .estchg.arr{color:var(--green2);}
+  /* 實際(A)／預計(E)時間標記：細細隻跟住時間 */
+  .tmark{font-size:10px; font-weight:600; margin-left:2px; letter-spacing:.5px; opacity:.85;}
+  td.dim{color:var(--muted);}
+  .c-blue{color:var(--blue);} .c-green{color:var(--green);} .c-red{color:var(--red);} .c-sched{color:var(--sched);}
+  /* ---------- 桌面版專業化 ---------- */
+  @media (min-width:720px){
+    main{max-width:1180px; padding:16px 24px 48px;}
+    .tablewrap{
+      border-radius:12px;
+      box-shadow:0 1px 2px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.08);
+    }
+    table{font-size:14px;}
+    thead th{
+      font-size:11px; letter-spacing:2px; text-transform:uppercase;
+      padding:14px 20px; background:var(--bg2);
+      border-bottom:2px solid var(--line);
+    }
+    thead th .lbl{margin-bottom:6px;}
+    #q{font-size:13px; padding:7px 10px; max-width:220px;}
+    tbody td{padding:13px 20px; border-bottom:1px solid var(--row-line);}
+    tbody tr.rw{transition:background-color .15s ease;}
+    tbody tr.rw:hover td{background:rgba(79,195,247,.06);}
+    [data-theme="light"] tbody tr.rw:hover td{background:rgba(2,136,209,.05);}
+    tbody tr:nth-child(even){background:transparent;}
+    tbody tr:nth-child(even):hover td{background:rgba(79,195,247,.06);}
+    td.fid{font-size:15px; font-weight:800; letter-spacing:.5px;}
+    td.standcell, th.standth{text-align:right;}
+    /* 隱藏目的地欄顯示（搜尋照用 f.via） */
+    #thVia, td.viacell{display:none;}
+    /* 工具列：緊湊儀表板風 */
+    .controls{flex-direction:row; align-items:center; gap:12px; padding:12px 4px 4px;}
+    .dates{flex:0 0 auto;}
+    .dates button{flex:none; padding:6px 14px; font-size:12px; border-radius:8px;}
+    .dates button small{display:block;}
+    .tabs{flex:0 1 340px; margin-left:auto;}
+    .tabs button{font-size:14px; padding:8px; letter-spacing:2px;}
+    .countrow{padding:10px 4px;}
+    .searchrow{display:none;} /* 桌面用表頭搜尋框 */
+  }
+  tr.nowline td{padding:5px 6px; border-bottom:1px solid var(--line);}
+  .nl{display:flex; align-items:center; gap:8px; color:var(--accent); font-size:11px; font-weight:700; letter-spacing:2px; white-space:nowrap;}
+  .nl::before,.nl::after{content:""; flex:1; height:1px; background:var(--accent); opacity:.4;}
+  .mnowline{padding:7px 2px;}
+  /* 跨表搜尋嘅到港／離港分組標題 */
+  .mgroup{padding:10px 2px 4px; font-size:12px; font-weight:700; color:var(--accent2); letter-spacing:3px;}
+  tr.grow td{padding:8px 12px; font-size:12px; font-weight:700; color:var(--accent2); letter-spacing:3px; background:var(--bg2); border-bottom:1px solid var(--line);}
+  /* ---------- 撳入詳情 ---------- */
+  tr.rw{cursor:pointer;}
+  tbody tr.rw:hover td{background:rgba(79,195,247,.07);}
+  [data-theme="light"] tbody tr.rw:hover td{background:rgba(2,136,209,.07);}
+  tr.drow td{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 12px; white-space:normal;}
+  .ddetail{font-size:12px; color:var(--text); line-height:1.8;}
+  .ddetail span{color:var(--muted);}
+  .mrow{cursor:pointer; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;}  /* 長按加備註唔彈複製選單 */
+  .mdetail{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 4px;}
+  /* ---------- 備註（長按加，有備註先喺目的地後面加 ⭐️） ---------- */
+  .nst{font-size:12px; margin-left:2px;}
+  .ddate{font-size:11px; color:var(--dim); white-space:nowrap; margin-left:4px;}
+  .fdate{font-size:11px; color:var(--dim); white-space:nowrap; margin-left:4px; font-weight:400;}
+  .avgdur{font-size:11px; color:var(--dim); white-space:nowrap;}
+  /* 泊位：粗體；轉位紅字 */
+  .st{font-weight:600;}
+  .stchg{color:var(--red);}
+  /* 舊泊位（轉位前）：細字＋紅色刪除線；新泊位用正常顏色 */
+  .stold, .mstandold{font-size:11px; color:var(--dim); font-weight:400; text-decoration:line-through; text-decoration-color:var(--red); text-decoration-thickness:1px;}
+  /* 長按泊位嘅區域高亮：統一螢光黃底＋深色字 */
+  .hizone{background:#ffff00; border-radius:3px; padding:0 3px;}
+  .hizone .mstand, .hizone .stchg{color:#111;}
+  .hizone .mstandold, .hizone .dim{color:#333;}
+  td.standcell.hizone{padding:2px 8px; color:#111;}
+  td.standcell.hizone .stchg{color:#111;}
+  td.standcell.hizone .dim{color:#333;}
+  .st .dim{font-weight:400;} /* 包住新舊泊位嗰陣，舊泊位唔跟粗 */
+  tr.rw.noted td{background:rgba(245,179,1,.22);}
+  tbody tr.rw.noted:hover td{background:rgba(245,179,1,.30);}
+  [data-theme="light"] tr.rw.noted td{background:rgba(245,179,1,.30);}
+  .mrow.noted{background:rgba(245,179,1,.22);}
+  [data-theme="light"] .mrow.noted{background:rgba(245,179,1,.32);}
+  .rw.noted,.mrow.noted{-webkit-touch-callout:none;}
+  .noteinput{background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:4px 6px; font-size:16px; width:55%;}
+  .nbtn{background:var(--input-bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:3px 8px; font-size:12px; cursor:pointer; margin-left:4px;}
+  .notewrap{display:flex; align-items:center; flex-wrap:wrap; gap:4px;}
+  .expandbar{padding:10px; text-align:center;}
+  .expandbar button{
+    background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
+    padding:8px 18px; font-size:13px; cursor:pointer; letter-spacing:1px;
+  }
+  .expandbar button:active{transform:scale(.96);}
+  /* 列表內頂部展開掣（抄新版 tr.xrow） */
+  tr.xrow td{padding:8px 4px; text-align:center;}
+  tr.xrow .xrowbtn{
+    background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
+    padding:8px 18px; font-size:13px; cursor:pointer;
+  }
+  div.xrowdiv{padding:8px 4px; text-align:center;}
+  div.xrowdiv .xrowbtn{
+    background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
+    padding:8px 18px; font-size:13px; cursor:pointer;
+  }
+  .error{padding:24px; text-align:center; color:var(--error-fg);}
+  /* ---------- mobile compact rows ---------- */
+  #cards{display:none;}
+  .mhead{display:none;} /* 桌面版唔用手機標題 */
+  @media (max-width:719px), (orientation:landscape) and (max-height:500px){
+    .tablewrap{display:none;}
+    #cards{display:block;}
+    /* 手機版固定標題（抄新版 thead 概念；顏色跟上面搜尋欄一體） */
+    .mhead{
+      display:grid; grid-template-columns:1fr 120px 1fr; gap:7px;
+      position:sticky; top:var(--barH,0px); z-index:5;
+      background:rgba(11,28,44,.85);
+      -webkit-backdrop-filter:blur(14px) saturate(1.3);
+      backdrop-filter:blur(14px) saturate(1.3);
+      padding:8px 2px;
+      font-size:11px; color:var(--muted); letter-spacing:1px; white-space:nowrap;
+      border-bottom:2px solid var(--line);
+    }
+    [data-theme="light"] .mhead{ background:rgba(255,255,255,.85); }
+    .mhead span:nth-child(1){text-align:left;}
+    .mhead span:nth-child(2){text-align:center;}
+    .mhead span:nth-child(3){text-align:right;}
+    .mrow{padding:6px 2px; border-bottom:1px solid var(--line);}
+    .mline1{display:grid; grid-template-columns:1fr 120px 1fr; align-items:baseline; gap:7px;}
+    .mleft{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+    .mright{min-width:0; text-align:right; white-space:nowrap;}
+    .mdest{display:none;} /* 隱藏目的地顯示，搜尋照用 f.via */
+    .mflight{font-weight:600; font-size:16px; white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mdest{font-size:10px; color:var(--dim); white-space:nowrap; opacity:.75;}
+    .mstandwrap{text-align:center; white-space:nowrap;}
+    .mstandwrap-r{text-align:right; white-space:nowrap;}
+    .mtimewrap{white-space:nowrap; position:relative; width:120px; text-align:center;}
+    .mtimewrap .ddate{position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:5px;}
+    .mtimewrap .ddate ~ .ddate{margin-left:54px;}
+    .mtime{font-weight:600; font-size:15px; color:var(--sched); white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mtime-ata{font-weight:600; font-size:15px; color:var(--sched); white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mtime-est{font-weight:600; font-size:15px; color:var(--green); white-space:nowrap; font-variant-numeric:tabular-nums;}
+    .mtime-est.arr{color:var(--green2);}
+    .msep{color:var(--dim); font-size:13px; margin:0 2px;}
+    .mstand{font-size:16px; font-weight:600; color:var(--text);}
+    .mline2{font-size:11px; color:var(--dim); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums;}
+    #q{max-width:none;}
+    .searchrow{padding:8px 2px 10px;}
+  }
+  @media (min-width:720px){ .searchrow{display:none;} }
+  @media (orientation:landscape) and (max-height:500px){ .searchrow{display:block !important;} }
+  .searchrow input{
+    width:100%; background:var(--input-bg); border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-size:16px; padding:9px 12px; outline:none;
+  }
+  .searchrow input::placeholder{color:var(--placeholder);}
+  .swrap{position:relative;}
+  .swrap input{padding-right:40px;}
+  .swrap input::-webkit-search-cancel-button{-webkit-appearance:none; appearance:none;}
+  .qclear{
+    display:none; position:absolute; right:4px; top:50%; transform:translateY(-50%);
+    width:32px; height:32px; border:0; background:transparent; color:var(--dim);
+    font-size:15px; line-height:1; padding:0; cursor:pointer;
+  }
+  .swrap.hasq .qclear{display:block;}
+  /* ---------- about overlay ---------- */
+  #aboutOverlay{
+    position:fixed; inset:0; z-index:60; background:var(--overlay-bg);
+    display:none; align-items:center; justify-content:center; padding:22px;
+  }
+  #aboutOverlay.open{display:flex;}
+  .about-card{
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px;
+    max-width:430px; width:100%; padding:20px 20px 16px;
+    box-shadow:0 8px 32px rgba(0,0,0,.5); max-height:84vh; overflow-y:auto;
+  }
+  .about-card h3{margin:0 0 10px; font-size:17px; letter-spacing:3px;}
+  .about-card ul{margin:0 0 10px; padding-left:20px; font-size:13px; color:var(--text);}
+  .about-card li{margin-bottom:7px;}
+  .about-card .fine{font-size:11.5px; color:var(--muted); margin:0 0 14px;}
+  .about-card button{
+    width:100%; background:var(--accent2); border:0; border-radius:8px;
+    color:var(--tab-on-fg); font-size:14px; font-weight:700; padding:10px; cursor:pointer; letter-spacing:2px;
+  }
+  .about-card button:active{transform:scale(.97);}
+</style>
+<script data-goatcounter="https://xiaojian.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+
+<div id="splash" aria-hidden="true">
+  <svg class="plane" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M21.5 15.5v-2l-8.5-5v-5.6c0-.8-.7-1.4-1.5-1.4s-1.5.6-1.5 1.4v5.6l-8.5 5v2l8.5-2.6v5.3l-2.4 1.7v1.6l3.9-1 3.9 1v-1.6l-2.4-1.7v-5.3l8.5 2.6z"/>
+  </svg>
+  <h1>航班資訊</h1>
+  <div class="sub">香港國際機場</div>
+  <div class="caps">FLIGHT INFORMATION · HKG</div>
+  <div class="ts" id="splashTs">資料擷取時間：—</div>
+  <div class="bar"><i></i></div>
+  <button id="splashAbout" class="linkbtn">關於</button>
+</div>
+
+<div id="aboutOverlay" role="dialog" aria-modal="true" aria-label="關於">
+  <div class="about-card">
+    <h3>關於航班資訊</h3>
+    <ul>
+      <li>資料來源：香港國際機場官方網站，每 15 分鐘自動更新。</li>
+      <li>開住個頁唔郁超過一分鐘，有新資料會靜靜自動更新（捲動位置、搜尋同展開狀態不變）；睇緊詳情、打緊字嗰陣唔會郁。</li>
+      <li>手機喺航班列表向左滑動轉去離港、向右滑動返到港；連點三下開搜尋欄。</li>
+      <li>支援 <b>到港／離港</b> 切換，及 <b>昨天／今天／明天</b> 查詢（每日 00:00–23:59）。</li>
+      <li>在搜尋框輸入 Flight ID、來往地或泊位關鍵字，即時篩選。搜泊位（如 N5、S33）會同時顯示到港同離港，分兩組排列。</li>
+      <li>貨運航班以 <span class="cbadge">貨</span> 標示，可用「隱藏貨機」／「隱藏客機」過濾；「H**代理」開咗只顯示 H** 地勤代理嘅航空公司（UO／Z2／QZ／AK／FD 默認隱藏）。</li>
+      <li>長按客機加備註（目的地後面 ⭐️＋整行高亮）；有備註嘅航班撳即展開詳情（備註、延誤時間、行李帶／大堂、泊位變動），冇備註撳落去冇反應。備註存喺呢部裝置，唔會畀數據更新覆蓋。</li>
+      <li>長按貨機手動輸入泊位（存喺呢部裝置，數據更新唔會覆蓋；其他航班資料照常自動更新）。保存後自動收起；清空泊位欄再按保存、或按刪除掣即清除。</li>
+      <li>長按<b>泊位格</b>可將同一區域（S／N／W／R）嘅泊位全部螢光黃高亮，再長按取消；重開頁面自動清除。</li>
+      <li>時間列右邊嘅 ⟳ 可手動重新載入最新資料；☀️／🌙 可切換日間／夜間模式。</li>
+      <li>時間顏色：<span class="c-sched">白色</span>為原定時間，<span class="c-green">綠色</span>為預計時間（到港用深綠色）。字母標記：<b>S</b>＝原定時間，<b>E</b>＝預計時間，<b>A</b>＝實際時間（到港／離港都有）。</li>
+    </ul>
+    <p class="fine">時間為香港時間 (HKT)。航班資料僅供參考，請以機場官方公布為準。</p>
+    <button id="aboutClose">關閉</button>
+  </div>
+</div>
+
+
+<header>
+  <div class="row1">
+    <svg class="plane-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+    <h2>航班資訊</h2>
+    <span class="caps" id="capsLine">FLIGHT INFORMATION · HKG</span>
+    <button id="headAbout" class="linkbtn">關於</button>
+  </div>
+</header>
+
+<div class="stickybar"><div class="stickyinner">
+  <div class="ts" id="stickyTs"><span>資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</span><span class="tsbtns"><button id="themeBtn" class="tsbtn" title="日／夜模式" aria-label="切換日夜模式">
+  <svg id="icoSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/>
+  </svg>
+  <svg id="icoMoon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none">
+    <path d="M20.6 14.5A8.8 8.8 0 0 1 9.5 3.4a.7.7 0 0 0-.9-.9 10.2 10.2 0 1 0 12.9 12.9.7.7 0 0 0-.9-.9z"/>
+  </svg>
+</button><button id="refreshBtn" class="tsbtn" title="更新" aria-label="更新資料">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>
+  </svg>
+</button></span></div>
+  <div class="controls">
+    <div class="dates" id="datePills" aria-label="選擇日期"></div>
+    <div class="tabs" role="tablist" aria-label="到港或離港">
+      <button data-tab="arrival" class="on" role="tab">到港</button>
+      <button data-tab="departure" role="tab">離港</button>
+    </div>
+  </div>
+  <div class="countrow">
+    <span class="count" id="countLine"></span>
+    <label class="hidecargo"><input type="checkbox" id="hidePax"> 隱藏客機</label>
+    <label class="hidecargo"><input type="checkbox" id="hideCargo" checked> 隱藏貨機</label>
+    <label class="hidecargo"><input type="checkbox" id="showHas" checked> H**代理</label>
+  </div>
+  <div class="searchrow">
+    <div class="swrap">
+      <input id="qm" type="search" placeholder="搜尋 Flight ID／來往地／泊位…" autocomplete="off">
+      <button id="qclear" class="qclear" aria-label="清除搜尋">✕</button>
+    </div>
+  </div>
+</div></div>
+
+<main>
+  <div class="tablewrap">
+    <table id="flightTable" aria-label="航班">
+      <thead>
+        <tr>
+          <th><span class="lbl">Flight ID</span><input id="q" type="search" placeholder="關鍵字篩選…" autocomplete="off"></th>
+          <th id="thVia">來自</th><th id="thEta">ETA</th><th id="thAta">ATA</th><th id="thStand" class="standth">STAND</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div class="mhead" id="mhead"><span>Flight ID</span><span id="mheadTime">STA/ETA</span><span id="mheadStand">STAND</span></div>
+  <div id="cards"></div>
+  <div class="expandbar" id="expandBar" style="display:none">
+    <button id="expandBtn"></button>
+  </div>
+  <div class="error" id="errBox" style="display:none"></div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var PAGE = 12;
+  var DB = null;
+  var tab = "arrival", dateIdx = 1, hideCargo = true, hidePax = false, onlyHas = true, query = "";
+  var filtered = [], expanded = false, lastStart = 0;
+  var nowlineTimer = null;
+  var detailFlight = null, lastList = [];
+  /* 備註＋手動泊位：存瀏覽器 localStorage，同 data.json 分開，15 分鐘更新唔會覆蓋 */
+  var WATCH = (function(){
+    try{
+      var w = JSON.parse(localStorage.getItem("hkia-watch-v1")) || {};
+      Object.keys(w).forEach(function(k){ if(!w[k] || (!w[k].note && !w[k].stand)) delete w[k]; });
+      return w;
+    }catch(e){ return {}; }
+  })();
+  var noteEditingKey = null, noteFocus = false;
+  var pressTimer = null, pressFlight = null, pressWatchKey = null, suppressClick = false;
+  function saveWatch(){ try{ localStorage.setItem("hkia-watch-v1", JSON.stringify(WATCH)); }catch(e){} }
+  function watchKey(f){
+    /* 跨表搜尋時用航班真正所屬 tab，等喺正常視圖睇返同一班機都對得上備註 */
+    var t = f._tab || tab;
+    var d = f._date || ((DB && DB.dates && DB.dates[dateIdx]) ? DB.dates[dateIdx] : ("d"+dateIdx));
+    return d + "|" + t + "|" + opId(f);
+  }
+  /* 舊 key 用 tab 位（d0/d1/d2＝昨天／今天／明天）記，換日就對唔返；用建立時間推算真正日期 (HKT) 遷移到新 key */
+  (function migrateWatchKeys(){
+    var moved = false;
+    Object.keys(WATCH).forEach(function(k){
+      var m = /^d([012])\|(arrival|departure)\|(.+)$/.exec(k), w = WATCH[k];
+      if(!m || !w || !w.t) return;
+      var hk = new Date(w.t + 8*3600*1000);
+      hk.setUTCDate(hk.getUTCDate() + (+m[1]) - 1);
+      var ds = hk.getUTCFullYear() + "-" + ("0"+(hk.getUTCMonth()+1)).slice(-2) + "-" + ("0"+hk.getUTCDate()).slice(-2);
+      var nk = ds + "|" + m[2] + "|" + m[3];
+      if(nk === k) return;
+      if(WATCH[nk]){ if(w.note && !WATCH[nk].note) WATCH[nk].note = w.note; if(w.stand && !WATCH[nk].stand) WATCH[nk].stand = w.stand; }
+      else WATCH[nk] = w;
+      delete WATCH[k]; moved = true;
+    });
+    if(moved) saveWatch();
+  })();
+  function hasNote(f){
+    var k = watchKey(f), w = WATCH[k];
+    if(f.cargo){  /* 貨機唔用備註：舊有備註靜靜清走 */
+      if(w && w.note){ delete w.note; if(!w.stand) delete WATCH[k]; saveWatch(); }
+      return false;
+    }
+    return !!(w && w.note);
+  }
+  function manualStand(f){ var w = WATCH[watchKey(f)]; return (w && w.stand) || ""; }
+  function commitNote(){
+    var ni = document.getElementById("noteInput");
+    var si = document.getElementById("standInput");
+    var k = noteEditingKey;
+    noteEditingKey = null;
+    if(k){
+      WATCH[k] = WATCH[k] || {t:Date.now()};
+      if(ni){
+        var v = ni.value.trim();
+        if(v) WATCH[k].note = v; else delete WATCH[k].note;
+      }
+      if(si){
+        var s = si.value.trim().toUpperCase();
+        if(s) WATCH[k].stand = s; else delete WATCH[k].stand;
+      }
+      if(!WATCH[k].note && !WATCH[k].stand) delete WATCH[k];
+      saveWatch();
+      if(!(WATCH[k] && WATCH[k].note)) detailFlight = null;  /* 無備註就收起，唔留空白 */
+    }
+    render();
+  }
+  function deleteNote(f){
+    var k = noteEditingKey;
+    noteEditingKey = null;
+    if(k && WATCH[k]){
+      if(f && f.cargo) delete WATCH[k].stand;  /* 貨機：刪除手動泊位 */
+      else delete WATCH[k].note;              /* 客機：刪除備註 */
+      if(!WATCH[k].note && !WATCH[k].stand) delete WATCH[k];
+      saveWatch();
+    }
+    detailFlight = null;
+    render();
+  }
+
+  var L = {
+    arrival:   {name:"到港", caps:"FLIGHT INFORMATION · HKG · 到港 ARRIVALS", via:"來自", stand:"STAND", eta:"STA", ata:"ATA"},
+    departure: {name:"離港", caps:"FLIGHT INFORMATION · HKG · 離港 DEPARTURES", via:"前往", stand:"GATE", eta:"STD", ata:"ATD"}
+  };
+  var DATE_NAMES = ["昨天","今天","明天"];
+
+  var rowsEl = document.getElementById("rows");
+  var cardsEl = document.getElementById("cards");
+  var expandBar = document.getElementById("expandBar");
+  var expandBtn = document.getElementById("expandBtn");
+  var countLine = document.getElementById("countLine");
+  var headCount = document.getElementById("headCount");
+  var q = document.getElementById("q"), qm = document.getElementById("qm");
+  var isMobile = function(){ return window.matchMedia("(max-width:719px), (orientation:landscape) and (max-height:500px)").matches; };
+
+  /* sticky 表頭（桌面版 thead）要留返 stickybar 高度 */
+  function setBarH(){
+    var b = document.querySelector(".stickybar");
+    if(b) document.documentElement.style.setProperty("--barH", b.offsetHeight + "px");
+  }
+
+  function norm(s){ return (s||"").replace(/\s+/g,"").toUpperCase(); }
+  function md(iso){ var p = String(iso).split("-"); return (+p[1]) + "/" + (+p[2]); }
+
+  /* current time in HKT as "HH:MM", for centering today's list */
+  function nowHHMM(){
+    var d = new Date();
+    var hkt = new Date(d.getTime() + (d.getTimezoneOffset() + 480) * 60000);
+    return ("0"+hkt.getHours()).slice(-2) + ":" + ("0"+hkt.getMinutes()).slice(-2);
+  }
+  function timeAnchorIndex(list){
+    var now = nowHHMM();
+    for(var i=0;i<list.length;i++){
+      var t = effTime(list[i]);
+      if(t && t !== "—" && t >= now) return i;
+    }
+    return list.length;
+  }
+
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  /* 生效日期：實際＞預計＞原定（est/ata 可能早過原定，落喺前一日） */
+  function effDate(f){
+    if(f.ata && f.ata !== "—" && f.ata_date) return f.ata_date;
+    if(f.est && f.est !== "—" && f.est_date) return f.est_date;
+    return f._date;
+  }
+
+  function tabFlights(t){
+    if(!DB || !DB.dates || !DB.days) return [];
+    /* 每日 00:00–23:59（日曆日），按生效日期歸位：
+       早到（est 早過原定一日）撥入前一日；延誤過午夜撥入後一日 */
+    var d0 = DB.dates[dateIdx];
+    if(!d0) return [];
+    var dIdx = DB.dates.indexOf(d0);
+    var list = [];
+    [dIdx-1, dIdx, dIdx+1].forEach(function(idx){
+      var d = DB.dates[idx];
+      if(!d || !DB.days[d] || !DB.days[d][t]) return;
+      var arr = DB.days[d][t];
+      for(var i=0;i<arr.length;i++){
+        tagFlightDate([arr[i]], d);  /* _date = 原定日期（資料檔日期） */
+        if(effDate(arr[i]) === d0) list.push(arr[i]);
+      }
+    });
+    /* 按生效時間排序（實際＞預計＞原定），時間線先擺得啱位 */
+    list.sort(function(a,b){
+      var ta = effTime(a), tb = effTime(b);
+      return ta < tb ? -1 : (ta > tb ? 1 : 0);
+    });
+    if(hideCargo) list = list.filter(function(f){ return !f.cargo; });
+    if(hidePax) list = list.filter(function(f){ return f.cargo; });
+    if(onlyHas) list = list.filter(isHasFlight);
+    /* 記住真正所屬 tab，跨表搜尋時備註 key 先啱 */
+    for(var k=0;k<list.length;k++){ if(list[k] && !list[k]._tab) list[k]._tab = t; }
+    return list;
+  }
+  function currentFlights(){ return tabFlights(tab); }
+
+  /* 記住每班機真正所屬日期（跨日併入時用嚟標日期、計備註 key） */
+  function tagFlightDate(list, d){
+    for(var i=0;i<list.length;i++){ if(list[i] && !list[i]._date) list[i]._date = d; }
+  }
+
+  // 只顯示營運航班編號（第一個），codeshare 保留作搜尋用。
+  function opId(f){ return (f.flight_id || "").split(" / ")[0]; }
+
+  // HAS 地勤代理嘅航空公司（用戶提供，2026-09-30；客／貨分開：KE/JL/QR 得客機先係 HAS）
+  var HAS_PAX_CODES = ["CX","PX","JX","KE","JL","QR","FJ","BI","LH","LX","DL","UO","AK","FD","Z2","QZ","GK","9G"];
+  var HAS_CARGO_CODES = ["CX","LD","QY","3V","C6","D4","MS","CK","AK","Z2"];
+  // 呢幾間客機雖係 HAS 代理，但 HAS 過濾開嗰陣默認隱藏（貨機唔受影響）
+  var LCC_HIDE = ["UO","Z2","QZ","AK","FD"];
+  function isHasFlight(f){
+    var code = opId(f).replace(/\s/g,"").substring(0,2).toUpperCase();
+    if(!f.cargo && LCC_HIDE.indexOf(code) !== -1) return false;
+    return (f.cargo ? HAS_CARGO_CODES : HAS_PAX_CODES).indexOf(code) !== -1;
+  }
+
+  /* 泊位查詢（N5、S33、W71、R16、純數字等）：觸發跨到港／離港搜尋 */
+  function isStandQuery(nq){
+    return /^([SNWRsnwr]?\d+)$/.test(nq);
+  }
+  /* crossSplit >= 0 時為跨表搜尋：filtered 前段係到港（0..crossSplit-1），後段係離港 */
+  var crossSplit = -1;
+  function matchFlight(f, nq){
+    // 純兩字母航空公司代碼：只配對營運方（搜 CX 唔出 UO 671/CX 5671 呢啲 codeshare）
+    if(/^[A-Z]{2}$/.test(nq)){
+      return norm(opId(f)).indexOf(nq) === 0;
+    }
+    return norm(f.flight_id).indexOf(nq) !== -1 || norm(f.via).indexOf(nq) !== -1 || norm(manualStand(f) || f.stand).indexOf(nq) !== -1;
+  }
+  function applyFilter(){
+    var nq = norm(query);
+    if(nq && isStandQuery(nq)){
+      var arr = tabFlights("arrival").filter(function(f){ return matchFlight(f, nq); });
+      var dep = tabFlights("departure").filter(function(f){ return matchFlight(f, nq); });
+      filtered = arr.concat(dep);
+      crossSplit = arr.length;
+    }else{
+      crossSplit = -1;
+      var all = currentFlights();
+      filtered = nq ? all.filter(function(f){ return matchFlight(f, nq); }) : all.slice();
+    }
+    expanded = false;
+    render();
+  }
+
+  function badge(f){
+    var h = f.cargo ? '<span class="cbadge">貨</span>' : "";
+    if(f.cancelled) h += '<span class="cbadge cancel">取消</span>';
+    return h;
+  }
+
+  /* 泊位所屬區域（長按高亮用）：S/N/W；R同純數字歸 R */
+  function standZone(s){
+    s = (s || "").trim().toUpperCase();
+    var c = s.charAt(0);
+    if(c === "S" || c === "N" || c === "W") return c;
+    if(c === "R" || /^\d+$/.test(s)) return "R";
+    return "";
+  }
+  /* hiZone：而家高亮緊邊個區域（"" = 無）；唔存 localStorage，重開頁面清除 */
+  var hiZone = "";
+  function hiCls(f){
+    if(!hiZone) return "";
+    var z = standZone(manualStand(f) || f.stand);
+    return (z && z === hiZone) ? " hizone" : "";
+  }
+  function toggleZoneHi(f){
+    var z = standZone(manualStand(f) || f.stand);
+    if(!z) return;
+    hiZone = (hiZone === z) ? "" : z;
+    render();
+  }
+  function standSpan(s, changed){
+    var cls = "st" + (changed ? " stchg" : "");
+    return "<span class='"+cls+"'>"+esc(s)+"</span>";
+  }
+
+  function dstandHtml(f){
+    var ms = manualStand(f);
+    if(ms) return standSpan(ms);  /* 手動泊位優先 */
+    if(f.stand_old && f.stand_old !== f.stand){
+      return "<span class='st'>"+esc(f.stand)+"</span> <span class='stold'>("+esc(f.stand_old)+")</span>";
+    }
+    return standSpan(f.stand);
+  }
+
+  function mstandHtml(f, wrap){
+    var inner;
+    var ms = manualStand(f);
+    if(ms){
+      inner = "<span class='mstand'>"+standSpan(ms)+"</span>";
+    }else if(f.stand_old && f.stand_old !== f.stand){
+      inner = "<span class='mstand'>"+esc(f.stand)+"</span> <span class='mstandold'>("+esc(f.stand_old)+")</span>";
+    }else{
+      inner = "<span class='mstand'>"+standSpan(f.stand||"—")+"</span>";
+    }
+    return "<span class='"+(wrap||"mstandwrap")+hiCls(f)+"'>"+inner+"</span>";
+  }
+
+  /* 實際時間後面加 A 標記（到港／離港都有） */
+  function ataMark(f){
+    return (f.ata && f.ata !== "—") ? "<span class='tmark'>A</span>" : "";
+  }
+  /* 到港只有原定時間（無預計／實際）時，原定時間後面加細 s */
+  function schedMark(f){
+    if(tab !== "arrival") return "";
+    var estShown = f.est && f.est !== "—" && f.est !== f.eta;
+    if(estShown) return "";
+    if(f.ata && f.ata !== "—") return "";  /* 有實際時間（就算同原定一樣）都唔係「只有 STA」 */
+    return "<span class='tmark'>S</span>";
+  }
+
+  function etaCell(f){
+    var h = esc(f.eta) + schedMark(f) + schedDateTag(f);
+    if(f.est && f.est !== "—" && f.est !== f.eta){
+      /* 到港預計：加深綠色＋E 標記 */
+      var arrE = (tab === "arrival");
+      h += " <span class='estchg"+(arrE?" arr":"")+"'>"+esc(f.est)+(arrE?"<span class='tmark'>E</span>":"")+"</span>"+dateTag(f,"est");
+    }
+    h += avgDurTag(f);
+    return h;
+  }
+  /* 只有 STA（無預計／實際）時，細細隻顯示該航線平均飛行時間 */
+  function avgDurTag(f){
+    if(!f.avg_dur) return "";
+    var estShown = f.est && f.est !== "—" && f.est !== f.eta;
+    var ataShown = f.ata && f.ata !== "—" && f.ata !== f.eta;
+    if(estShown || ataShown) return "";
+    return " <span class='avgdur'>~"+esc(f.avg_dur)+"</span>";
+  }
+  /* 預計／實際時間若同原定唔同日，後面加 (DD/MM) */
+  function dateTag(f, which){
+    var d = which === "est" ? f.est_date : f.ata_date;
+    var t = which === "est" ? f.est : f.ata;
+    if(!d || !t || t === "—") return "";
+    var sched = (DB && DB.dates && DB.dates[dateIdx]) || "";
+    if(!sched || d === sched) return "";
+    if(f._date && d === f._date) return "";  /* 已經喺原定時間標咗，唔重複 */
+    var p = d.split("-");
+    return "<span class='ddate'>("+p[2]+"/"+p[1]+")</span>";
+  }
+  /* 跨日航班：原定日期標喺航班編號後面（如 CX289 05），唔再放時間後面 */
+  function flightDateTag(f){
+    if(!f._date || !DB || !DB.dates || !DB.dates[dateIdx]) return "";
+    if(f._date === DB.dates[dateIdx]) return "";
+    var p = String(f._date).split("-");
+    if(p.length < 3) return "";
+    return " <span class='fdate'>"+p[2]+"</span>";
+  }
+  function schedDateTag(f){ return ""; }
+
+  function rowHtml(f, i){
+    var hn = hasNote(f);
+    var cls = 'rw'+(hn?" noted":"")+(f.cancelled?" cancelled":"");
+    return "<tr class='"+cls+"' data-i='"+i+"'><td class='fid'>"+esc(opId(f))+flightDateTag(f)+badge(f)+"</td>"+
+      "<td class='viacell'>"+esc(f.via)+(hn?" <span class='nst'>⭐️</span>":"")+"</td>"+
+      "<td class='eta'>"+etaCell(f)+"</td>"+
+      "<td class='ata'>"+esc(f.ata)+ataMark(f)+dateTag(f,"ata")+"</td><td class='standcell"+hiCls(f)+"'>"+dstandHtml(f)+"</td></tr>";
+  }
+
+  /* effective time: estimated if available, else scheduled — matches server sort */
+  function effTime(f){
+    if(f.ata && f.ata !== "—") return f.ata;
+    if(f.est && f.est !== "—") return f.est;
+    return f.eta || "—";
+  }
+
+  /* status text without the time (time moves to the right side) */
+  function mrowHtml(f, i){
+    var timeHtml = "<span class='mtime'>"+esc(f.eta||"—")+schedMark(f)+"</span>"+schedDateTag(f);
+    var estShown = f.est && f.est !== "—" && f.est !== f.eta;
+    var arrM = (tab === "arrival");
+    if(estShown){
+      timeHtml += "<span class='msep'>/</span><span class='mtime-est"+(arrM?" arr":"")+"'>"+esc(f.est)+(arrM?"<span class='tmark'>E</span>":"")+"</span>"+dateTag(f,"est");
+    }
+    /* actual time (At gate / Landed / Dep) always on the right, arrival + departure */
+    if(f.ata && f.ata !== "—" && f.ata !== f.eta && (!estShown || f.ata !== f.est)){
+      timeHtml += "<span class='msep'>/</span><span class='mtime-ata'>"+esc(f.ata)+ataMark(f)+"</span>"+dateTag(f,"ata");
+    }
+    var dur = avgDurTag(f);
+    if(dur){ timeHtml += dur; }
+    var standRight = mstandHtml(f, "mstandwrap-r");
+    var hn = hasNote(f);
+    var mcls = 'mrow'+(hn?" noted":"")+(f.cancelled?" cancelled":"");
+    /* 時間一律置中 */
+    var twrapCls = "mtimewrap";
+    return "<div class='"+mcls+"' data-i='"+i+"'><div class='mline1'><span class='mleft'><span class='mflight'>"+esc(opId(f))+"</span>"+flightDateTag(f)+" "+badge(f)+
+      " <span class='mdest'>"+esc(f.via)+"</span>"+(hn?"<span class='nst'>⭐️</span>":"")+"</span><span class='"+twrapCls+"'>"+timeHtml+"</span><span class='mright'>"+standRight+"</span></div></div>";
+  }
+
+  /* ---------- 撳入詳情 ---------- */
+  function toMin(t){ var m = /^(\d{1,2}):(\d{2})/.exec(t || ""); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+  function delayText(f){
+    if(!f.est || f.est === "—" || !f.eta || f.eta === "—" || f.est === f.eta) return "";
+    var m1 = toMin(f.eta), m2 = toMin(f.est);
+    if(m1 === null || m2 === null) return "";
+    var d = m2 - m1;
+    if(d > 720) d -= 1440; else if(d < -720) d += 1440;
+    if(d === 0) return "";
+    return d > 0 ? "延誤 " + d + " 分鐘" : "提早 " + (-d) + " 分鐘";
+  }
+  function detailInner(f){
+    var h = "";
+    /* 取消 */
+    if(f.cancelled) h += "<div><span style='color:var(--red);font-weight:700;'>已取消</span></div>";
+    /* 備註 */
+    var wk = watchKey(f), w = WATCH[wk];
+    var note = w ? (w.note || "") : "";
+    if(noteEditingKey === wk){
+      if(f.cargo){
+        /* 貨機：淨係手動泊位，唔用備註 */
+        h += "<div class='notewrap'><span>泊位：</span><input id='standInput' class='noteinput' maxlength='10' value='"+esc(manualStand(f)).replace(/"/g,"&quot;")+"' placeholder='手動輸入'>"+
+             "<button class='nbtn' data-act='note-save'>保存</button><button class='nbtn' data-act='note-cancel'>刪除</button></div>";
+      }else{
+        h += "<div class='notewrap'><span>備註：</span><input id='noteInput' class='noteinput' maxlength='140' value='"+esc(note).replace(/"/g,"&quot;")+"'>"+
+             "<button class='nbtn' data-act='note-save'>保存</button><button class='nbtn' data-act='note-cancel'>刪除</button></div>";
+      }
+    }else if(note){
+      h += "<div><span>備註：</span>"+esc(note)+"</div>";
+    }
+    var dt = delayText(f);
+    if(dt) h += "<div><span>時間：</span>"+esc(dt)+"</div>";
+    if(tab === "arrival"){
+      if(f.baggage && f.baggage !== "—") h += "<div><span>行李帶：</span>"+esc(f.baggage)+"</div>";
+    }else{
+      if(f.hall && f.hall !== "—") h += "<div><span>大堂：</span>"+esc(f.hall)+"</div>";
+    }
+    if(f.stand_old && f.stand_old !== f.stand){
+      var lbl = (tab === "arrival") ? "泊位變動：" : "閘口變動：";
+      h += "<div><span>"+lbl+"</span>"+esc(f.stand_old)+" → "+esc(f.stand)+"</div>";
+    }
+    return h;
+  }
+  function dDetailHtml(f, i){
+    return "<tr class='drow' data-i='"+i+"'><td colspan='5'><div class='ddetail'>"+detailInner(f)+"</div></td></tr>";
+  }
+  function mDetailHtml(f, i){
+    return "<div class='mdetail' data-i='"+i+"'><div class='ddetail'>"+detailInner(f)+"</div></div>";
+  }
+  function toggleDetail(f){
+    detailFlight = (detailFlight === f) ? null : f;
+    render();
+  }
+
+  /* ---------- 「而家」分隔線 ---------- */
+  function nowHtml(t, mobile){
+    var inner = "<div class='nl'><span>"+esc(t)+"</span></div>";
+    return mobile ? "<div class='mnowline'>"+inner+"</div>"
+                  : "<tr class='nowline'><td colspan='5'>"+inner+"</td></tr>";
+  }
+
+  /* 跨表搜尋嘅分組標題 */
+  function groupHeader(t, n, mobile){
+    var label = (t === "arrival" ? "到港" : "離港") + "（" + n + "班）";
+    if(mobile) return "<div class='mgroup'>"+label+"</div>";
+    return "<tr class='grow'><td colspan='5'>"+label+"</td></tr>";
+  }
+
+  function render(){
+    var l = L[tab];
+    var isCross = crossSplit >= 0;
+    if(isCross){
+      /* 跨到港／離港：用中性表頭 */
+      document.getElementById("thVia").textContent = "來往地";
+      document.getElementById("thStand").textContent = "泊位";
+      document.getElementById("thEta").textContent = "時間";
+      document.getElementById("thAta").textContent = "實際";
+    }else{
+      document.getElementById("thVia").textContent = l.via;
+      document.getElementById("thStand").textContent = l.stand;
+      document.getElementById("thEta").textContent = l.eta;
+      document.getElementById("thAta").textContent = l.ata;
+    }
+    /* 手機版標題：到港 STA/ETA，離港 STD/ETD */
+    var mht = document.getElementById("mheadTime");
+    var mhs = document.getElementById("mheadStand");
+    if(mht) mht.textContent = isCross ? "時間" : (tab === "arrival" ? "STA/ETA" : "STD/ETD");
+    if(mhs) mhs.textContent = isCross ? "泊位" : l.stand;
+    document.getElementById("capsLine").innerHTML = esc(l.caps).replace(/HKG/, "<span class='hkg'>HKG</span>");
+    document.getElementById("flightTable").setAttribute("aria-label", l.name+"航班");
+
+    var ps = isMobile() ? 60 : PAGE;
+    /* 今天：由現時之前 18 班開始，顯示 60 班（上18／下42，抄新版）；昨天/明天/搜尋維持由頭顯示 */
+    /* 跨表搜尋：顯示全部，唔分頁 */
+    var start = 0, showN = ps, centered = false;
+    if(!isCross && !expanded && !query && dateIdx === 1 && filtered.length){
+      var w = 60, ai = timeAnchorIndex(filtered);
+      start = Math.max(0, Math.min(ai - 18, filtered.length - w));
+      showN = Math.min(w, filtered.length);
+      centered = true;
+    }
+    var list = (isCross || expanded) ? filtered : filtered.slice(start, start + showN);
+    lastStart = start;
+    lastList = list;
+    /* 已展開詳情嘅航班若唔喺而家個 list，收返埋 */
+    if(detailFlight && list.indexOf(detailFlight) === -1){ detailFlight = null; noteEditingKey = null; }
+
+    /* 「而家」分隔線：只限今天（跨表搜尋唔顯示） */
+    var showNow = (!isCross && dateIdx === 1 && filtered.length > 0);
+    var divPos = -1, nowLabel = "";
+    if(showNow){
+      var aiNow = timeAnchorIndex(filtered);
+      divPos = aiNow - start;
+      if(divPos < 0) divPos = 0;
+      nowLabel = nowHHMM();
+    }
+
+    var mobile = isMobile();
+    var htmlArr = [];
+    /* 頂部「展開全部」掣放喺列表入面做第一行（抄新版） */
+    if(!isCross && filtered.length > showN){
+      var xbtn = "<button class='xrowbtn'>"+(expanded?"收起":"展開全部 "+filtered.length+" 班航班")+"</button>";
+      htmlArr.push(mobile
+        ? "<div class='xrowdiv'>"+xbtn+"</div>"
+        : "<tr class='xrow'><td colspan='5'>"+xbtn+"</td></tr>");
+    }
+    var savedTab = tab;
+    for(var i = 0; i < list.length; i++){
+      if(isCross){
+        /* 按組別切換 tab，等時間標記／備註 key 用啱 */
+        tab = (i < crossSplit) ? "arrival" : "departure";
+        if(i === 0 && crossSplit > 0) htmlArr.push(groupHeader("arrival", crossSplit, mobile));
+        if(i === crossSplit && crossSplit < list.length) htmlArr.push(groupHeader("departure", list.length - crossSplit, mobile));
+      }
+      if(showNow && i === divPos) htmlArr.push(nowHtml(nowLabel, mobile));
+      var f = list[i];
+      if(mobile){
+        htmlArr.push(mrowHtml(f, i));
+        if(f === detailFlight) htmlArr.push(mDetailHtml(f, i));
+      }else{
+        htmlArr.push(rowHtml(f, i));
+        if(f === detailFlight) htmlArr.push(dDetailHtml(f, i));
+      }
+    }
+    tab = savedTab;
+    if(showNow && divPos >= list.length) htmlArr.push(nowHtml(nowLabel, mobile));
+    var html = htmlArr.join("");
+    if(mobile){
+      cardsEl.innerHTML = html;
+      rowsEl.innerHTML = "";
+    }else{
+      rowsEl.innerHTML = html;
+      cardsEl.innerHTML = "";
+    }
+    /* 列表內頂部展開掣綁定 */
+    var xb = document.querySelector("#cards .xrowbtn, #rows .xrowbtn");
+    if(xb) xb.addEventListener("click", toggleExpanded);
+    /* 備註／泊位輸入框：Enter 存檔，剛進入編輯時自動聚焦 */
+    var ni = document.getElementById("noteInput") || document.getElementById("standInput");
+    if(ni){
+      ni.addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); commitNote(); } });
+      if(noteFocus){ noteFocus = false; try{ ni.focus(); }catch(e){} }
+    }
+    var total = filtered.length;
+    var dlabel = DB ? md(DB.dates[dateIdx]) + " " + l.name : l.name;
+    if(isCross){
+      var depN = total - crossSplit;
+      countLine.textContent = "「"+query+"」到港 "+crossSplit+" 班 / 離港 "+depN+" 班";
+    }else{
+      countLine.textContent = query
+        ? "「"+query+"」找到 "+total+" 班"
+        : dlabel+"共 "+total+" 班";
+    }
+    headCount.textContent = currentFlights().length;
+    if(isCross){
+      expandBar.style.display = "none";
+    }else if(total > showN && !expanded){
+      expandBar.style.display = "";
+      expandBtn.textContent = "展開全部 "+total+" 班航班";
+    }else if(total > showN && expanded){
+      expandBar.style.display = "";
+      expandBtn.textContent = "收起";
+    }else{
+      expandBar.style.display = "none";
+    }
+    setBarH();
+  }
+
+  function buildDates(){
+    var wrap = document.getElementById("datePills");
+    wrap.innerHTML = "";
+    DB.dates.slice(0,3).forEach(function(d, i){
+      var b = document.createElement("button");
+      b.innerHTML = esc(DATE_NAMES[i]||d) + "<br><small>" + esc(md(d)) + "</small>";
+      if(i===dateIdx) b.classList.add("on");
+      b.addEventListener("click", function(){
+        dateIdx = i;
+        var btns = wrap.querySelectorAll("button");
+        for(var k=0;k<btns.length;k++) btns[k].classList.toggle("on", k===i);
+        applyFilter();
+      });
+      wrap.appendChild(b);
+    });
+  }
+
+  var tabBtns = document.querySelectorAll(".tabs button");
+  function setTab(t, slideDir){
+    if(tab === t) return;
+    tab = t;
+    for(var k=0;k<tabBtns.length;k++) tabBtns[k].classList.toggle("on", tabBtns[k].getAttribute("data-tab")===t);
+    applyFilter();
+    /* 滑動切換時，新列表由滑動方向滑入 */
+    if(slideDir){
+      var el = isMobile() ? cardsEl : rowsEl;
+      el.style.transition = "none";
+      el.style.transform = "translateX(" + (slideDir * 60) + "px)";
+      el.style.opacity = "0.2";
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          el.style.transition = "transform .3s ease-out, opacity .3s ease-out";
+          el.style.transform = "translateX(0)";
+          el.style.opacity = "1";
+          setTimeout(function(){ el.style.transition = ""; el.style.transform = ""; el.style.opacity = ""; }, 350);
+        });
+      });
+    }
+  }
+  for(var ti=0; ti<tabBtns.length; ti++){
+    (function(b){
+      b.addEventListener("click", function(){ setTab(b.getAttribute("data-tab")); });
+    })(tabBtns[ti]);
+  }
+
+  /* 連點兩下跳返時間線、三下開搜尋欄（抄新版；focus 要喺 touchend 入面同步做，iOS 先會彈鍵盤；
+     第三下 preventDefault 唔俾佢變 click，否則 iOS 當「點咗出面」即刻收起鍵盤） */
+  var tapTimes = [];
+  var lastTapT = 0, lastTapX = -9999, lastTapY = -9999;
+  document.addEventListener("touchend", function(e){
+    var now = Date.now();
+    tapTimes.push(now);
+    while(tapTimes.length && now - tapTimes[0] > 800) tapTimes.shift();
+    var tc = e.changedTouches && e.changedTouches[0];
+    var x = tc ? tc.clientX : -9999, y = tc ? tc.clientY : -9999;
+    var isDbl = (tapTimes.length === 2) && (now - lastTapT < 400) &&
+                ((x-lastTapX)*(x-lastTapX) + (y-lastTapY)*(y-lastTapY) < 1600);
+    lastTapT = now; lastTapX = x; lastTapY = y;
+    if(tapTimes.length >= 3){
+      tapTimes = [];
+      if(overlay.classList.contains("open")) return;
+      var input3 = isMobile() ? qm : q;
+      if(!input3 || document.activeElement === input3) return;
+      e.preventDefault();
+      input3.focus();
+      return;
+    }
+    var input = isMobile() ? qm : q;
+    if(isDbl && !noteEditingKey &&
+       !overlay.classList.contains("open") &&
+       document.activeElement !== input &&
+       !(e.target.closest && e.target.closest("input,button"))){
+      e.preventDefault();
+      jumpToTimeline();
+    }
+  }, {passive:false});
+  /* dblclick 做後備：上面 touchend 漏咗（冇 preventDefault）嗰陣先會觸發 */
+  document.addEventListener("dblclick", function(e){
+    if(noteEditingKey) return;
+    if(overlay.classList.contains("open")) return;
+    var input = isMobile() ? qm : q;
+    if(document.activeElement === input) return;
+    if(e.target.closest && e.target.closest("input,button")) return;
+    e.preventDefault();
+    jumpToTimeline();
+  });
+
+  /* 雙擊跳返時間線（抄新版）：搜尋緊就返頂；唔係今日就跳返今日；
+     未展開就停上 8 班位；展開緊就唔收起，淨係將 nowline 捲返時間線位置附近 */
+  function jumpToTimeline(){
+    if(overlay.classList.contains("open")) return;
+    var input = isMobile() ? qm : q;
+    if(document.activeElement === input || noteEditingKey) return;
+    if(query){ window.scrollTo({top:0, behavior:"smooth"}); return; }
+    if(dateIdx !== 1){
+      dateIdx = 1;
+      var btns = document.querySelectorAll("#datePills button");
+      for(var i=0;i<btns.length;i++) btns[i].classList.toggle("on", i===1);
+      expanded = false; detailFlight = null; noteEditingKey = null;
+      applyFilter();
+      scrollToEightAbove();
+      return;
+    }
+    render();
+    if(!expanded){ scrollToEightAbove(); return; }
+    /* 展開緊：將 nowline 放返上 8 班位置 */
+    var mobile = isMobile();
+    var nl = mobile ? document.querySelector(".mnowline") : document.querySelector("tr.nowline");
+    if(!nl){ scrollToEightAbove(); return; }
+    var row = mobile ? document.querySelector("#cards div.mrow") : document.querySelector("#rows tr.rw");
+    var rowH = row ? row.getBoundingClientRect().height : (mobile ? 60 : 34);
+    var xr = mobile ? document.querySelector("#cards .xrowdiv") : document.querySelector("#rows tr.xrow");
+    var xH = xr ? xr.getBoundingClientRect().height : 0;
+    var bar = document.querySelector(".stickybar");
+    var barH = bar ? bar.offsetHeight : 0;
+    var wantTop = barH + xH + 8 * rowH;
+    window.scrollTo(0, window.scrollY + (nl.getBoundingClientRect().top - wantTop));
+  }
+
+  /* 手機左右滑動切換到港／離港（向左→離港，向右→到港） */
+  var swipeX = 0, swipeY = 0, swipeOn = false;
+  cardsEl.addEventListener("touchstart", function(e){
+    if(e.touches.length !== 1){ swipeOn = false; return; }
+    swipeX = e.touches[0].clientX;
+    swipeY = e.touches[0].clientY;
+    swipeOn = true;
+  }, {passive:true});
+  cardsEl.addEventListener("touchend", function(e){
+    if(!swipeOn) return;
+    swipeOn = false;
+    var dx = e.changedTouches[0].clientX - swipeX;
+    var dy = e.changedTouches[0].clientY - swipeY;
+    if(Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5){
+      if(dx < 0 && tab === "arrival") setTab("departure", 1);   /* 向左滑，新頁由右滑入 */
+      else if(dx > 0 && tab === "departure") setTab("arrival", -1);  /* 向右滑，新頁由左滑入 */
+    }
+  }, {passive:true});
+
+  document.getElementById("hidePax").addEventListener("change", function(e){
+    hidePax = !!e.target.checked;
+    applyFilter();
+  });
+
+  document.getElementById("hideCargo").addEventListener("change", function(e){
+    hideCargo = !!e.target.checked;
+    applyFilter();
+  });
+
+  document.getElementById("showHas").addEventListener("change", function(e){
+    onlyHas = !!e.target.checked;
+    applyFilter();
+  });
+
+  /* 捲到「時間線上 8 班」嘅位置（抄新版：上面留 8 班，下面見到時間線） */
+  function scrollToEightAbove(){
+    var mobile = isMobile();
+    var items = mobile
+      ? document.querySelectorAll("#cards div.mrow")
+      : document.querySelectorAll("#rows tr.rw");
+    /* 時間線喺 list index 18，要第 10 班（index 10）置頂，即係上面留 8 班 */
+    var target = items[10];
+    var bar = document.querySelector(".stickybar");
+    if(target && bar){
+      var barH = bar.offsetHeight;
+      window.scrollTo(0, window.scrollY + target.getBoundingClientRect().top - barH);
+    }else{
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function toggleExpanded(){
+    /* 如果載入嗰陣個自動捲去時間線未執行，用戶撳掣就取消佢 */
+    if(nowlineTimer){ clearTimeout(nowlineTimer); nowlineTimer = null; }
+    if(!expanded){
+      /* 展開前記住「而家」線喺畫面嘅位置，render 後放返同一位置，唔跳（抄新版） */
+      var nl = document.querySelector(".mnowline") || document.querySelector("tr.nowline");
+      var top = nl ? nl.getBoundingClientRect().top : null;
+      expanded = true;
+      render();
+      var nl2 = document.querySelector(".mnowline") || document.querySelector("tr.nowline");
+      if(nl2 && top !== null) window.scrollTo(0, window.scrollY + nl2.getBoundingClientRect().top - top);
+    }else{
+      expanded = false;
+      render();
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
+  }
+  expandBtn.addEventListener("click", toggleExpanded);
+
+  function onType(v){ query = v; applyFilter(); }
+  q.addEventListener("input", function(){ qm.value = q.value; syncQclear(); onType(q.value); });
+  qm.addEventListener("input", function(){ q.value = qm.value; syncQclear(); onType(qm.value); });
+  var qc = document.getElementById("qclear");
+  function syncQclear(){ qm.closest(".swrap").classList.toggle("hasq", !!qm.value); }
+  qc.addEventListener("click", function(){ qm.value = ""; q.value = ""; syncQclear(); onType(""); qm.blur(); });
+
+  /* 撳航班列：有備註先展開睇詳情，無備註冇反應（揀緊文字唔觸發，方便 copy） */
+  function onRowAreaClick(e){
+    var t = e.target;
+    if(!t || !t.closest) return;
+    if(suppressClick){ suppressClick = false; return; }  /* 長按之後嗰下 click 唔要 */
+    var row = t.closest("tr.rw") || t.closest("tr.drow") || t.closest(".mrow") || t.closest(".mdetail");
+    if(!row) return;
+    var f = lastList[+row.getAttribute("data-i")];
+    if(!f) return;
+    var actEl = t.closest("[data-act]");
+    if(actEl){
+      var act = actEl.getAttribute("data-act");
+      detailFlight = f;
+      if(act === "note-save"){ commitNote(); }
+      else if(act === "note-cancel"){ deleteNote(f); }
+      return;
+    }
+    if(t.closest("tr.drow") || t.closest(".mdetail")) return;  /* 詳情區其他位置唔收起 */
+    if(!hasNote(f)) return;  /* 無備註：點擊無反應 */
+    if(window.getSelection && window.getSelection().toString()) return;
+    toggleDetail(f);
+  }
+  rowsEl.addEventListener("click", onRowAreaClick);
+  cardsEl.addEventListener("click", onRowAreaClick);
+
+  /* 長按任何航班 → 加／改備註 */
+  function pressRow(e){
+    var t = e.target;
+    return (t && t.closest) ? (t.closest("tr.rw") || t.closest(".mrow")) : null;
+  }
+  function pressStart(e){
+    pressCancel();
+    var row = pressRow(e);
+    if(!row) return;
+    var t = e.target;
+    if(t.closest("[data-act]")) return;
+    var f = lastList[+row.getAttribute("data-i")];
+    if(!f) return;
+    /* 長按泊位格 → 切換區域高亮；長按行嘅其他位 → 備註（原有） */
+    if(t.closest(".mstandwrap-r") || t.closest("td.standcell")){
+      pressFlight = f;
+      pressTimer = setTimeout(function(){
+        pressTimer = null;
+        suppressClick = true;
+        setTimeout(function(){ suppressClick = false; }, 800);
+        toggleZoneHi(pressFlight);
+      }, 550);
+      return;
+    }
+    pressFlight = f;
+    pressWatchKey = watchKey(f);
+    pressTimer = setTimeout(function(){
+      pressTimer = null;
+      suppressClick = true;
+      setTimeout(function(){ suppressClick = false; }, 800);  /* 長按後 800ms 內嘅 click 先唔要，之後恢復正常 */
+      var k = pressWatchKey;
+      if(!WATCH[k]) WATCH[k] = {t:Date.now()};
+      detailFlight = pressFlight;
+      noteEditingKey = k;
+      noteFocus = true;
+      render();
+    }, 550);
+  }
+  function pressCancel(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; } pressFlight = null; }
+  [rowsEl, cardsEl].forEach(function(el){
+    el.addEventListener("touchstart", pressStart, {passive:true});
+    el.addEventListener("touchend", pressCancel);
+    el.addEventListener("touchcancel", pressCancel);
+    el.addEventListener("touchmove", pressCancel);
+    el.addEventListener("mousedown", function(e){ if(e.button === 0) pressStart(e); });
+    el.addEventListener("mouseup", pressCancel);
+    el.addEventListener("mousemove", pressCancel);
+    el.addEventListener("contextmenu", function(e){ if(pressRow(e)) e.preventDefault(); });
+  });
+
+  var rsz;
+  window.addEventListener("resize", function(){ clearTimeout(rsz); rsz = setTimeout(function(){ setBarH(); render(); }, 150); });
+  setBarH();
+
+  document.getElementById("refreshBtn").addEventListener("click", function(){
+    location.href = location.pathname + "?t=" + Date.now();
+  });
+
+  /* 日／夜模式切換：圖示＋theme-color 跟住主題，偏好存 localStorage */
+  var themeBtn = document.getElementById("themeBtn");
+  var icoSun = document.getElementById("icoSun"), icoMoon = document.getElementById("icoMoon");
+  function syncThemeUI(){
+    var t = document.documentElement.getAttribute("data-theme") || "dark";
+    var isLight = (t === "light");
+    icoSun.style.display = isLight ? "none" : "";
+    icoMoon.style.display = isLight ? "" : "none";
+    /* iOS web app 唔食直接改 content，要成個 meta 刪咗再起先會跟 */
+    var old = document.querySelector('meta[name="theme-color"]');
+    if(old) old.parentNode.removeChild(old);
+    var mc = document.createElement("meta");
+    mc.setAttribute("name", "theme-color");
+    mc.setAttribute("content", isLight ? "#eef2f6" : "#0b1c2c");
+    document.head.appendChild(mc);
+  }
+  syncThemeUI();
+  themeBtn.addEventListener("click", function(){
+    var cur = document.documentElement.getAttribute("data-theme");
+    var next = (cur === "light") ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    try{ localStorage.setItem("hkia-theme", next); }catch(e){}
+    syncThemeUI();
+  });
+
+  var overlay = document.getElementById("aboutOverlay");
+  function openAbout(){ overlay.classList.add("open"); }
+  function closeAbout(){ overlay.classList.remove("open"); }
+  document.getElementById("splashAbout").addEventListener("click", function(e){ e.stopPropagation(); openAbout(); });
+  document.getElementById("headAbout").addEventListener("click", openAbout);
+  document.getElementById("aboutClose").addEventListener("click", closeAbout);
+  overlay.addEventListener("click", function(e){ if(e.target===overlay) closeAbout(); });
+
+  /* 瀏覽器唔好自動還原舊 scroll 位，定位由我哋控制（抄新版） */
+  try{ history.scrollRestoration = "manual"; }catch(e){}
+
+  var t0 = Date.now();
+  fetch("data.json?_="+Date.now(), {cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(d){
+      DB = d;
+      if(!DB.dates || !DB.days) throw new Error("bad data");
+      dateIdx = 1;
+      document.getElementById("headTs").textContent = d.generated_at || "—";
+      document.getElementById("splashTs").textContent = "資料擷取時間："+(d.generated_at||"—");
+      buildDates();
+      applyFilter();
+      /* 首次載入：停喺時間線上 8 班位置（抄新版；用戶手動操作會取消） */
+      nowlineTimer = setTimeout(function(){
+        nowlineTimer = null;
+        scrollToEightAbove();
+      }, 150);
+    })
+    .catch(function(e){
+      var eb = document.getElementById("errBox");
+      eb.style.display = "";
+      eb.textContent = "載入航班資料失敗，請稍後再試。（"+e.message+"）";
+    })
+    .then(function(){
+      var wait = Math.max(0, 1200 - (Date.now()-t0));
+      setTimeout(function(){ document.getElementById("splash").classList.add("hide"); }, wait);
+    });
+
+  /* ---------- 靜默自動更新：每5分鐘check，有新資料＋冇郁手先靜靜換 ---------- */
+  var lastActive = Date.now();
+  ["touchstart","touchmove","mousedown","keydown","wheel","scroll"].forEach(function(ev){
+    window.addEventListener(ev, function(){ lastActive = Date.now(); }, {passive:true});
+  });
+  var IDLE_MS = 60000, POLL_MS = 15*60*1000;
+  function userBusy(){
+    if(Date.now() - lastActive < IDLE_MS) return true;
+    if(detailFlight) return true;  /* 睇緊詳情 */
+    var ae = document.activeElement;
+    if(ae && (ae === q || ae === qm)) return true;  /* 打緊字（桌面#q／手機#qm） */
+    if(overlay.classList.contains("open")) return true;  /* 關於頁開緊 */
+    return false;
+  }
+  function silentUpdate(d){
+    var sy = window.scrollY || window.pageYOffset || 0;
+    var keepExpanded = expanded;
+    DB = d;
+    document.getElementById("headTs").textContent = d.generated_at || "—";
+    buildDates();
+    applyFilter();  /* 會 reset expanded＋render */
+    if(keepExpanded){ expanded = true; render(); }
+    if(sy) window.scrollTo(0, sy);
+  }
+  function checkForUpdate(){
+    if(!DB || document.visibilityState !== "visible" || userBusy()) return;
+    fetch("data.json?_="+Date.now(), {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+      .then(function(d){
+        if(!d || !d.generated_at || !d.dates || !d.days) return;
+        if(d.generated_at === DB.generated_at) return;  /* 冇新嘢 */
+        if(userBusy()) return;  /* fetch 期間郁過手就等下次 */
+        silentUpdate(d);
+      })
+      .catch(function(){ /* 靜靜失敗，下次再試 */ });
+  }
+  setInterval(checkForUpdate, POLL_MS);
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible") checkForUpdate();
+  });
+})();
+</script>
+</body>
+</html>
