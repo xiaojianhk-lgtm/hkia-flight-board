@@ -1,0 +1,1 @@
+{"background_color":"#f5f1e8","description":"香港國際機場航班資訊","display":"standalone","icons":[{"sizes":"180x180","src":"apple-touch-icon.png","type":"image/png"},{"purpose":"any","sizes":"512x512","src":"icon-512.png","type":"image/png"}],"name":"航班資訊 · HKG","orientation":"portrait","scope":"./","short_name":"航班資訊","start_url":"./side-by-side.html","theme_color":"#006b6e"}
