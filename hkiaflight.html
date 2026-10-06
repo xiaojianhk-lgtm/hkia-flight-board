@@ -764,7 +764,8 @@ try{(function(){
     if(f.stand_old && f.stand_old !== f.stand){
       h += "<div><span>"+(typ==="arrival"?"泊位變動：":"閘口變動：")+"</span>"+esc(f.stand_old)+" → "+esc(f.stand)+"</div>";
     }
-    h += "<div style='margin-top:6px'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button></div>";
+    h += "<div style='margin-top:6px'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button> "+
+         "<button class='nbtn' data-act='fr24'>✈️ Flightradar24</button></div>";
     return h;
   }
 
@@ -1289,6 +1290,7 @@ try{(function(){
       if(act === "note-save"){ commitNote(); }
       else if(act === "note-cancel" && it2){ deleteNote(it2.typ, it2.f); }
       else if(act === "copy-flight" && it2){ copyFlight(it2.typ, it2.f); }
+      else if(act === "fr24" && it2){ window.open("https://www.flightradar24.com/"+opId(it2.f).toLowerCase(), "_blank"); }
       return;
     }
 
