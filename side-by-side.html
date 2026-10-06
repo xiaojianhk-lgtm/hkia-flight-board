@@ -970,15 +970,19 @@ try{
     if(allFresh.length) bayAlert(allFresh);
   }
   function bayAlert(list){
-    /* 按 bay 分組顯示；淨彈 banner，唔響唔震 */
+    /* 按 bay 分組顯示；淨彈 banner，唔響唔震；
+       每組按時間排序；淨顯示主要航班編號（唔顯示聯合航班號） */
     var byBay = {};
     list.forEach(function(it){
       (byBay[it.bay] = byBay[it.bay] || []).push(it);
     });
     $("waBay").textContent = Object.keys(byBay).sort().join("、");
     $("waList").innerHTML = Object.keys(byBay).sort().map(function(bay){
-      return "<div style='margin-bottom:4px'><b>"+esc(bay)+"</b></div>" + byBay[bay].map(function(it){
-        return "<div><b>"+esc(it.f.flight_id)+"</b> "+(it.typ === "arrival" ? "到港" : "離港")+" · "+esc(eff(it.f))+"</div>";
+      var items = byBay[bay].slice().sort(function(a, b){
+        return toMin(eff(a.f)) - toMin(eff(b.f));
+      });
+      return "<div style='margin-bottom:4px'><b>"+esc(bay)+"</b></div>" + items.map(function(it){
+        return "<div><b>"+esc(opId(it.f))+"</b> "+(it.typ === "arrival" ? "到港" : "離港")+" · "+esc(eff(it.f))+"</div>";
       }).join("");
     }).join("");
     $("watchalert").hidden = false;
