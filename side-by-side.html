@@ -1073,6 +1073,11 @@ try{
     if(!row) return;
     var it = lastItems[+row.getAttribute("data-k")];
     if(!it) return;
+    /* 備註編輯緊：點航班 row 就保存兼關閉，唔使下下撳掣 */
+    if(noteEditingKey){
+      commitNote();
+      return;
+    }
     if(!hasNote(it.typ, it.f)) return;
     if(window.getSelection && window.getSelection().toString()) return;
     var k = itemKey(it);
