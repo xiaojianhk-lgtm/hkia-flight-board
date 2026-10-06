@@ -217,7 +217,7 @@ try{
   tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
   tbody tr.rw:active td{background:rgba(128,128,128,.14);}
   @media (hover:hover){ tbody tr.rw:hover td{background:rgba(128,128,128,.12);} }
-  td.fid{font-weight:400; overflow:visible;} /* 隔籬航班欄永遠係空嘅，★✓ 唔夠位可以借用 */
+  td.fid{font-weight:700; overflow:visible;} /* 隔籬航班欄永遠係空嘅，★✓ 唔夠位可以借用 */
   .tmark.inspk{color:var(--red); opacity:1; font-size:14px;}
   .twrap{position:relative; display:inline-block;}
   .twrap .tmark.inspk.ab{position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:2px;}
@@ -227,13 +227,13 @@ try{
   .sthl.stN{background:var(--stN);}
   .sthl.stW{background:var(--stW);}
   .sthl.stR{background:var(--dim);}
-  td.time{font-weight:400;}
+  td.time{font-weight:700;}
   .tchg{color:var(--red); font-weight:700;}
   .tsta{color:var(--dim);}
-  .tmark{font-size:12px; font-weight:400; margin-left:2px; letter-spacing:.5px; opacity:.85;}
+  .tmark{font-size:12px; font-weight:700; margin-left:2px; letter-spacing:.5px; opacity:.85;}
   .ddate{display:inline; font-size:10px; color:var(--muted); margin-left:3px; white-space:nowrap;}
   /* 泊位右邊色 bar */
-  .st{font-weight:400;}
+  .st{font-weight:700;}
   .stchg{color:var(--red);}
   .stold{font-size:11px; color:var(--dim); font-weight:400;}
   /* 取消 */
@@ -255,12 +255,16 @@ try{
   .ddetail{font-size:12px; color:var(--text); line-height:1.8;}
   .ddetail span{color:var(--muted);}
   .adir{display:inline-block; min-width:16px; font-weight:700;}
-  /* 表身統一柔和灰、唔加粗（參考專業版面） */
-  tbody td{color:#444;}
+  /* 表身：粗體；時間＋標記用紫藍色 */
+  tbody td{color:#444; font-weight:700;}
   [data-theme="dark"] tbody td{color:#b0b8c0;}
   tbody td.fid{color:#444;}
   [data-theme="dark"] tbody td.fid{color:#b0b8c0;}
   tr.rw.dep td.fid{color:var(--cxgreen);}
+  td.time{color:#5b5bd6;}
+  [data-theme="dark"] td.time{color:#8f8ff0;}
+  .tmark{color:#5b5bd6;}
+  [data-theme="dark"] .tmark{color:#8f8ff0;}
   tr.rw.noted td{background:rgba(201,162,39,.10);}
   tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(201,162,39,.6);}
   tr.rw.noted td:last-child{box-shadow:inset -3px 0 0 rgba(201,162,39,.6);}
