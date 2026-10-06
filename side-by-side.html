@@ -8,6 +8,12 @@
 <meta name="theme-color" content="#0b1c2c">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="航班資訊">
+<meta name="theme-color" content="#006b6e">
 <title>航班資訊 · 香港國際機場</title>
 <script>
 /* 密碼門：新設備第一次要入密碼，啱咗記喺 localStorage */
@@ -1452,5 +1458,12 @@ try{
   });
 })();
 </script>
+  <script>
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("./sw.js").catch(function(){});
+    });
+  }
+  </script>
 </body>
 </html>
