@@ -27,7 +27,10 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;
 function fmt(iso){
   try{
     var d=new Date(iso);
-    return d.toLocaleString('zh-HK',{timeZone:'Asia/Hong_Kong',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+    // 轉做 HKT (UTC+8) 手動格式化，避開 toLocaleString 相容問題
+    var hkt=new Date(d.getTime()+8*3600*1000);
+    function p(n){return (n<10?'0':'')+n;}
+    return p(hkt.getUTCMonth()+1)+'/'+p(hkt.getUTCDate())+' '+p(hkt.getUTCHours())+':'+p(hkt.getUTCMinutes());
   }catch(e){return iso;}
 }
 function load(){
