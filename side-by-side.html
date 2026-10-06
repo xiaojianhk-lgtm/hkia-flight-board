@@ -257,9 +257,10 @@ try{
   .ddetail{font-size:12px; color:var(--text); line-height:1.8;}
   .ddetail span{color:var(--muted);}
   .adir{display:inline-block; min-width:16px; font-weight:700;}
-  /* 表身：航班編號／航點／Bay 統一黑色；時間＋標記用深藍色 */
+  /* 表身：航班編號／航點／Bay 統一黑色（離港編號國泰綠）；時間＋標記用深藍色 */
   tbody td{color:var(--strong); font-weight:600;}
   [data-theme="dark"] tbody td{color:var(--strong);}
+  tr.rw.dep td.fid{color:var(--cxgreen);}
   td.time{color:#1a3f85;}
   [data-theme="dark"] td.time{color:#7f9fd8;}
   .tmark{color:#1a3f85;}
