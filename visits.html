@@ -37,10 +37,10 @@
   <div id="box"><button onclick="load()">載入記錄</button></div>
 </div>
 <script>
-/* 同主頁共用同一個密碼門 (hkia-auth-v1) */
+/* visits 專用密碼門 (同主頁分開) */
 (function(){
-  var HASH="19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896";
-  var KEY="hkia-auth-v1";
+  var HASH="81ea96707fb0643653507e2ecc9905deeeb7793c8c8df87fc89681d5af356af7";
+  var KEY="hkia-visits-auth-v1";
   var gate=document.getElementById("gate"), main=document.getElementById("main");
   try{ if(localStorage.getItem(KEY)==="1"){ main.hidden=false; return; } }catch(e){}
   gate.hidden=false;
