@@ -404,6 +404,7 @@ try{(function(){
     <h4>泊位提醒</h4>
     <ul>
       <li>搜尋欄輸入 <b>W63+</b>：之後有新航班入該泊位，就彈 banner 通知。</li>
+      <li>搜尋欄輸入 <b>CX123@</b>：嗰班機一有泊位，就彈 banner 通知。</li>
       <li>撳 <b>🌧</b>：機場未來 3 小時降雨機率 ≥50% 就彈 banner 通知（Open-Meteo 預報）。</li>
       <li>提醒 arm 咗之後，每 15 分鐘自動檢查（碌緊 page 都會）。page 要開住先會響。</li>
     </ul>
@@ -937,6 +938,16 @@ try{(function(){
       q.blur();
       return;
     }
+    var mFlight = /^([A-Za-z]+\d+)@$/i.exec(v);
+    if(mFlight){
+      /* FLIGHT@：arm 指定航班泊位提醒，嗰班機一有 Bay 就彈 banner */
+      armFlightWatch(mFlight[1].toUpperCase());
+      q.value = ""; query = "";
+      $("qclear").parentElement.classList.remove("hasq");
+      expanded = false; render();
+      q.blur();
+      return;
+    }
     query = q.value;
     $("qclear").parentElement.classList.toggle("hasq", !!q.value);
     expanded = false;
@@ -1016,7 +1027,13 @@ try{(function(){
       d.innerHTML = "已關注 <span>"+esc(bay)+"</span> <button aria-label='取消提醒' data-unwatch='"+esc(bay)+"'>✕</button>";
       box.appendChild(d);
     });
-    box.hidden = !watchCount();
+    Object.keys(flightWatches).sort().forEach(function(fid){
+      var d = document.createElement("div");
+      d.className = "watchpill";
+      d.innerHTML = "已關注 <span>"+esc(fid)+"</span> <button aria-label='取消提醒' data-unwatchflight='"+esc(fid)+"'>✕</button>";
+      box.appendChild(d);
+    });
+    box.hidden = !(watchCount() || flightWatchCount());
     setBarH();
   }
   function checkBayWatch(){
@@ -1058,7 +1075,83 @@ try{(function(){
   document.addEventListener("click", function(e){
     var b = e.target.closest && e.target.closest("[data-unwatch]");
     if(b){ disarmWatch(b.getAttribute("data-unwatch")); }
+    var f = e.target.closest && e.target.closest("[data-unwatchflight]");
+    if(f){ disarmFlightWatch(f.getAttribute("data-unwatchflight")); }
   });
+
+  /* ---------- 指定航班泊位提醒（隱藏功能：搜尋欄輸入 FLIGHT@） ---------- */
+  var flightWatches = {};  /* flightId -> {seenBay:""} */
+  var FW_KEY = "hkia-flightwatch-v1";
+  function saveFlightWatch(){
+    try{ localStorage.setItem(FW_KEY, JSON.stringify({flights:flightWatches})); }catch(e){}
+  }
+  function loadFlightWatch(){
+    try{
+      var fw = JSON.parse(localStorage.getItem(FW_KEY) || "null");
+      if(fw && fw.flights) flightWatches = fw.flights;
+    }catch(e){}
+  }
+  function flightWatchCount(){ return Object.keys(flightWatches).length; }
+  function findFlight(fid){
+    /* 喺目標日期搵航班；唔用 getLists()，唔受 filter 影響 */
+    if(!DB || !DB.dates || !DB.days) return null;
+    var target = DB.dates[dateIdx];
+    var fidU = (fid || "").toUpperCase();
+    var found = null;
+    Object.keys(DB.days).forEach(function(d){
+      if(found) return;
+      var day = DB.days[d];
+      [["arrival", day.arrival || []], ["departure", day.departure || []]].forEach(function(pair){
+        if(found) return;
+        pair[1].forEach(function(f){
+          if(found) return;
+          if((effDate(f) || d) !== target) return;
+          if(opId(f).toUpperCase() === fidU) found = {typ:pair[0], f:f};
+        });
+      });
+    });
+    return found;
+  }
+  function flightBay(f){
+    return (manualStand("arrival", f) || manualStand("departure", f) || f.stand || "").toUpperCase();
+  }
+  function armFlightWatch(fid){
+    var it = findFlight(fid);
+    var bay = it ? flightBay(it.f) : "";
+    flightWatches[fid] = { seenBay: bay };
+    saveFlightWatch(); showWatchPill();
+  }
+  function disarmFlightWatch(fid){
+    if(fid){ delete flightWatches[fid]; }
+    else{ flightWatches = {}; }
+    saveFlightWatch(); showWatchPill();
+  }
+  function checkFlightWatch(){
+    if(!flightWatchCount() || !DB) return;
+    var fresh = [];
+    Object.keys(flightWatches).forEach(function(fid){
+      var w = flightWatches[fid];
+      var it = findFlight(fid);
+      if(!it) return;
+      var bay = flightBay(it.f);
+      if(bay && bay !== "—" && bay !== w.seenBay){
+        /* 新有 Bay（或轉咗 Bay） */
+        fresh.push({fid:fid, typ:it.typ, f:it.f, bay:bay});
+        w.seenBay = bay;
+      }else if(!bay || bay === "—"){
+        w.seenBay = "";
+      }
+    });
+    saveFlightWatch();
+    if(fresh.length) flightAlert(fresh);
+  }
+  function flightAlert(list){
+    document.querySelector("#watchalert .wa-title").innerHTML = "🔔 指定航班已有泊位";
+    $("waList").innerHTML = list.map(function(it){
+      return "<div><b>"+esc(it.fid)+"</b> "+(it.typ === "arrival" ? "到港" : "離港")+" · "+esc(eff(it.f))+"<br>泊位：<b>"+esc(it.bay)+"</b></div>";
+    }).join("");
+    $("watchalert").hidden = false;
+  }
 
   /* ---- 機場降雨提醒 ---- */
   var RAIN_KEY = "hkia-rain-watch-v1";
@@ -1119,7 +1212,7 @@ try{(function(){
   });
   updateRainBtn();
 
-  loadWatch();
+  loadWatch(); loadFlightWatch();
 
   // 共用同一個 localStorage key 做搜尋框同步（舊版 q/qm）
   $("qclear").addEventListener("click", function(){
@@ -1371,7 +1464,7 @@ try{(function(){
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
           buildDates();
-          checkBayWatch(); checkRainWatch();
+          checkBayWatch(); checkRainWatch(); checkFlightWatch();
           done("updated");
         }else{
           done("latest");
@@ -1517,8 +1610,8 @@ try{(function(){
       /* 開頁停喺時間線上 8 班（上面仲有 10 班，要碌上去先見） */
       scrollToEightAbove();
       /* 還原提醒：同上次見過嘅比較，有新航班入 bay 就彈 banner */
-      if(watchCount()){
-        checkBayWatch(); checkRainWatch();
+      if(watchCount() || flightWatchCount()){
+        checkBayWatch(); checkRainWatch(); checkFlightWatch();
         showWatchPill();
       }
     })
@@ -1535,7 +1628,7 @@ try{(function(){
   });
   setInterval(function(){
     if(!DB || document.visibilityState !== "visible") return;
-    if(Date.now() - lastActive < 60000 && !watchCount()) return;
+    if(Date.now() - lastActive < 60000 && !watchCount() && !flightWatchCount()) return;
     if(detailKey || noteEditingKey) return;
     if(document.activeElement === q) return;
     if(overlay.classList.contains("open")) return;
@@ -1549,7 +1642,7 @@ try{(function(){
           checkStale(d.generated_at);
           buildDates(); render();
           if(keepEx){ expanded = true; render(); }
-          checkBayWatch(); checkRainWatch();
+          checkBayWatch(); checkRainWatch(); checkFlightWatch();
           /* 展開／搜尋緊就還原舊位，否則停返時間線上 8 班 */
           if(keepEx || query){ if(sy) window.scrollTo(0, sy); }
           else scrollToEightAbove();
