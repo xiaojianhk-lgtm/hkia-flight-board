@@ -358,10 +358,19 @@ try{
 <script data-goatcounter="https://xiaojian.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 <script>
-/* 訪問記錄：只記時間+瀏覽器+OS，不記 IP */
+/* 訪問記錄：只記時間+瀏覽器+OS+設備ID，不記 IP */
 try{(function(){
   var ua=navigator.userAgent||'';
   var b='?',o='?';
+  /* 每部機一個隨機設備 ID，存 localStorage */
+  var did=null;
+  try{
+    did=localStorage.getItem('hkia-device-id');
+    if(!did){
+      did='xxxx-xxxx'.replace(/x/g,function(){return (Math.random()*16|0).toString(16);})+Date.now().toString(36).slice(-4);
+      localStorage.setItem('hkia-device-id',did);
+    }
+  }catch(e){}
   if(/Edg\//.test(ua))b='Edge';
   else if(/OPR\//.test(ua))b='Opera';
   else if(/Chrome\//.test(ua))b='Chrome';
@@ -374,7 +383,7 @@ try{(function(){
   else if(/Linux/.test(ua))o='Linux';
   fetch('https://xiaojian-visit-log.xiaojian-hk.workers.dev/log?token=lt8ZHWKRVAip4ASDOhZ5Qzgk8I7I-RMl',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({browser:b,os:o,page:location.pathname})
+    body:JSON.stringify({browser:b,os:o,page:location.pathname,device:did})
   }).catch(function(){});
 })();}catch(e){}
 </script>
@@ -401,7 +410,7 @@ try{(function(){
       <li>長按泊位：高亮所有同區泊位（再長按取消，長按另一區轉過去）。</li>
       <li>連點兩下：跳返時間線；連點三下：開搜尋。</li>
     </ul>
-    <h4>泊位提醒</h4>
+    <h4>提醒</h4>
     <ul>
       <li>搜尋欄輸入 <b>W63+</b>：之後有新航班入該泊位，就彈 banner 通知。</li>
       <li>搜尋欄輸入 <b>CX123+</b>：嗰班機一有泊位，就彈 banner 通知。</li>
