@@ -110,7 +110,7 @@ try{
     padding:10px 16px 10px 24px; padding-right:104px;
   }
   header .row1{display:flex; align-items:center; gap:10px;}
-  .plane-ico{width:26px; height:26px; color:var(--accent2); flex:none;}
+  .plane-ico{height:26px; width:auto; flex:none;}
   .titleblock{display:flex; flex-direction:column; gap:3px;}
   header h2{font-size:19px; margin:0; letter-spacing:4px; line-height:1.1;}
   header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
@@ -330,7 +330,7 @@ try{
   #gate .gcard{background:var(--card); border:1px solid var(--line); border-radius:18px;
     padding:36px 32px 28px; display:flex; flex-direction:column; align-items:center; gap:12px;
     width:min(88vw, 320px); box-shadow:0 8px 32px rgba(0,0,0,.12);}
-  #gate .glogo{width:48px; height:48px; color:var(--accent2);}
+  #gate .glogo{height:48px; width:auto;}
   #gate .gtitle{font-size:22px; font-weight:800; letter-spacing:6px; text-indent:6px;}
   #gate .gsub{font-size:11px; letter-spacing:3px; color:var(--muted); margin-bottom:8px;}
   #gate .gsub .hkg{color:var(--accent2); font-weight:800;}
@@ -345,7 +345,7 @@ try{
 <body>
 <div id="gate" hidden>
   <div class="gcard">
-    <svg class="glogo" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+    <img class="glogo" src="plane-icon.png" alt="">
     <div class="gtitle">航班資訊</div>
     <div class="gsub">FLIGHT INFORMATION · <span class="hkg">HKG</span></div>
     <input id="gatePw" type="password" inputmode="numeric" placeholder="請輸入密碼" autocomplete="off">
@@ -380,7 +380,7 @@ try{
 
 <header>
   <div class="row1">
-    <svg class="plane-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+    <img class="plane-ico" src="plane-icon.png" alt="" aria-hidden="true">
     <div class="titleblock">
       <h2>航班資訊</h2>
       <span class="caps">FLIGHT INFORMATION · <span class="hkg">HKG</span></span>
