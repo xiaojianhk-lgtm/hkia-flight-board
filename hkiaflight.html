@@ -158,6 +158,8 @@ try{
   .countrow{display:flex; justify-content:space-between; align-items:center; padding:8px 4px; gap:8px; flex-wrap:wrap;}
   .hidecargo{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;}
   .hidecargo input{accent-color:var(--accent2);}
+  .rainbtn{font-size:16px; background:transparent; border:1px solid var(--line); border-radius:8px; padding:2px 8px; cursor:pointer; opacity:.45;}
+  .rainbtn.on{opacity:1; border-color:var(--accent2); background:rgba(0,107,110,.12);}
   .searchrow{padding:8px 2px 10px;}
   #watchpills{display:flex; flex-wrap:wrap; gap:6px;}
   #watchpills[hidden]{display:none;}
@@ -442,6 +444,7 @@ try{(function(){
     <label class="hidecargo"><input type="checkbox" id="hideCargo" checked> 隱藏貨機</label>
     <label class="hidecargo"><input type="checkbox" id="showHas" checked> H**代理</label>
     <label class="hidecargo"><input type="checkbox" id="hideCX"> 隱藏CX</label>
+    <button id="rainWatch" class="rainbtn" title="機場降雨提醒">🌧</button>
   </div>
   <div class="searchrow">
     <div class="swrap">
@@ -1056,6 +1059,65 @@ try{(function(){
     if(b){ disarmWatch(b.getAttribute("data-unwatch")); }
   });
 
+  /* ---- 機場降雨提醒 ---- */
+  var RAIN_KEY = "hkia-rain-watch-v1";
+  var rainWatch = { on:false, alertedAt:"" };
+  try{
+    var rw = JSON.parse(localStorage.getItem(RAIN_KEY) || "null");
+    if(rw && typeof rw.on === "boolean") rainWatch = rw;
+  }catch(e){}
+  function saveRainWatch(){ try{ localStorage.setItem(RAIN_KEY, JSON.stringify(rainWatch)); }catch(e){} }
+  function updateRainBtn(){
+    var b = $("rainWatch");
+    if(b) b.classList.toggle("on", !!rainWatch.on);
+  }
+  function checkRainWatch(){
+    if(!rainWatch.on) return;
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=22.308&longitude=113.915&hourly=precipitation_probability&timezone=Asia%2FHong_Kong&forecast_days=2")
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(d){
+        var times = (d.hourly||{}).time || [], probs = (d.hourly||{}).precipitation_probability || [];
+        var now = new Date();
+        var maxP = 0, maxT = "";
+        for(var i=0;i<times.length;i++){
+          var t = new Date(times[i]);
+          var diffH = (t - now)/3600000;
+          if(diffH >= 0 && diffH <= 3){
+            if(probs[i] > maxP){ maxP = probs[i]; maxT = times[i]; }
+          }
+        }
+        if(maxP >= 50){
+          /* 同一場雨唔重複彈：記住觸發嗰個鐘 */
+          if(rainWatch.alertedAt !== maxT){
+            rainWatch.alertedAt = maxT; saveRainWatch();
+            rainAlert(maxP, maxT);
+          }
+        }else{
+          if(rainWatch.alertedAt){ rainWatch.alertedAt = ""; saveRainWatch(); }
+        }
+      })
+      .catch(function(){});
+  }
+  function rainAlert(prob, isoTime){
+    var d = new Date(isoTime);
+    var hh = ("0"+d.getHours()).slice(-2), mm = ("0"+d.getMinutes()).slice(-2);
+    document.querySelector("#watchalert .wa-title").innerHTML = "🌧 機場未來 3 小時可能有雨";
+    $("waList").innerHTML = "<div>最高機率 <b>"+prob+"%</b>（約 "+hh+":"+mm+"）</div><div style='color:var(--muted);font-size:12px;margin-top:4px'>資料來源：Open-Meteo 預報</div>";
+    $("watchalert").hidden = false;
+  }
+  var _origBayAlert = bayAlert;
+  bayAlert = function(list){
+    document.querySelector("#watchalert .wa-title").innerHTML = "🔔 <span id=\"waBay\"></span> 有航班到位";
+    _origBayAlert(list);
+  };
+  $("rainWatch").addEventListener("click", function(){
+    rainWatch.on = !rainWatch.on;
+    if(!rainWatch.on) rainWatch.alertedAt = "";
+    saveRainWatch(); updateRainBtn();
+    if(rainWatch.on) checkRainWatch();
+  });
+  updateRainBtn();
+
   loadWatch();
 
   // 共用同一個 localStorage key 做搜尋框同步（舊版 q/qm）
@@ -1308,7 +1370,7 @@ try{(function(){
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
           buildDates();
-          checkBayWatch();
+          checkBayWatch(); checkRainWatch();
           done("updated");
         }else{
           done("latest");
@@ -1455,7 +1517,7 @@ try{(function(){
       scrollToEightAbove();
       /* 還原提醒：同上次見過嘅比較，有新航班入 bay 就彈 banner */
       if(watchCount()){
-        checkBayWatch();
+        checkBayWatch(); checkRainWatch();
         showWatchPill();
       }
     })
@@ -1486,7 +1548,7 @@ try{(function(){
           checkStale(d.generated_at);
           buildDates(); render();
           if(keepEx){ expanded = true; render(); }
-          checkBayWatch();
+          checkBayWatch(); checkRainWatch();
           /* 展開／搜尋緊就還原舊位，否則停返時間線上 8 班 */
           if(keepEx || query){ if(sy) window.scrollTo(0, sy); }
           else scrollToEightAbove();
