@@ -1039,7 +1039,13 @@ try{(function(){
     Object.keys(flightWatches).sort().forEach(function(fid){
       var d = document.createElement("div");
       d.className = "watchpill";
-      d.innerHTML = "已關注 <span>"+esc(fid)+"</span> <button aria-label='取消提醒' data-unwatchflight='"+esc(fid)+"'>✕</button>";
+      var w = flightWatches[fid];
+      var dateLabel = "";
+      if(w.date){
+        var parts = w.date.split("-");
+        if(parts.length === 3) dateLabel = " " + parts[1] + "/" + parts[2];
+      }
+      d.innerHTML = "已關注 <span>"+esc(fid)+dateLabel+"</span> <button aria-label='取消提醒' data-unwatchflight='"+esc(fid)+"'>✕</button>";
       box.appendChild(d);
     });
     box.hidden = !(watchCount() || flightWatchCount());
@@ -1101,10 +1107,10 @@ try{(function(){
     }catch(e){}
   }
   function flightWatchCount(){ return Object.keys(flightWatches).length; }
-  function findFlight(fid){
-    /* 喺目標日期搵航班；唔用 getLists()，唔受 filter 影響 */
+  function findFlight(fid, date){
+    /* 喺指定日期搵航班；唔用 getLists()，唔受 filter 影響 */
     if(!DB || !DB.dates || !DB.days) return null;
-    var target = DB.dates[dateIdx];
+    var target = date || DB.dates[dateIdx];
     var fidU = (fid || "").toUpperCase();
     var found = null;
     Object.keys(DB.days).forEach(function(d){
@@ -1125,9 +1131,10 @@ try{(function(){
     return (manualStand("arrival", f) || manualStand("departure", f) || f.stand || "").toUpperCase();
   }
   function armFlightWatch(fid){
-    var it = findFlight(fid);
+    var target = DB && DB.dates ? DB.dates[dateIdx] : "";
+    var it = findFlight(fid, target);
     var bay = it ? flightBay(it.f) : "";
-    flightWatches[fid] = { seenBay: bay };
+    flightWatches[fid] = { seenBay: bay, date: target };
     saveFlightWatch(); showWatchPill();
   }
   function disarmFlightWatch(fid){
@@ -1140,7 +1147,7 @@ try{(function(){
     var fresh = [];
     Object.keys(flightWatches).forEach(function(fid){
       var w = flightWatches[fid];
-      var it = findFlight(fid);
+      var it = findFlight(fid, w.date);
       if(!it) return;
       var bay = flightBay(it.f);
       if(bay && bay !== "—" && bay !== w.seenBay){
@@ -1157,7 +1164,13 @@ try{(function(){
   function flightAlert(list){
     document.querySelector("#watchalert .wa-title").innerHTML = "🔔 指定航班已有泊位";
     $("waList").innerHTML = list.map(function(it){
-      return "<div style='margin-bottom:6px'><b>"+esc(it.fid)+"</b> "+(it.typ === "arrival" ? "到港" : "離港")+"</div>"+
+      var dateLabel = "";
+      var w = flightWatches[it.fid];
+      if(w && w.date){
+        var parts = w.date.split("-");
+        if(parts.length === 3) dateLabel = " (" + parts[1] + "/" + parts[2] + ")";
+      }
+      return "<div style='margin-bottom:6px'><b>"+esc(it.fid)+"</b>"+esc(dateLabel)+" "+(it.typ === "arrival" ? "到港" : "離港")+"</div>"+
         "<div>時間：<b>"+esc(eff(it.f))+"</b></div>"+
         "<div>泊位：<b>"+esc(it.bay)+"</b></div>";
     }).join("");
