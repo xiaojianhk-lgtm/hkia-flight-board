@@ -381,7 +381,7 @@ try{(function(){
   else if(/Mac OS/.test(ua))o='macOS';
   else if(/Windows/.test(ua))o='Windows';
   else if(/Linux/.test(ua))o='Linux';
-  fetch('https://xiaojian-visit-log.xiaojian-hk.workers.dev/log?token=lt8ZHWKRVAip4ASDOhZ5Qzgk8I7I-RMl',{
+  fetch('https://xiaojian-visit-log.xiaojian-hk.workers.dev/log',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({browser:b,os:o,page:location.pathname,device:did})
   }).catch(function(){});
