@@ -382,6 +382,8 @@
       window.addEventListener("hkia-unlocked", function h(){ window.removeEventListener("hkia-unlocked", h); bootLoad(); });
       return;
     }
+  /* loading 狀態：落緊 data.json 嗰陣顯示 */
+  $("rows").innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--muted);padding:32px;'><div style='font-size:20px;margin-bottom:8px;'>✈️</div>載入航班數據…</td></tr>";
   fetch("data.json?_="+Date.now(), {cache:"no-store"})
     .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
     .then(function(d){
