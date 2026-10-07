@@ -62,9 +62,13 @@
       commitNote();
       return;
     }
-    if(!hasNote(it.typ, it.f)) return;
     if(window.getSelection && window.getSelection().toString()) return;
     var k = itemKey(it);
+    /* 撳冇備注嘅航班：如果有嘢開緊就閂咗佢 */
+    if(!hasNote(it.typ, it.f)){
+      if(detailKey){ detailKey = null; render(); }
+      return;
+    }
     detailKey = (detailKey === k) ? null : k;
     render();
   });
