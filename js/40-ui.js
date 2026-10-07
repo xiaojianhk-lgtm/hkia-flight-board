@@ -1,4 +1,9 @@
 /* HKIA flight board - 40-ui.js */
+  /* 右下角浮動搜尋掣：碌返頂＋focus 搜尋框 */
+  $("fabSearch").addEventListener("click", function(){
+    window.scrollTo({top: 0, behavior: "smooth"});
+    setTimeout(function(){ q.focus(); }, 350);
+  });
   // 共用同一個 localStorage key 做搜尋框同步（舊版 q/qm）
   $("qclear").addEventListener("click", function(){
     q.value = ""; query = "";
