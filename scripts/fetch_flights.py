@@ -371,24 +371,39 @@ def main() -> int:
         "dates": dates,
         "days": days,
     }
+    # 輕量版：淨係頭 3 日（昨天/今天/明天，UI 顯示用），細 ~30%
+    slim_payload = {
+        "generated_at": payload["generated_at"],
+        "dates": dates[:3],
+        "days": {d: days[d] for d in dates[:3]},
+    }
 
     # Idempotent: only rewrite when the data actually changed, so the CI
     # `git diff` check correctly reports "no change" and skips the commit.
     # (stand_old is part of days, so a newly detected / cleared stand change
     # counts as a change.)
     if old_payload is not None:
-        if old_payload.get("dates") == dates and old_payload.get("days") == days:
+        if old_payload.get("dates") == dates[:3] and old_payload.get("days") == slim_payload["days"]:
             total = sum(len(v) for d in days.values() for v in d.values())
             print(f"OK: no change ({total} flights), kept {out_path}")
             return 0
 
     tmp_path = out_path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as fh:
-        json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
+        json.dump(slim_payload, fh, ensure_ascii=False, separators=(",", ":"))
     os.replace(tmp_path, out_path)
 
+    # 完整版（4 日齊）另外存 data-full.json
+    full_path = os.path.join(os.path.dirname(out_path), "data-full.json")
+    tmp_full = full_path + ".tmp"
+    with open(tmp_full, "w", encoding="utf-8") as fh:
+        json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
+    os.replace(tmp_full, full_path)
+
     total = sum(len(v) for d in days.values() for v in d.values())
-    print(f"OK: wrote {total} flights for {dates[0]}..{dates[3]} -> {out_path}")
+    slim_total = sum(len(v) for d in slim_payload["days"].values() for v in d.values())
+    print(f"OK: wrote {slim_total} flights for {dates[0]}..{dates[2]} -> {out_path}")
+    print(f"OK: wrote {total} flights for {dates[0]}..{dates[3]} -> {full_path}")
     return 0
 
 
