@@ -269,20 +269,19 @@
   }
 
   function copyFlight(typ, f){
-    var t = eff(f) || "—";
-    var mark = "";
-    if(typ === "arrival"){
-      if(f.ata && f.ata !== "—") mark = /^landed/i.test(f.status_raw || "") ? "L" : "A";
-      else if(f.est && f.est !== "—") mark = "E";
-      else mark = "S";
-    }else{
-      mark = (f.ata && f.ata !== "—") ? "A" : "E";
-    }
-    var txt = opId(f) + " " + t + mark + " · " + (manualStand(typ, f) || f.stand || "—");
     var w = WATCH[watchKey(typ, f)];
     var note = w ? (w.note || "") : "";
-    if(note) txt += " (" + note + ")";
-    var done = function(){ showToast("已複製：" + txt); };
+    var bay = manualStand(typ, f) || f.stand || "—";
+    /* 日期：DD/MM/YYYY（用緊睇嗰日） */
+    var dstr = (DB && DB.dates && DB.dates[dateIdx]) || "";
+    var dp = dstr.split("-");
+    var dateline = dp.length === 3 ? dp[2] + "/" + dp[1] + "/" + dp[0] : dstr;
+    /* 時間：scheduled time */
+    var tm = f.eta || eff(f) || "—";
+    var tlabel = typ === "arrival" ? "ETA" : "ETD";
+    var txt = dateline + "\n" + opId(f) + " (" + bay + " / " + tlabel + " " + tm + ")";
+    if(note) txt += "\n" + note;
+    var done = function(){ showToast("已複製：" + opId(f)); };
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt); done(); });
     }else{ fallbackCopy(txt); done(); }
