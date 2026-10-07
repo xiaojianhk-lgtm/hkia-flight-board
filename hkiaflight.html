@@ -210,19 +210,20 @@ try{
   }
   /* ---------- 表格 ---------- */
   main{padding:8px 8px 32px; max-width:1100px; margin:0 auto;}
-  table{width:100%; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums; table-layout:fixed;}
+  /* 基準：iPhone 17 Pro 402px 闊時 13px；其他機按比例自動縮放 */
+  table{width:100%; border-collapse:collapse; font-size:clamp(11.5px, 3.233vw, 14.5px); font-variant-numeric:tabular-nums; table-layout:fixed;}
   thead th{
     position:sticky; top:var(--barH,0px); background:var(--card); z-index:5;
-    font-size:11px; padding:8px 4px; border-bottom:2px solid var(--line);
+    font-size:.846em; padding:8px 4px; border-bottom:2px solid var(--line);
     text-align:left; white-space:nowrap; color:var(--text); letter-spacing:1px;
     vertical-align:baseline;
   }
-  thead th .hzh{font-size:12px; font-weight:700; color:var(--text); letter-spacing:2px;}
-  thead th .hen{font-size:10px; font-weight:400; opacity:.7; margin-left:4px; letter-spacing:1px;}
+  thead th .hzh{font-size:1.091em; font-weight:700; color:var(--text); letter-spacing:2px;}
+  thead th .hen{font-size:.909em; font-weight:400; opacity:.7; margin-left:4px; letter-spacing:1px;}
   thead th.tcol, tbody td.tcol{text-align:center;}
   thead th.bayh, tbody td.bayc{text-align:right; padding-right:8px; border-right:1px solid var(--row-line);}
   thead th.apth{text-align:center; letter-spacing:1px;}
-  tbody td.apc{text-align:center; font-size:12px; letter-spacing:1px;}
+  tbody td.apc{text-align:center; font-size:.923em; letter-spacing:1px;}
   thead th:first-child, tbody td:first-child{border-left:1px solid var(--row-line);}
   tbody td{padding:7px 4px; white-space:nowrap; border-bottom:1px solid var(--row-line); overflow:hidden; text-overflow:ellipsis;}
   tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
@@ -243,15 +244,15 @@ try{
   .tmark.tchg{color:var(--red);}
   .tsta{color:var(--dim);}
   .tsta .tmark{color:var(--dim);}
-  .tmark{font-size:12px; font-weight:600; margin-left:2px; letter-spacing:.5px; opacity:.85;}
-  .ddate{display:inline; font-size:10px; color:var(--muted); margin-left:3px; white-space:nowrap;}
+  .tmark{font-size:.923em; font-weight:600; margin-left:2px; letter-spacing:.5px; opacity:.85;}
+  .ddate{display:inline; font-size:.769em; color:var(--muted); margin-left:3px; white-space:nowrap;}
   /* 泊位右邊色 bar */
   .st{font-weight:600;}
   .stchg{color:var(--red);}
   /* 取消 */
   tr.cancelled td{opacity:.5;}
   .cbadge{
-    display:inline-block; font-size:8px; background:var(--badge-bg); color:var(--badge-fg);
+    display:inline-block; font-size:.615em; background:var(--badge-bg); color:var(--badge-fg);
     border:1px solid var(--badge-bd); border-radius:3px; padding:0 2px; margin-left:2px;
     line-height:1.4; vertical-align:2px;
     vertical-align:1px; font-weight:400;
@@ -421,7 +422,7 @@ try{(function(){
     <ul>
       <li>每 15 分鐘自動更新（閒置先會靜靜換）；亦可向下拉手動更新。</li>
     </ul>
-    <div style="color:var(--muted);font-size:11px;text-align:center;margin:8px 0 4px;">穩定版 v1</div>
+    <div style="color:var(--muted);font-size:11px;text-align:center;margin:8px 0 4px;">穩定版 v2</div>
     </ul>
     <button id="aboutClose">關閉</button>
   </div>
