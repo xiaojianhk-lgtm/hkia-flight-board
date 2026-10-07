@@ -213,8 +213,8 @@ try{
   /* 基準：iPhone 17 Pro 402px 闊時 13px；其他機按比例自動縮放 */
   table{width:100%; border-collapse:collapse; font-size:clamp(11.5px, 3.233vw, 14.5px); font-variant-numeric:tabular-nums; table-layout:fixed;}
   thead th{
-    position:sticky; top:var(--barH,0px); background:var(--card); z-index:5;
-    font-size:.846em; padding:8px 4px; border-bottom:2px solid var(--line);
+    position:sticky; top:calc(var(--barH,0px) - 1px); background:var(--card); z-index:5;
+    font-size:.846em; padding:9px 4px 8px; border-bottom:2px solid var(--line);
     text-align:left; white-space:nowrap; color:var(--text); letter-spacing:1px;
     vertical-align:baseline;
   }
