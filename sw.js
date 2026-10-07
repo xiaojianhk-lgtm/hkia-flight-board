@@ -1,5 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v23";
+var CACHE = "hkia-v24";
 var ASSETS = [
   "./hkiaflight.html",
   "./manifest.json",
@@ -12,7 +12,13 @@ var ASSETS = [
   "./js/40-ui.js"
 ];
 self.addEventListener("install", function(e){
-  e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(ASSETS); }).then(function(){ return self.skipWaiting(); }));
+  e.waitUntil(caches.open(CACHE).then(function(c){
+    return Promise.all(ASSETS.map(function(u){
+      return fetch(u).then(function(r){
+        if(r.ok) return c.put(u, r);
+      }).catch(function(){});
+    }));
+  }).then(function(){ return self.skipWaiting(); }));
 });
 self.addEventListener("activate", function(e){
   e.waitUntil(caches.keys().then(function(keys){
@@ -29,9 +35,14 @@ self.addEventListener("fetch", function(e){
   }
   e.respondWith(
     caches.match(e.request).then(function(hit){
+      /* 有 redirect 嘅 cache（舊版留下）唔好 serve，直接去 network */
+      if(hit && hit.redirected) hit = null;
       return hit || fetch(e.request).then(function(resp){
-        var copy = resp.clone();
-        caches.open(CACHE).then(function(c){ c.put(e.request, copy); });
+        /* 淨係 cache 200 OK，redirect 唔 cache */
+        if(resp.ok && !resp.redirected){
+          var copy = resp.clone();
+          caches.open(CACHE).then(function(c){ c.put(e.request, copy); });
+        }
         return resp;
       });
     }).catch(function(){ return caches.match("./hkiaflight.html"); })
