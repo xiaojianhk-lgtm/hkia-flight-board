@@ -1069,6 +1069,21 @@ try{(function(){
     saveBayWatch();
     if(allFresh.length) bayAlert(allFresh);
   }
+  /* 統一提醒隊列：同一輪檢查有多個觸發，一次過顯示，唔互相覆蓋 */
+  var pendingAlerts = [];
+  function queueAlert(title, html){
+    pendingAlerts.push({title:title, html:html});
+  }
+  function flushAlerts(){
+    if(!pendingAlerts.length) return;
+    var html = pendingAlerts.map(function(a){
+      return "<div style='margin-bottom:10px'><div style='font-weight:700;color:var(--accent);margin-bottom:4px'>"+a.title+"</div>"+a.html+"</div>";
+    }).join("");
+    document.querySelector("#watchalert .wa-title").innerHTML = "🔔 提醒";
+    $("waList").innerHTML = html;
+    $("watchalert").hidden = false;
+    pendingAlerts = [];
+  }
   function bayAlert(list){
     /* 按 bay 分組顯示；淨彈 banner，唔響唔震；
        每組按時間排序；淨顯示主要航班編號（唔顯示聯合航班號） */
@@ -1076,8 +1091,8 @@ try{(function(){
     list.forEach(function(it){
       (byBay[it.bay] = byBay[it.bay] || []).push(it);
     });
-    $("waBay").textContent = Object.keys(byBay).sort().join("、");
-    $("waList").innerHTML = Object.keys(byBay).sort().map(function(bay){
+    var bayNames = Object.keys(byBay).sort().join("、");
+    var html = Object.keys(byBay).sort().map(function(bay){
       var items = byBay[bay].slice().sort(function(a, b){
         return toMin(eff(a.f)) - toMin(eff(b.f));
       });
@@ -1085,7 +1100,7 @@ try{(function(){
         return "<div><b>"+esc(opId(it.f))+"</b> "+(it.typ === "arrival" ? "到港" : "離港")+" · "+esc(eff(it.f))+"</div>";
       }).join("");
     }).join("");
-    $("watchalert").hidden = false;
+    queueAlert("🅿️ "+esc(bayNames)+" 有航班到位", html);
   }
   $("waOk").addEventListener("click", function(){ $("watchalert").hidden = true; });
   document.addEventListener("click", function(e){
@@ -1163,8 +1178,7 @@ try{(function(){
     if(fresh.length) flightAlert(fresh);
   }
   function flightAlert(list){
-    document.querySelector("#watchalert .wa-title").innerHTML = "🔔 指定航班已有泊位";
-    $("waList").innerHTML = list.map(function(it){
+    var html = list.map(function(it){
       var dateLabel = "";
       var w = flightWatches[it.fid];
       if(w && w.date){
@@ -1175,7 +1189,7 @@ try{(function(){
         "<div>時間：<b>"+esc(eff(it.f))+"</b></div>"+
         "<div>泊位：<b>"+esc(it.bay)+"</b></div>";
     }).join("");
-    $("watchalert").hidden = false;
+    queueAlert("🔔 指定航班已有泊位", html);
   }
 
   /* ---- 機場降雨提醒 ---- */
@@ -1209,7 +1223,7 @@ try{(function(){
           /* 同一場雨唔重複彈：記住觸發嗰個鐘 */
           if(rainWatch.alertedAt !== maxT){
             rainWatch.alertedAt = maxT; saveRainWatch();
-            rainAlert(maxP, maxT);
+            rainAlert(maxP, maxT); flushAlerts();
           }
         }else{
           if(rainWatch.alertedAt){ rainWatch.alertedAt = ""; saveRainWatch(); }
@@ -1220,15 +1234,9 @@ try{(function(){
   function rainAlert(prob, isoTime){
     var d = new Date(isoTime);
     var hh = ("0"+d.getHours()).slice(-2), mm = ("0"+d.getMinutes()).slice(-2);
-    document.querySelector("#watchalert .wa-title").innerHTML = "🌧 機場未來 3 小時可能有雨";
-    $("waList").innerHTML = "<div>最高機率 <b>"+prob+"%</b>（約 "+hh+":"+mm+"）</div><div style='color:var(--muted);font-size:12px;margin-top:4px'>資料來源：Open-Meteo 預報</div>";
-    $("watchalert").hidden = false;
+    var html = "<div>最高機率 <b>"+prob+"%</b>（約 "+hh+":"+mm+"）</div><div style='color:var(--muted);font-size:12px;margin-top:4px'>資料來源：Open-Meteo 預報</div>";
+    queueAlert("🌧 機場未來 3 小時可能有雨", html);
   }
-  var _origBayAlert = bayAlert;
-  bayAlert = function(list){
-    document.querySelector("#watchalert .wa-title").innerHTML = "🔔 <span id=\"waBay\"></span> 有航班到位";
-    _origBayAlert(list);
-  };
   $("rainWatch").addEventListener("click", function(){
     rainWatch.on = !rainWatch.on;
     if(!rainWatch.on) rainWatch.alertedAt = "";
@@ -1489,7 +1497,7 @@ try{(function(){
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
           buildDates();
-          checkBayWatch(); checkRainWatch(); checkFlightWatch();
+          checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
           done("updated");
         }else{
           done("latest");
@@ -1636,7 +1644,7 @@ try{(function(){
       scrollToEightAbove();
       /* 還原提醒：同上次見過嘅比較，有新航班入 bay 就彈 banner */
       if(watchCount() || flightWatchCount()){
-        checkBayWatch(); checkRainWatch(); checkFlightWatch();
+        checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
         showWatchPill();
       }
     })
@@ -1667,7 +1675,7 @@ try{(function(){
           checkStale(d.generated_at);
           buildDates(); render();
           if(keepEx){ expanded = true; render(); }
-          checkBayWatch(); checkRainWatch(); checkFlightWatch();
+          checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
           /* 展開／搜尋緊就還原舊位，否則停返時間線上 8 班 */
           if(keepEx || query){ if(sy) window.scrollTo(0, sy); }
           else scrollToEightAbove();
