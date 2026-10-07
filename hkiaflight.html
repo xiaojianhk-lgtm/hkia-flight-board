@@ -137,6 +137,16 @@ try{
   }
   [data-theme="light"] .stickybar{ background:rgba(255,255,255,.85); }
   .stickyinner{max-width:1100px; margin:0 auto; padding:0 8px;}
+  /* 右下角浮動搜尋掣（單手用） */
+  #fabSearch{
+    position:fixed; right:16px; bottom:24px; z-index:40;
+    width:52px; height:52px; border-radius:50%;
+    background:var(--cxgreen); color:#06283d; border:none;
+    font-size:22px; cursor:pointer;
+    box-shadow:0 4px 12px rgba(0,0,0,.35);
+    display:flex; align-items:center; justify-content:center;
+  }
+  #fabSearch:active{ transform:scale(.92); }
   #stickyTs{padding:6px 0 4px; font-size:11px; display:flex; align-items:center; gap:8px;}
   .ts{font-size:12px; color:var(--muted); margin-top:2px;}
   .ts b{color:var(--accent); font-weight:600;}
@@ -491,6 +501,8 @@ try{(function(){
     <button id="expandBtn"></button>
   </div>
 </main>
+
+<button id="fabSearch" aria-label="搜尋">🔍</button>
 
 <div id="watchalert" hidden>
   <div class="wa-box">
