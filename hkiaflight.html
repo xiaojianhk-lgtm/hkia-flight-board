@@ -422,7 +422,7 @@ try{(function(){
     <ul>
       <li>每 15 分鐘自動更新（閒置先會靜靜換）；亦可向下拉手動更新。</li>
     </ul>
-    <div style="color:var(--muted);font-size:11px;text-align:center;margin:8px 0 4px;">穩定版 v2</div>
+    <div style="color:var(--muted);font-size:11px;text-align:center;margin:8px 0 4px;">穩定版 v3</div>
     </ul>
     <button id="aboutClose">關閉</button>
   </div>
@@ -441,6 +441,7 @@ try{(function(){
 
 <div class="stickybar"><div class="stickyinner">
   <div id="staleWarn" hidden style="background:#fff3e0; color:#e65100; font-size:12px; padding:6px 12px; border-radius:6px; margin-bottom:6px; text-align:center;">⚠️ 數據已超過 <b id="staleAge">—</b> 未更新，自動更新可能已停止</div>
+  <div id="hkoWarn" hidden style="background:rgba(211,47,47,.10); color:var(--red); font-size:12px; padding:6px 12px; border-radius:6px; margin-bottom:6px; text-align:center; font-weight:600;"></div>
   <div class="ts" id="stickyTs"><span>資料擷取時間：<b id="headTs">—</b>　共 <b id="headCount">—</b> 班</span><span class="tsbtns">
       <button id="themeBtn" class="tsbtn" title="日／夜模式" aria-label="切換日夜模式">
         <svg id="icoSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/></svg>
@@ -1246,6 +1247,38 @@ try{(function(){
     if(rainWatch.on) checkRainWatch();
   });
   updateRainBtn();
+
+  /* ---------- 天文台警告 banner（打風／暴雨先顯示） ---------- */
+  function checkHkoWarn(){
+    var el = $("hkoWarn");
+    fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc", {cache:"no-store"})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var show = [];
+        Object.keys(d || {}).forEach(function(k){
+          var w = d[k] || {};
+          var code = (w.code || "").toUpperCase();
+          var name = w.name || "";
+          /* 打風信號、暴雨警告、雷暴警告先顯示 */
+          if(/^TC\d/.test(code) || code.indexOf("WTC") === 0 ||
+             code === "WRAINA" || code === "WRAINR" || code === "WRAINB" ||
+             code === "WTS"){
+            var label = name;
+            if(w.type) label += w.type;
+            show.push(label);
+          }
+        });
+        if(show.length){
+          el.innerHTML = "⚠️ " + show.map(esc).join("、") + " <span style='font-weight:400;opacity:.7'>（航班可能受影響）</span>";
+          el.hidden = false;
+        }else{
+          el.hidden = true;
+        }
+      })
+      .catch(function(){ el.hidden = true; });
+  }
+  checkHkoWarn();
+  setInterval(checkHkoWarn, 15 * 60 * 1000);
 
   loadWatch(); loadFlightWatch();
 
