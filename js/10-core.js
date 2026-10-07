@@ -276,9 +276,11 @@
     var dstr = (DB && DB.dates && DB.dates[dateIdx]) || "";
     var dp = dstr.split("-");
     var dateline = dp.length === 3 ? dp[2] + "/" + dp[1] + "/" + dp[0] : dstr;
-    /* 時間：scheduled time */
-    var tm = f.eta || eff(f) || "—";
-    var tlabel = typ === "arrival" ? "ETA" : "ETD";
+    /* 時間：有 ATA 用 ATA，有 EST 用 ETA，得 STA 用 STA/STD */
+    var tm, tlabel;
+    if(f.ata && f.ata !== "—"){ tm = f.ata; tlabel = "ATA"; }
+    else if(f.est && f.est !== "—"){ tm = f.est; tlabel = "ETA"; }
+    else { tm = f.eta || "—"; tlabel = typ === "arrival" ? "STA" : "STD"; }
     var txt = dateline + "\n" + opId(f) + " (" + bay + " / " + tlabel + " " + tm + ")";
     if(note) txt += "\n" + note;
     var done = function(){ showToast("已複製：" + opId(f)); };
