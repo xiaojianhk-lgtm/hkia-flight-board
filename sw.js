@@ -1,11 +1,15 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v19";
+var CACHE = "hkia-v20";
 var ASSETS = [
   "./hkiaflight.html",
   "./manifest.json",
   "./plane-icon.png",
   "./apple-touch-icon.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./js/10-core.js",
+  "./js/20-render.js",
+  "./js/30-watch.js",
+  "./js/40-ui.js"
 ];
 self.addEventListener("install", function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(ASSETS); }).then(function(){ return self.skipWaiting(); }));
