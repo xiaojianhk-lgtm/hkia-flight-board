@@ -1,9 +1,59 @@
 /* HKIA flight board - 40-ui.js */
-  /* 右下角浮動搜尋掣：focus 先（iOS 要同步先彈到鍵盤），再碌返頂 */
-  $("fabSearch").addEventListener("click", function(){
-    q.focus();
-    window.scrollTo({top: 0, behavior: "smooth"});
-  });
+  /* 右下角浮動搜尋掣：撳=搜尋，長按拖動=搬位（位置存 localStorage） */
+  (function(){
+    var fab = $("fabSearch");
+    var KEY = "hkia-fab-pos-v1";
+    /* 還原上次位置 */
+    try{
+      var p = JSON.parse(localStorage.getItem(KEY));
+      if(p && typeof p.x === "number" && typeof p.y === "number"){
+        fab.style.right = "auto"; fab.style.bottom = "auto";
+        fab.style.left = p.x + "px"; fab.style.top = p.y + "px";
+      }
+    }catch(e){}
+    var dragging = false, moved = false, sx, sy, ox, oy, pressTimer = null;
+    function pos(e){
+      var t = e.touches ? e.touches[0] : e;
+      return {x: t.clientX, y: t.clientY};
+    }
+    fab.addEventListener("touchstart", function(e){
+      var pt = pos(e); sx = pt.x; sy = pt.y; moved = false;
+      var r = fab.getBoundingClientRect(); ox = r.left; oy = r.top;
+      pressTimer = setTimeout(function(){
+        dragging = true;
+        fab.style.right = "auto"; fab.style.bottom = "auto";
+        fab.style.left = ox + "px"; fab.style.top = oy + "px";
+      }, 400);
+    }, {passive: true});
+    fab.addEventListener("touchmove", function(e){
+      if(!dragging) return;
+      var pt = pos(e);
+      if(Math.abs(pt.x - sx) + Math.abs(pt.y - sy) > 8) moved = true;
+      var nx = Math.min(Math.max(0, ox + pt.x - sx), window.innerWidth - 52);
+      var ny = Math.min(Math.max(0, oy + pt.y - sy), window.innerHeight - 52);
+      fab.style.left = nx + "px"; fab.style.top = ny + "px";
+      if(e.cancelable) e.preventDefault();
+    }, {passive: false});
+    fab.addEventListener("touchend", function(){
+      if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; }
+      if(dragging){
+        dragging = false;
+        if(moved){
+          /* 存位置 */
+          try{
+            localStorage.setItem(KEY, JSON.stringify({
+              x: parseInt(fab.style.left), y: parseInt(fab.style.top)
+            }));
+          }catch(e){}
+        }
+      }
+    });
+    fab.addEventListener("click", function(e){
+      if(moved){ moved = false; e.preventDefault(); e.stopPropagation(); return; }
+      q.focus();
+      window.scrollTo({top: 0, behavior: "smooth"});
+    });
+  })();
   // 共用同一個 localStorage key 做搜尋框同步（舊版 q/qm）
   $("qclear").addEventListener("click", function(){
     q.value = ""; query = "";
