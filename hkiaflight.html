@@ -16,17 +16,57 @@
 <meta name="theme-color" content="#006b6e">
 <title>航班資訊 · 香港國際機場</title>
 <script>
-/* 密碼門：新設備第一次要入密碼，啱咗記喺 localStorage */
+/* 密碼門 v2：hash 存喺 localStorage，開頁嗰陣同 auth.json 對，改咗密碼舊設備即鎖 */
 (function(){
-  var HASH = "19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896";
-  var KEY = "hkia-auth-v1";
-  try{ if(localStorage.getItem(KEY) === "1"){ return; } }catch(e){}
-  window.__hkiaLocked = true;
-  /* 即刻閂住主內容，唔等 DOMContentLoaded，避免閃一下 */
-  document.documentElement.classList.add("locked");
+  var KEY = "hkia-auth-v2";  /* 存當時用嚟入嘅 hash */
+  var OLDKEY = "hkia-auth-v1";
+  var stored = null, hadOld = false;
+  try{
+    stored = localStorage.getItem(KEY);
+    hadOld = localStorage.getItem(OLDKEY) === "1";
+  }catch(e){}
+  if(!stored && !hadOld){
+    /* 從未入過：即刻鎖 */
+    window.__hkiaLocked = true;
+    document.documentElement.classList.add("locked");
+  }else{
+    /* 有記錄：暫放行，等陣 async 對 auth.json */
+    window.__hkiaAuthPending = true;
+    if(hadOld && !stored) window.__hkiaMigrate = true;
+  }
+  /* async 驗證：對唔上就鎖 */
+  function verify(){
+    fetch("auth.json", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(a){
+      var cur = null;
+      try{ cur = localStorage.getItem(KEY); }catch(e){}
+      if(window.__hkiaMigrate){
+        try{
+          localStorage.setItem(KEY, a.hash);
+          localStorage.removeItem(OLDKEY);
+        }catch(e){}
+        window.__hkiaMigrate = false;
+      }else if(cur && cur !== a.hash){
+        /* 密碼改咗：鎖 */
+        window.__hkiaLocked = true;
+        document.documentElement.classList.add("locked");
+        window.dispatchEvent(new Event("hkia-relock"));
+      }
+      window.__hkiaAuthPending = false;
+    }).catch(function(){
+      window.__hkiaAuthPending = false;  /* 攞唔到唔鎖人 */
+    });
+  }
+  window.__hkiaVerifyAuth = verify;
   function initGate(){
     var gate = document.getElementById("gate");
     if(!gate) return;
+    /* relock 事件：要 show gate */
+    window.addEventListener("hkia-relock", function(){
+      gate.hidden = false;
+      var pw = document.getElementById("gatePw");
+      if(pw) setTimeout(function(){ pw.focus(); }, 200);
+    });
+    if(!window.__hkiaLocked) return;
     gate.hidden = false;
     var pw = document.getElementById("gatePw"), err = document.getElementById("gateErr");
     function sha256(s){
@@ -37,13 +77,20 @@
       }
       return Promise.resolve("UNSUPPORTED");
     }
+    /* 攞最新 hash（有 fallback） */
+    var serverHash = null;
+    fetch("auth.json", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(a){
+      serverHash = a.hash;
+    }).catch(function(){});
     function go(){
       err.textContent = "";
       sha256(pw.value).then(function(h){
-        if(h === HASH){
-          try{ localStorage.setItem(KEY, "1"); }catch(e){}
+        var okHash = serverHash || "19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896";
+        if(h === okHash){
+          try{ localStorage.setItem(KEY, okHash); }catch(e){}
           gate.hidden = true;
           window.__hkiaLocked = false;
+          window.__hkiaAuthPending = false;
           document.documentElement.classList.remove("locked");
           window.dispatchEvent(new Event("hkia-unlocked"));
         }else{
