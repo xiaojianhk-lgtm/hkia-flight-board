@@ -67,6 +67,8 @@
 
     var g = getLists();
     $("headCount").textContent = g.arr.length + g.dep.length;
+    var ac = $("adCount");
+    if(ac) ac.textContent = "到港 " + g.arr.length + " / 離港 " + g.dep.length;
     var total = items.length;
     if(total > showN){
       $("expandBar").style.display = "";
