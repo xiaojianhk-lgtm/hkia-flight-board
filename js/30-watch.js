@@ -361,4 +361,7 @@
   checkHkoTemp();
   setInterval(checkHkoTemp, 15 * 60 * 1000);
 
+  /* 密碼版本驗證：開頁嗰陣對一次 auth.json */
+  if(window.__hkiaVerifyAuth) window.__hkiaVerifyAuth();
+
   loadWatch(); loadFlightWatch();
