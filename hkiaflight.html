@@ -178,6 +178,11 @@ try{
   }
   header .row1{display:flex; align-items:center; gap:14px;}
   .plane-ico{height:40px; width:auto; flex:none;}
+  /* 夜晚模式：飛機 logo 調光到同 HKG 一樣色 */
+  [data-theme="dark"] .plane-ico{filter:brightness(1.65) saturate(1.1);}
+  [data-theme="dark"] #gate .glogo{filter:brightness(1.65) saturate(1.1);}
+  /* 關於掣同 HKG 一樣色 */
+  #aboutBtn{color:var(--accent2);}
   .titleblock{display:flex; flex-direction:column; gap:4px;}
   header h2{font-size:19px; margin:0; letter-spacing:4px; line-height:1.1;}
   header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
