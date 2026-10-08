@@ -183,7 +183,8 @@
       var mf = function(typ){
         return function(f){
           var w = WATCH[watchKey(typ, f)];
-          return norm(f.flight_id).indexOf(nq) !== -1 ||
+          /* 淨 match 主航班編號，唔 match 聯合航班 */
+          return norm(opId(f)).indexOf(nq) !== -1 ||
                  norm(f.via).indexOf(nq) !== -1 ||
                  norm(manualStand(typ, f) || f.stand).indexOf(nq) !== -1 ||
                  norm(w && w.note).indexOf(nq) !== -1;
