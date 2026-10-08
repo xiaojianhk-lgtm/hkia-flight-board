@@ -66,12 +66,8 @@
     }
 
     var g = getLists();
-<<<<<<< HEAD
     var hc = $("headCount");
     if(hc) hc.textContent = g.arr.length + g.dep.length;
-=======
-    $("headCount").textContent = g.arr.length + g.dep.length;
->>>>>>> d60c92e (ad count next to temp)
     var ac = $("adCount");
     if(ac) ac.textContent = "到港 " + g.arr.length + " / 離港 " + g.dep.length;
     var total = items.length;
