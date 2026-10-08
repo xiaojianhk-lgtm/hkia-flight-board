@@ -22,6 +22,8 @@
   var KEY = "hkia-auth-v1";
   try{ if(localStorage.getItem(KEY) === "1"){ return; } }catch(e){}
   window.__hkiaLocked = true;
+  /* 即刻閂住主內容，唔等 DOMContentLoaded，避免閃一下 */
+  document.documentElement.classList.add("locked");
   function initGate(){
     var gate = document.getElementById("gate");
     if(!gate) return;
@@ -42,6 +44,7 @@
           try{ localStorage.setItem(KEY, "1"); }catch(e){}
           gate.hidden = true;
           window.__hkiaLocked = false;
+          document.documentElement.classList.remove("locked");
           window.dispatchEvent(new Event("hkia-unlocked"));
         }else{
           err.textContent = "密碼錯誤";
@@ -71,6 +74,8 @@ try{
 }catch(e){ document.documentElement.setAttribute("data-theme", "dark"); }
 </script>
 <style>
+  /* 鎖定嗰陣閂埋主內容，唔好閃一下（gate 本身唔閂） */
+  html.locked header, html.locked .stickybar, html.locked main, html.locked #fabSearch{ visibility:hidden; }
   :root{
     --bg:#0b1c2c; --bg2:#10263c; --card:#132c44; --line:#1f3a55;
     --text:#e8f1f8; --muted:#8fa8bd; --dim:#8fa8bd; --strong:#ffffff;
