@@ -342,4 +342,22 @@
   checkHkoWarn();
   setInterval(checkHkoWarn, 15 * 60 * 1000);
 
+  /* ---------- 機場溫度（天文台 rhrread，赤鱲角） ---------- */
+  function checkHkoTemp(){
+    var el = $("hkoTemp");
+    if(!el) return;
+    fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc", {cache:"no-store"})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var found = null;
+        (d.temperature && d.temperature.data || []).forEach(function(t){
+          if(t.place === "赤鱲角") found = t.value;
+        });
+        el.textContent = "🌡️ " + (found !== null ? found + "°C" : "—");
+      })
+      .catch(function(){ el.textContent = "🌡️ —"; });
+  }
+  checkHkoTemp();
+  setInterval(checkHkoTemp, 15 * 60 * 1000);
+
   loadWatch(); loadFlightWatch();
