@@ -307,7 +307,7 @@
         if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
-          buildDates();
+          if(typeof buildDates==="function") buildDates();
           checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
           done("updated");
         }else{
@@ -451,7 +451,7 @@
       dateIdx = 1;
       $("headTs").textContent = d.generated_at || "—";
       checkStale(d.generated_at);
-      buildDates();
+      if(typeof buildDates==="function") buildDates();
       render();
       /* 開頁停喺時間線上 8 班（上面仲有 10 班，要碌上去先見） */
       scrollToEightAbove();
@@ -486,7 +486,7 @@
           DB = d;
           $("headTs").textContent = d.generated_at;
           checkStale(d.generated_at);
-          buildDates(); render();
+          if(typeof buildDates==="function") buildDates(); render();
           if(keepEx){ expanded = true; render(); }
           checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
           /* 展開／搜尋緊就還原舊位，否則停返時間線上 8 班 */
