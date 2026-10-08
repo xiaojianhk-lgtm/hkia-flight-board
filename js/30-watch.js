@@ -344,7 +344,8 @@
 
   /* ---------- 機場溫度（天文台 rhrread，赤鱲角） ---------- */
   function checkHkoTemp(){
-    var el = $("hkoTemp");
+    var el = $("hkoTempTx");
+    if(!el) el = $("hkoTemp");
     if(!el) return;
     fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc", {cache:"no-store"})
       .then(function(r){ return r.json(); })
