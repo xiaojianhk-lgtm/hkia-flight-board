@@ -66,7 +66,8 @@
     }
 
     var g = getLists();
-    $("headCount").textContent = g.arr.length + g.dep.length;
+    var hc = $("headCount");
+    if(hc) hc.textContent = g.arr.length + g.dep.length;
     var ac = $("adCount");
     if(ac) ac.textContent = "到港 " + g.arr.length + " / 離港 " + g.dep.length;
     var total = items.length;
