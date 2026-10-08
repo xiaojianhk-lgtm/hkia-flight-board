@@ -353,9 +353,9 @@
         (d.temperature && d.temperature.data || []).forEach(function(t){
           if(t.place === "赤鱲角") found = t.value;
         });
-        el.textContent = "🌡️ " + (found !== null ? found + "°C" : "—");
+        el.textContent = "赤鱲角 " + (found !== null ? found + "°C" : "—°C");
       })
-      .catch(function(){ el.textContent = "🌡️ —"; });
+      .catch(function(){ el.textContent = "赤鱲角 —°C"; });
   }
   checkHkoTemp();
   setInterval(checkHkoTemp, 15 * 60 * 1000);
