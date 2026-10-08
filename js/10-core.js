@@ -264,8 +264,13 @@
     if(f.stand_old && f.stand_old !== f.stand){
       h += "<div><span>"+(typ==="arrival"?"泊位變動：":"閘口變動：")+"</span>"+esc(f.stand_old)+" → "+esc(f.stand)+"</div>";
     }
+    // IATA -> ICAO (for FR24 deep link)
+    var ICAO={"CX":"CPA","SQ":"SIA","NH":"ANA","JL":"JAL","KE":"KAL","OZ":"AAR","BR":"EVA","CI":"CAL","MU":"CES","CA":"CCA","CZ":"CSN","HU":"CHH","MF":"CXA","ZH":"CSZ","HO":"DKH","9C":"CQH","GJ":"CDC","PN":"CHB","UQ":"CUH","EU":"UEA","FM":"CSH","GS":"GCR","KN":"CUA","KY":"KYD","NS":"HBH","QW":"QDA","TV":"TBA","Y8":"YZR","8L":"LKE","BK":"CQH","DZ":"DCA","G5":"HXA","JD":"CBJ","QY":"BCS","LD":"AHK","3V":"VTT","C6":"CCL","D4":"MXD","MS":"MSR","CK":"CKK","AK":"AXM","Z2":"EZD","PX":"PXP","JX":"SJX","FJ":"FJI","BI":"RBA","LH":"DLH","LX":"SWR","DL":"DAL","UO":"HKE","FD":"AIQ","QZ":"AWQ","GK":"JJP","9G":"NJS","TR":"TGW","MM":"APJ","7C":"JNA","TW":"TWB","LJ":"JNA","BX":"ABL","ZE":"ESR","YP":"RRV","VZ":"TVJ","SL":"TNU","DD":"NOK","XJ":"TAX","FD":"AIQ"};
+    var fid=opId(f).toLowerCase();
+    var icao=ICAO[opId(f).replace(/\s/g,"").substring(0,2).toUpperCase()];
+    var fr24url=icao?("https://fr24.com/"+fid+"/"+icao+opId(f).replace(/[^0-9]/g,"")):("https://www.flightradar24.com/"+fid);
     h += "<div style='margin-top:6px'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button> "+
-         "<a class='nbtn' style='text-decoration:none;display:inline-block;font-family:inherit;line-height:normal;vertical-align:baseline;' href='https://www.flightradar24.com/"+opId(f).toLowerCase()+"' rel='noopener'>✈️ Flightradar24</a></div>";
+         "<a class='nbtn' style='text-decoration:none;display:inline-block;font-family:inherit;line-height:normal;vertical-align:baseline;' href='"+fr24url+"' rel='noopener'>✈️ Flightradar24</a></div>";
     return h;
   }
 
