@@ -1,4 +1,20 @@
 /* HKIA flight board - 40-ui.js */
+  /* 大字模式：開頁還原＋掣切換 */
+  (function(){
+    var KEY = "hkia-large-v1";
+    function apply(v){
+      document.documentElement.classList.toggle("large", !!v);
+      try{ localStorage.setItem(KEY, v ? "1" : "0"); }catch(e){}
+    }
+    try{ if(localStorage.getItem(KEY) === "1") apply(true); }catch(e){}
+    var b = document.getElementById("largeBtn");
+    if(b) b.addEventListener("click", function(){
+      var on = !document.documentElement.classList.contains("large");
+      apply(on);
+      render();
+    });
+    window.__hkiaLarge = function(){ return document.documentElement.classList.contains("large"); };
+  })();
   /* 右下角浮動搜尋掣：撳=搜尋，長按拖動=搬位（位置存 localStorage） */
   (function(){
     var fab = $("fabSearch");
