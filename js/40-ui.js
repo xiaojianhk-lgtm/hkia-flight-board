@@ -404,8 +404,8 @@
   function scrollToEightAbove(){
     var rows = document.querySelectorAll("#rows tr.rw");
     var largeMode = window.__hkiaLarge && window.__hkiaLarge();
-    /* 時間線喺 list index 18；平時上面留 8 班（index 10 置頂），大字留 4 班（index 14 置頂） */
-    var target = rows[largeMode ? 14 : 10];
+    /* 時間線喺 list index 18（大字 12）；平時上面留 8 班（index 10 置頂），大字留 4 班（index 8 置頂） */
+    var target = rows[largeMode ? 8 : 10];
     var thr = document.querySelector("thead th");
     if(target && thr){
       var thRect = thr.getBoundingClientRect();
