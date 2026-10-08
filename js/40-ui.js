@@ -400,11 +400,12 @@
     window.scrollTo(0, window.scrollY + (nl.getBoundingClientRect().top - wantTop));
   }
 
-  /* 捲到「時間線上 8 班」嘅位置（上面仲有 10 班，要碌上去先見到） */
+  /* 捲到「時間線上 8 班」嘅位置（大字模式：4 班） */
   function scrollToEightAbove(){
     var rows = document.querySelectorAll("#rows tr.rw");
-    /* 時間線喺 list index 18，要第 10 班（index 10）置頂，即係上面留 8 班 */
-    var target = rows[10];
+    var largeMode = window.__hkiaLarge && window.__hkiaLarge();
+    /* 時間線喺 list index 18；平時上面留 8 班（index 10 置頂），大字留 4 班（index 14 置頂） */
+    var target = rows[largeMode ? 14 : 10];
     var thr = document.querySelector("thead th");
     if(target && thr){
       var thRect = thr.getBoundingClientRect();
