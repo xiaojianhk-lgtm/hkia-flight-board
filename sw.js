@@ -1,5 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v42";
+var CACHE = "hkia-v43";
 var ASSETS = [
   "./hkiaflight.html",
   "./manifest.json",
