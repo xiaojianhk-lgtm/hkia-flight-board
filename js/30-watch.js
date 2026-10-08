@@ -74,7 +74,7 @@
         if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
-          buildDates(); render();
+          if(typeof buildDates==="function") buildDates(); render();
         }
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
