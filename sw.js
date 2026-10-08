@@ -28,8 +28,8 @@ self.addEventListener("activate", function(e){
 self.addEventListener("fetch", function(e){
   if(e.request.method !== "GET") return;
   var url = new URL(e.request.url);
-  // data.json always goes to network (fresh flight data)
-  if(url.pathname.endsWith("data.json")){
+  // data.json 同 auth.json 永遠行 network（要新鮮）
+  if(url.pathname.endsWith("data.json") || url.pathname.endsWith("auth.json")){
     e.respondWith(fetch(e.request).catch(function(){ return caches.match(e.request); }));
     return;
   }
