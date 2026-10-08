@@ -12,10 +12,11 @@
     /* 今日：時間線之前 18 班開始顯示 60 班（上面18班，下面42班）；開頁／雙擊停喺上8班位置 */
     var largeMode = window.__hkiaLarge && window.__hkiaLarge();
     var pageN = largeMode ? 30 : 60;
+    var aboveN = largeMode ? 12 : 18;
     var start = 0, showN = pageN;
     if(!expanded && !query && dateIdx === 1 && items.length){
       showN = Math.min(pageN, items.length);
-      start = Math.max(0, Math.min(divPos - 18, items.length - showN));
+      start = Math.max(0, Math.min(divPos - aboveN, items.length - showN));
     }
     var list = expanded ? items : items.slice(start, start + showN);
     lastItems = list;
