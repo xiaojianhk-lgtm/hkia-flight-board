@@ -7,7 +7,7 @@
     var mBayAt = /^([A-Za-z]?\d+)@$/.exec(v);
     if(mBayAt){
       armWatch(mBayAt[1].toUpperCase(), true);
-      showToast("已添加 " + mBayAt[1].toUpperCase());
+      showToast("已添加 " + mBayAt[1].toUpperCase(), true);
       q.value = ""; query = "";
       $("qclear").parentElement.classList.remove("hasq");
       expanded = false; render();
@@ -18,7 +18,7 @@
     var mFlightAt = /^([A-Za-z]{2,}\d+)@$/i.exec(v);
     if(mFlightAt){
       armFlightWatch(mFlightAt[1].toUpperCase(), true);
-      showToast("已添加 " + mFlightAt[1].toUpperCase());
+      showToast("已添加 " + mFlightAt[1].toUpperCase(), true);
       q.value = ""; query = "";
       $("qclear").parentElement.classList.remove("hasq");
       expanded = false; render();
@@ -100,12 +100,14 @@
         }
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
+        watchBays[bay].silent = !!silent;
         flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
         saveBayWatch(); if(!silent) showWatchPill();
       })
       .catch(function(){
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
+        watchBays[bay].silent = !!silent;
         flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
         saveBayWatch(); if(!silent) showWatchPill();
       });
@@ -119,15 +121,17 @@
     var box = $("watchpills");
     box.innerHTML = "";
     Object.keys(watchBays).sort().forEach(function(bay){
+      if(watchBays[bay].silent) return;  /* @ 靜默加入嘅唔顯示 pill */
       var d = document.createElement("div");
       d.className = "watchpill";
       d.innerHTML = "已關注 <span>"+esc(bay)+"</span> <button aria-label='取消提醒' data-unwatch='"+esc(bay)+"'>✕</button>";
       box.appendChild(d);
     });
     Object.keys(flightWatches).sort().forEach(function(fid){
+      var w = flightWatches[fid];
+      if(w.silent) return;  /* @ 靜默加入嘅唔顯示 pill */
       var d = document.createElement("div");
       d.className = "watchpill";
-      var w = flightWatches[fid];
       var dateLabel = "";
       if(w.date){
         var parts = w.date.split("-");
@@ -136,7 +140,9 @@
       d.innerHTML = "已關注 <span>"+esc(fid)+dateLabel+"</span> <button aria-label='取消提醒' data-unwatchflight='"+esc(fid)+"'>✕</button>";
       box.appendChild(d);
     });
-    box.hidden = !(watchCount() || flightWatchCount());
+    var hasVisible = Object.keys(watchBays).some(function(b){ return !watchBays[b].silent; }) ||
+                     Object.keys(flightWatches).some(function(f){ return !flightWatches[f].silent; });
+    box.hidden = !hasVisible;
     setBarH();
   }
   function checkBayWatch(){
@@ -237,7 +243,7 @@
     var target = DB && DB.dates ? DB.dates[dateIdx] : "";
     var it = findFlight(fid, target);
     var bay = it ? flightBay(it.f) : "";
-    flightWatches[fid] = { seenBay: bay, date: target };
+    flightWatches[fid] = { seenBay: bay, date: target, silent: !!silent };
     saveFlightWatch(); if(!silent) showWatchPill();
   }
   function disarmFlightWatch(fid){
