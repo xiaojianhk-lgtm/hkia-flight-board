@@ -114,6 +114,8 @@
     if(suppressClick){ suppressClick = false; return; }
     var t = e.target;
     if(!t || !t.closest) return;
+    /* 關注頁取消掣：唔好觸發行展開 */
+    if(t.closest("[data-unwatchflight]")) return;
 
     /* 先處理詳情區按鈕（保存／刪除）：佢哋喺 tr.drow 入面，唔係 tr.rw */
     var actEl = t.closest("[data-act]");
