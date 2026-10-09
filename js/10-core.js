@@ -317,17 +317,22 @@
     }catch(e){}
   }
   var toastTimer = null;
-  function showToast(msg){
+  function showToast(msg, big){
     var el = $("toast");
     if(!el){
       el = document.createElement("div");
       el.id = "toast";
-      el.style.cssText = "position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:99;white-space:nowrap;";
       document.body.appendChild(el);
+    }
+    /* big=1：大版提示（例如 @ 加入關注），置中＋大字＋國泰綠底 */
+    if(big){
+      el.style.cssText = "position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);background:#006b6e;color:#fff;padding:16px 28px;border-radius:12px;font-size:18px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.3);";
+    }else{
+      el.style.cssText = "position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:99;white-space:nowrap;";
     }
     el.textContent = msg; el.style.display = "block";
     if(toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ el.style.display = "none"; }, 1800);
+    toastTimer = setTimeout(function(){ el.style.display = "none"; }, big ? 2500 : 1800);
   }
 
   var noteEditingKey = null, noteFocus = false;
