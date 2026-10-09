@@ -284,60 +284,10 @@
       h += "<div><span>"+(typ==="arrival"?"泊位變動：":"閘口變動：")+"</span>"+esc(f.stand_old)+" → "+esc(f.stand)+"</div>";
     }
     h += "<div style='margin-top:6px'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button> "+
-         "<a class='nbtn' style='text-decoration:none;display:inline-block;font-family:inherit;line-height:normal;vertical-align:baseline;' href='https://www.flightradar24.com/"+opId(f).toLowerCase()+"' rel='noopener'>✈️ Flightradar24</a>"+
-         /* 長按備註模式先顯示機型／註冊編號（ADS-B） */
-         (noteEditingKey === wk ? " <span id='acInfo' style='font-size:12px;color:var(--muted);margin-left:6px;'>載入中…</span>" : "")+"</div>";
+         "<a class='nbtn' style='text-decoration:none;display:inline-block;font-family:inherit;line-height:normal;vertical-align:baseline;' href='https://www.flightradar24.com/"+opId(f).toLowerCase()+"' rel='noopener'>✈️ Flightradar24</a></div>";
     return h;
   }
 
-  /* ---------- ADS-B 機型／註冊編號（長按備註模式用） ---------- */
-  var acCache = {};  /* fid -> {t, r, ts} */
-  var IATA2ICAO = {CX:"CPA", UO:"HKE", HX:"CRK", KA:"HDA", LD:"AHK", BX:"ABL", KE:"KAL", JL:"JAL", NH:"ANA", SQ:"SIA", TG:"THA", MH:"MAS", GA:"GIA", QF:"QFA", BA:"BAW", LH:"DLH", AF:"AFR", KL:"KLM", EK:"UAE", QR:"QTR", EY:"ETD", SV:"SVA", TK:"THY", AI:"AIC", VN:"HVN", PR:"PAL", CI:"CAL", BR:"EVA", NX:"AMU", TR:"TGW", AK:"AXM", FD:"AIQ", Z2:"APJ", QZ:"AWQ", GK:"JJP", "9G":"HGB", MM:"MMX", "7C":"JJA", TW:"TWB", BX:"ABL", OZ:"AAR", CA:"CCA", MU:"CES", CZ:"CSN", HU:"CHH", FM:"CSH", ZH:"CSZ", MF:"CXA", SC:"CDG", HO:"DKH", KN:"CBG", GS:"GCR", EU:"UEA", NS:"HBH", JD:"CBJ", PN:"CHB", AQ:"JYH", Y8:"YZR", DZ:"DAH"};
-  function fidToCallsign(fid){
-    var m = /^([A-Z]{2,})(\d+)$/i.exec(fid || "");
-    if(!m) return fid;
-    var icao = IATA2ICAO[m[1].toUpperCase()];
-    return (icao || m[1].toUpperCase()) + m[2];
-  }
-  function fetchAcInfo(fid){
-    var el = document.getElementById("acInfo");
-    if(!el) return;
-    var now = Date.now();
-    var c = acCache[fid];
-    if(c && now - c.ts < 3600000){
-      el.textContent = c.t ? ("機型 " + c.t + (c.r ? " · " + c.r : "")) : "暫無資料（撳重試）";
-      return;
-    }
-    var cs = fidToCallsign(fid);
-    el.textContent = "載入中…";
-    el.style.cursor = "";
-    el.onclick = null;
-    /* 經 Cloudflare Worker 代理（adsb.lol 唔支援 CORS） */
-    fetch("https://xiaojian-visit-log.xiaojian-hk.workers.dev/adsb/callsign/" + encodeURIComponent(cs), {cache:"no-store"})
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        var el2 = document.getElementById("acInfo");
-        if(!el2) return;
-        var ac = (d.ac || [])[0];
-        if(ac && (ac.t || ac.r)){
-          acCache[fid] = {t: ac.t || "", r: ac.r || "", ts: now};
-          el2.textContent = "機型 " + (ac.t || "—") + (ac.r ? " · " + ac.r : "");
-          el2.style.cursor = "";
-          el2.onclick = null;
-        }else{
-          el2.textContent = "暫無資料（撳重試）";
-          el2.style.cursor = "pointer";
-          el2.onclick = function(){ fetchAcInfo(fid); };
-        }
-      })
-      .catch(function(){
-        var el3 = document.getElementById("acInfo");
-        if(!el3) return;
-        el3.textContent = "暫無資料（撳重試）";
-        el3.style.cursor = "pointer";
-        el3.onclick = function(){ fetchAcInfo(fid); };
-      });
-  }
 
   function copyFlight(typ, f){
     var w = WATCH[watchKey(typ, f)];
