@@ -95,8 +95,13 @@
   }
   $("expandBtn").addEventListener("click", toggleExpand);
   $("refreshBtn").addEventListener("click", function(){
-    /* replace 唔會加 history，唔會越撳越多上一頁 */
-    location.replace(location.pathname + "?t=" + Date.now());
+    /* 軟更新：拉 data.json + 溫度，唔 reload 成頁（PWA 下更可靠） */
+    var btn = this;
+    btn.style.opacity = "0.5";
+    doPullRefresh(function(){
+      btn.style.opacity = "";
+      if(typeof jumpToTimeline === "function") jumpToTimeline();
+    });
   });
 
   /* 撳列展開（有備註先有反應） */
