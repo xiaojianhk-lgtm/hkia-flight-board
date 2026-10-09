@@ -483,7 +483,6 @@ try{(function(){
     <h3>關於航班資訊</h3>
     <h4>操作</h4>
     <ul>
-      <li>喺航班上向左滑：加<span style="color:var(--red)">紅色✓</span>巡視標記（一次編號、兩次連時間）；向右滑逐級取消。</li>
       <li>長按航班：加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
       <li>長按泊位：高亮所有同區泊位（再長按取消，長按另一區轉過去）。</li>
       <li>連點兩下：跳返時間線；連點三下：開搜尋。</li>
@@ -493,14 +492,13 @@ try{(function(){
       <li>搜尋欄輸入 <b>W63+</b>：之後有新航班入該泊位，就彈 banner 通知。</li>
       <li>搜尋欄輸入 <b>CX123+</b>：嗰班機一有泊位，就彈 banner 通知。</li>
       <li>撳 <b>🌧</b>：機場未來 3 小時降雨機率 ≥50% 就彈 banner 通知（Open-Meteo 預報）。</li>
-      <li>提醒 arm 咗之後，每 15 分鐘自動檢查（碌緊 page 都會）。page 要開住先會響。</li>
     </ul>
     <h4>數據</h4>
     <ul>
       <li>每 15 分鐘自動更新（閒置先會靜靜換）；亦可向下拉手動更新。</li>
+      <li>航班資料來自機管局官方 API；天氣來自 Open-Meteo。</li>
     </ul>
     <div style="color:var(--muted);font-size:11px;text-align:center;margin:8px 0 4px;">穩定版 v5</div>
-    </ul>
     <button id="aboutClose">關閉</button>
   </div>
 </div>
