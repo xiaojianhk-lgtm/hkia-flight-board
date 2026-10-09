@@ -374,7 +374,7 @@
     if(isDbl && !noteEditingKey &&
        !$("aboutOverlay").classList.contains("open") &&
        document.activeElement !== q &&
-       !(e.target.closest && e.target.closest("input,button"))){
+       !(e.target.closest && e.target.closest("input,button,thead"))){
       e.preventDefault();
       jumpToTimeline();
     }
@@ -384,7 +384,7 @@
     if(noteEditingKey) return;
     if($("aboutOverlay").classList.contains("open")) return;
     if(document.activeElement === q) return;
-    if(e.target.closest && e.target.closest("input,button")) return;
+    if(e.target.closest && e.target.closest("input,button,thead")) return;
     e.preventDefault();
     jumpToTimeline();
   });
@@ -541,6 +541,11 @@
   });
   /* 雙擊到港／離港標題欄：主頁↔關注頁跳轉（隱藏功能） */
   (function(){
+    /* 關注頁唔顯示 pill（成頁都係關注，唔使再提示） */
+    if(window.__WATCH_ONLY){
+      var wp = document.getElementById("watchpills");
+      if(wp) wp.style.display = "none";
+    }
     var lastTap = 0;
     var thead = document.querySelector("thead");
     if(!thead) return;
