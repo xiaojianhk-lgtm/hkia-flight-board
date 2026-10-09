@@ -360,6 +360,7 @@
   }
   checkHkoTemp();
   setInterval(checkHkoTemp, 15 * 60 * 1000);
+  window.__hkiaCheckTemp = checkHkoTemp; /* 俾下拉更新手動觸發 */
 
   /* 密碼版本驗證：開頁嗰陣對一次 auth.json */
   if(window.__hkiaVerifyAuth) window.__hkiaVerifyAuth();
