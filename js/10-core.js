@@ -153,6 +153,7 @@
   function badge(f){
     var h = "";
     if(f.cancelled) h += '<span class="cbadge cancel">取消</span>';
+    if(f.cargo && isHasFlight(f)) h += '<span class="cbadge gh">gh</span>';
     return h;
   }
 
