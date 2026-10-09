@@ -66,6 +66,16 @@
     if(ni){
       ni.addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); commitNote(); } });
       if(noteFocus){ noteFocus = false; try{ ni.focus(); }catch(e){} }
+      /* 長按備註模式：順手攞 ADS-B 機型／註冊編號 */
+      try{
+        if(typeof fetchAcInfo === "function" && noteEditingKey && detailKey === noteEditingKey){
+          var dk = null;
+          for(var j=0;j<lastItems.length;j++){
+            if(itemKey(lastItems[j]) === detailKey){ dk = lastItems[j]; break; }
+          }
+          if(dk) fetchAcInfo(opId(dk.f));
+        }
+      }catch(e){}
     }
 
     var g = getLists();
