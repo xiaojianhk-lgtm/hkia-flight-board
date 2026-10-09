@@ -459,6 +459,18 @@ try{(function(){
   else if(/Mac OS/.test(ua))o='macOS';
   else if(/Windows/.test(ua))o='Windows';
   else if(/Linux/.test(ua))o='Linux';
+  /* 每日每部機淨記一次訪問（慳 KV 寫入，免費額唔爆） */
+  var today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Hong_Kong'});
+  var logKey='hkia-visit-logged-'+today;
+  try{
+    if(localStorage.getItem(logKey)) return;
+    localStorage.setItem(logKey,'1');
+    /* 清舊日期嘅 key，唔好塞爆 localStorage */
+    for(var i=localStorage.length-1;i>=0;i--){
+      var k=localStorage.key(i);
+      if(k&&k.indexOf('hkia-visit-logged-')===0&&k!==logKey) localStorage.removeItem(k);
+    }
+  }catch(e){}
   fetch('https://xiaojian-visit-log.xiaojian-hk.workers.dev/log',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({browser:b,os:o,page:location.pathname,device:did})
