@@ -114,8 +114,6 @@
     if(suppressClick){ suppressClick = false; return; }
     var t = e.target;
     if(!t || !t.closest) return;
-    /* 關注頁取消掣：唔好觸發行展開 */
-    if(t.closest("[data-unwatchflight]")) return;
 
     /* 先處理詳情區按鈕（保存／刪除）：佢哋喺 tr.drow 入面，唔係 tr.rw */
     var actEl = t.closest("[data-act]");
@@ -216,6 +214,23 @@
     swipedAt = Date.now();
     var it = lastItems[+row.getAttribute("data-k")];
     if(!it) return;
+    /* 關注頁：左滑取消關注（唔做巡視標記） */
+    if(window.__WATCH_ONLY && dx < 0){
+      try{
+        var fidU = opId(it.f).toUpperCase();
+        if(typeof flightWatches !== "undefined" && flightWatches[fidU] && typeof disarmFlightWatch === "function"){
+          disarmFlightWatch(fidU);
+          showToast("已取消關注 " + fidU, true);
+          suppressClick = true;
+          setTimeout(function(){ suppressClick = false; }, 800);
+          tapTimes.length = 0;
+          render();
+          return;
+        }
+      }catch(err){}
+      /* 唔係直接關注嘅航班（bay／備註），左滑無效 */
+      return;
+    }
     var lvl = inspLevel(it.typ, it.f);
     var want = Math.max(0, Math.min(2, lvl + (dx < 0 ? 1 : -1)));
     if(want === lvl) return;
