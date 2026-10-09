@@ -457,11 +457,16 @@
     syncThemeUI();
   });
 
-  /* 關於 */
+  /* 關於（watch.html 冇關於掣，defensive） */
   var overlay = $("aboutOverlay");
-  $("aboutBtn").addEventListener("click", function(){ overlay.classList.add("open"); });
-  $("aboutClose").addEventListener("click", function(){ overlay.classList.remove("open"); });
-  overlay.addEventListener("click", function(e){ if(e.target===overlay) overlay.classList.remove("open"); });
+  var abBtn = $("aboutBtn");
+  if(abBtn && overlay) abBtn.addEventListener("click", function(){ overlay.classList.add("open"); });
+  var abClose = $("aboutClose");
+  if(abClose && overlay) abClose.addEventListener("click", function(){ overlay.classList.remove("open"); });
+  if(overlay) overlay.addEventListener("click", function(e){ if(e.target===overlay) overlay.classList.remove("open"); });
+  /* 關注頁返回掣 */
+  var bkBtn = $("backBtn");
+  if(bkBtn) bkBtn.addEventListener("click", function(){ location.href = "./hkiaflight.html"; });
 
   window.addEventListener("resize", function(){ setBarH(); });
   /* 瀏覽器唔好自動還原舊 scroll 位，定位由我哋控制 */
@@ -534,3 +539,22 @@
       // 回來即檢查一次（簡單起見交給 interval）
     }
   });
+  /* 雙擊到港／離港標題欄：主頁↔關注頁跳轉（隱藏功能） */
+  (function(){
+    var lastTap = 0;
+    var thead = document.querySelector("thead");
+    if(!thead) return;
+    thead.addEventListener("click", function(){
+      var now = Date.now();
+      if(now - lastTap < 400){
+        lastTap = 0;
+        if(window.__WATCH_ONLY){
+          location.href = "./hkiaflight.html";
+        }else{
+          location.href = "./watch.html";
+        }
+      }else{
+        lastTap = now;
+      }
+    });
+  })();
