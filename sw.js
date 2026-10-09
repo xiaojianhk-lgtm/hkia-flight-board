@@ -1,5 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v68";
+var CACHE = "hkia-v69";
 var ASSETS = [
   "./hkiaflight.html",
   "./manifest.json",
@@ -31,6 +31,13 @@ self.addEventListener("fetch", function(e){
   // data.json 同 auth.json 永遠行 network（要新鮮）
   if(url.pathname.endsWith("data.json") || url.pathname.endsWith("auth.json")){
     e.respondWith(fetch(e.request).catch(function(){ return caches.match(e.request); }));
+    return;
+  }
+  /* 跨域 API（天文台 warnsum／rhrread、Open-Meteo 等）永遠行 network，唔入 cache：
+     caches.match 唔理 fetch 嗰陣嘅 cache:"no-store"，舊寫法會將 CORS 200 回應
+     長期快取，令警告 banner／溫度／降雨預報變成舊數據 */
+  if(url.origin !== self.location.origin){
+    e.respondWith(fetch(e.request));
     return;
   }
   e.respondWith(
