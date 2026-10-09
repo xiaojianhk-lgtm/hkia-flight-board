@@ -305,10 +305,13 @@
     var now = Date.now();
     var c = acCache[fid];
     if(c && now - c.ts < 3600000){
-      el.textContent = c.t ? ("機型 " + c.t + (c.r ? " · " + c.r : "")) : "暫無資料";
+      el.textContent = c.t ? ("機型 " + c.t + (c.r ? " · " + c.r : "")) : "暫無資料（撳重試）";
       return;
     }
     var cs = fidToCallsign(fid);
+    el.textContent = "載入中…";
+    el.style.cursor = "";
+    el.onclick = null;
     fetch("https://api.adsb.lol/v2/callsign/" + encodeURIComponent(cs), {cache:"no-store"})
       .then(function(r){ return r.json(); })
       .then(function(d){
@@ -318,13 +321,20 @@
         if(ac && (ac.t || ac.r)){
           acCache[fid] = {t: ac.t || "", r: ac.r || "", ts: now};
           el2.textContent = "機型 " + (ac.t || "—") + (ac.r ? " · " + ac.r : "");
+          el2.style.cursor = "";
+          el2.onclick = null;
         }else{
-          el2.textContent = "暫無資料";
+          el2.textContent = "暫無資料（撳重試）";
+          el2.style.cursor = "pointer";
+          el2.onclick = function(){ fetchAcInfo(fid); };
         }
       })
       .catch(function(){
         var el3 = document.getElementById("acInfo");
-        if(el3) el3.textContent = "暫無資料";
+        if(!el3) return;
+        el3.textContent = "暫無資料（撳重試）";
+        el3.style.cursor = "pointer";
+        el3.onclick = function(){ fetchAcInfo(fid); };
       });
   }
 
