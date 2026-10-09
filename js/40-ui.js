@@ -160,6 +160,9 @@
     if(!it) return;
     pressItem = it;
     pressOnBay = !!(e.target.closest && e.target.closest("td.bayc"));
+    /* 記低起始位，輕微郁唔當取消（Android 好易震） */
+    var t0 = (e.touches && e.touches[0]) || e;
+    pressSX = t0.clientX; pressSY = t0.clientY;
     pressTimer = setTimeout(function(){
       pressTimer = null;
       suppressClick = true;
@@ -176,14 +179,21 @@
     }, 550);
   }
   function pressCancel(){ if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; } pressItem = null; }
+  /* 郁超過 12px 先當取消，輕微震唔理 */
+  function pressMove(e){
+    if(!pressTimer) return;
+    var t0 = (e.touches && e.touches[0]) || e;
+    if(Math.abs(t0.clientX - pressSX) > 12 || Math.abs(t0.clientY - pressSY) > 12) pressCancel();
+  }
+  var pressSX = 0, pressSY = 0;
   var rowsEl = $("rows");
   rowsEl.addEventListener("touchstart", pressStart, {passive:true});
   rowsEl.addEventListener("touchend", pressCancel);
   rowsEl.addEventListener("touchcancel", pressCancel);
-  rowsEl.addEventListener("touchmove", pressCancel);
+  rowsEl.addEventListener("touchmove", pressMove, {passive:true});
   rowsEl.addEventListener("mousedown", function(e){ if(e.button===0) pressStart(e); });
   rowsEl.addEventListener("mouseup", pressCancel);
-  rowsEl.addEventListener("mousemove", pressCancel);
+  rowsEl.addEventListener("mousemove", pressMove);
   rowsEl.addEventListener("contextmenu", function(e){ if(rowFromEvent(e)) e.preventDefault(); });
 
   /* 左右滑：左滑加紅「/」（已巡視），右滑取消 */
