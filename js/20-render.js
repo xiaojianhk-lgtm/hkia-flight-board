@@ -40,17 +40,7 @@
       var key = itemKey(it);
       var ilv = inspLevel(typ, f);
       var adir = "<span class='adir'>"+(typ==="arrival"?"↓":"↑")+"</span>";
-      /* 關注頁：已關注航班加 ✕ 取消掣 */
-      var unwatchBtn = "";
-      if(window.__WATCH_ONLY){
-        try{
-          var fidU = opId(f).toUpperCase();
-          if(typeof flightWatches !== "undefined" && flightWatches[fidU]){
-            unwatchBtn = " <button class='unwatchbtn' data-unwatchflight='"+esc(fidU)+"' aria-label='取消關注' style='background:none;border:none;color:var(--red);font-size:14px;cursor:pointer;padding:0 2px;'>✕</button>";
-          }
-        }catch(e){}
-      }
-      var fidCell = "<td class='fid'>"+(typ==="arrival"?adir:"")+esc(opId(f))+dateTag(f)+badge(f)+(hn?" <span class='nst'>★</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+unwatchBtn+"</td>";
+      var fidCell = "<td class='fid'>"+(typ==="arrival"?adir:"")+esc(opId(f))+dateTag(f)+badge(f)+(hn?" <span class='nst'>★</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
       var tMark2 = ilv>=2 ? "<span class='tmark inspk ab'>✓</span>" : "";
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
