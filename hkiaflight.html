@@ -585,7 +585,29 @@ try{(function(){
   <script>
   if("serviceWorker" in navigator){
     window.addEventListener("load", function(){
-      navigator.serviceWorker.register("./sw.js").catch(function(){});
+      navigator.serviceWorker.register("./sw.js").then(function(reg){
+        /* 開頁自動 check 有冇新版 SW */
+        function checkSwUpdate(){ try{ reg.update(); }catch(e){} }
+        checkSwUpdate();
+        document.addEventListener("visibilitychange", function(){
+          if(!document.hidden) checkSwUpdate();
+        });
+        /* 有新 SW 裝好→彈 banner，一撳即 reload 用新版 */
+        reg.addEventListener("updatefound", function(){
+          var nw = reg.installing;
+          if(!nw) return;
+          nw.addEventListener("statechange", function(){
+            if(nw.state === "activated" && !document.getElementById("swUpdateBar")){
+              var b = document.createElement("div");
+              b.id = "swUpdateBar";
+              b.textContent = "有新版本，撳呢度更新";
+              b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#006b6e;color:#fff;text-align:center;padding:10px 12px;font-size:14px;font-weight:600;cursor:pointer;";
+              b.addEventListener("click", function(){ location.reload(); });
+              document.body.appendChild(b);
+            }
+          });
+        });
+      }).catch(function(){});
     });
   }
   </script>
