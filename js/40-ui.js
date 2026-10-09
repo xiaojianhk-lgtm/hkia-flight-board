@@ -546,20 +546,33 @@
       var wp = document.getElementById("watchpills");
       if(wp) wp.style.display = "none";
     }
-    var lastTap = 0;
     var thead = document.querySelector("thead");
     if(!thead) return;
-    thead.addEventListener("click", function(){
-      var now = Date.now();
-      if(now - lastTap < 400){
-        lastTap = 0;
-        if(window.__WATCH_ONLY){
-          location.href = "./hkiaflight.html";
-        }else{
-          location.href = "./watch.html";
-        }
+    /* 用原生 dblclick（唔用手動計時，避免同 browser timing 打架）；
+       stopPropagation 擋住 document 層嘅時間線跳轉 */
+    function goWatch(){
+      if(window.__WATCH_ONLY){
+        location.href = "./hkiaflight.html";
       }else{
-        lastTap = now;
+        location.href = "./watch.html";
       }
+    }
+    thead.addEventListener("dblclick", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      goWatch();
     });
+    /* 手機 touchend 版雙擊（iOS 有時唔出 dblclick） */
+    var thLastTap = 0;
+    thead.addEventListener("touchend", function(e){
+      var now = Date.now();
+      if(now - thLastTap < 500){
+        thLastTap = 0;
+        e.preventDefault();
+        e.stopPropagation();
+        goWatch();
+      }else{
+        thLastTap = now;
+      }
+    }, {passive:false});
   })();
