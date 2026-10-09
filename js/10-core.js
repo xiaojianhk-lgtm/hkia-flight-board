@@ -202,6 +202,25 @@
     g.arr.forEach(function(f){ items.push({sk:skDate(f, fdate, false), typ:'arrival', f:f}); });
     g.dep.forEach(function(f){ items.push({sk:skDate(f, fdate, true), typ:'departure', f:f}); });
     items.sort(function(a,b){ return a.sk-b.sk; });
+    /* 關注頁模式：淨顯示關注航班／關注 bay／有備註嘅航班 */
+    if(window.__WATCH_ONLY){
+      items = items.filter(function(it){
+        var fid = "";
+        try{ fid = opId(it.f).toUpperCase(); }catch(e){}
+        /* 1. 航班關注（@ 或 +） */
+        try{ if(typeof flightWatches !== "undefined" && flightWatches[fid]) return true; }catch(e){}
+        /* 2. Bay 關注：而家個 bay 喺 watch list 入面 */
+        try{
+          if(typeof watchBays !== "undefined"){
+            var bay = ((it.f.stand || "") + "").toUpperCase();
+            if(bay && watchBays[bay]) return true;
+          }
+        }catch(e){}
+        /* 3. 有備註 */
+        try{ if(hasNote(it.typ, it.f)) return true; }catch(e){}
+        return false;
+      });
+    }
     return items;
   }
   /* 排序鍵（認日期）：實際／預計時間若同航班日期唔同，加減 1440；離港減 50 分鐘 */
