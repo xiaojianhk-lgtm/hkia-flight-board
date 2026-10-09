@@ -312,7 +312,8 @@
     el.textContent = "載入中…";
     el.style.cursor = "";
     el.onclick = null;
-    fetch("https://api.adsb.lol/v2/callsign/" + encodeURIComponent(cs), {cache:"no-store"})
+    /* 經 Cloudflare Worker 代理（adsb.lol 唔支援 CORS） */
+    fetch("https://xiaojian-visit-log.xiaojian-hk.workers.dev/adsb/callsign/" + encodeURIComponent(cs), {cache:"no-store"})
       .then(function(r){ return r.json(); })
       .then(function(d){
         var el2 = document.getElementById("acInfo");
