@@ -3,6 +3,28 @@
   var q = $("q");
   q.addEventListener("input", function(){
     var v = q.value.trim();
+    /* BAY@：靜默加入 bay 關注（唔顯示 pill，淨係去關注頁睇） */
+    var mBayAt = /^([A-Za-z]?\d+)@$/.exec(v);
+    if(mBayAt){
+      armWatch(mBayAt[1].toUpperCase(), true);
+      showToast("已添加 " + mBayAt[1].toUpperCase());
+      q.value = ""; query = "";
+      $("qclear").parentElement.classList.remove("hasq");
+      expanded = false; render();
+      q.blur();
+      return;
+    }
+    /* FLIGHT@：靜默加入航班關注 */
+    var mFlightAt = /^([A-Za-z]{2,}\d+)@$/i.exec(v);
+    if(mFlightAt){
+      armFlightWatch(mFlightAt[1].toUpperCase(), true);
+      showToast("已添加 " + mFlightAt[1].toUpperCase());
+      q.value = ""; query = "";
+      $("qclear").parentElement.classList.remove("hasq");
+      expanded = false; render();
+      q.blur();
+      return;
+    }
     var mBay = /^([A-Za-z]?\d+)\+$/.exec(v);
     if(mBay){
       /* BAY+：淨係 arm 泊位提醒，唔過濾列表 */
@@ -66,7 +88,7 @@
     });
     return out;
   }
-  function armWatch(bay){
+  function armWatch(bay, silent){
     /* arm 即刻拉一次新數據 */
     fetch("data.json?_="+Date.now(), {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
@@ -79,13 +101,13 @@
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
         flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
-        saveBayWatch(); showWatchPill();
+        saveBayWatch(); if(!silent) showWatchPill();
       })
       .catch(function(){
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
         flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
-        saveBayWatch(); showWatchPill();
+        saveBayWatch(); if(!silent) showWatchPill();
       });
   }
   function disarmWatch(bay){
@@ -211,12 +233,12 @@
   function flightBay(f){
     return (manualStand("arrival", f) || manualStand("departure", f) || f.stand || "").toUpperCase();
   }
-  function armFlightWatch(fid){
+  function armFlightWatch(fid, silent){
     var target = DB && DB.dates ? DB.dates[dateIdx] : "";
     var it = findFlight(fid, target);
     var bay = it ? flightBay(it.f) : "";
     flightWatches[fid] = { seenBay: bay, date: target };
-    saveFlightWatch(); showWatchPill();
+    saveFlightWatch(); if(!silent) showWatchPill();
   }
   function disarmFlightWatch(fid){
     if(fid){ delete flightWatches[fid]; }
