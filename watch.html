@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1c2c">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="航班資訊">
+<meta name="theme-color" content="#006b6e">
+<title>關注航班 · 香港國際機場</title>
+<script>
+/* 密碼門 v2：hash 存喺 localStorage，開頁嗰陣同 auth.json 對，改咗密碼舊設備即鎖 */
+(function(){
+  var KEY = "hkia-auth-v2";  /* 存當時用嚟入嘅 hash */
+  var OLDKEY = "hkia-auth-v1";
+  var stored = null, hadOld = false;
+  try{
+    stored = localStorage.getItem(KEY);
+    hadOld = localStorage.getItem(OLDKEY) === "1";
+  }catch(e){}
+  if(!stored && !hadOld){
+    /* 從未入過：即刻鎖 */
+    window.__hkiaLocked = true;
+    document.documentElement.classList.add("locked");
+  }else{
+    /* 有記錄：暫放行，等陣 async 對 auth.json */
+    window.__hkiaAuthPending = true;
+    if(hadOld && !stored) window.__hkiaMigrate = true;
+  }
+  /* async 驗證：對唔上就鎖 */
+  function verify(){
+    fetch("auth.json", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(a){
+      var cur = null;
+      try{ cur = localStorage.getItem(KEY); }catch(e){}
+      if(window.__hkiaMigrate){
+        try{
+          localStorage.setItem(KEY, a.hash);
+          localStorage.removeItem(OLDKEY);
+        }catch(e){}
+        window.__hkiaMigrate = false;
+      }else if(cur && cur !== a.hash){
+        /* 密碼改咗：鎖 */
+        window.__hkiaLocked = true;
+        document.documentElement.classList.add("locked");
+        window.dispatchEvent(new Event("hkia-relock"));
+      }
+      window.__hkiaAuthPending = false;
+    }).catch(function(){
+      window.__hkiaAuthPending = false;  /* 攞唔到唔鎖人 */
+    });
+  }
+  window.__hkiaVerifyAuth = verify;
+  function initGate(){
+    var gate = document.getElementById("gate");
+    if(!gate) return;
+    /* relock 事件：要 show gate */
+    window.addEventListener("hkia-relock", function(){
+      gate.hidden = false;
+      var pw = document.getElementById("gatePw");
+      if(pw) setTimeout(function(){ pw.focus(); }, 200);
+    });
+    if(!window.__hkiaLocked) return;
+    gate.hidden = false;
+    var pw = document.getElementById("gatePw"), err = document.getElementById("gateErr");
+    function sha256(s){
+      if(crypto.subtle && crypto.subtle.digest){
+        return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function(b){
+          return Array.from(new Uint8Array(b)).map(function(x){ return ("0"+x.toString(16)).slice(-2); }).join("");
+        });
+      }
+      return Promise.resolve("UNSUPPORTED");
+    }
+    /* 攞最新 hash（有 fallback） */
+    var serverHash = null;
+    fetch("auth.json", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(a){
+      serverHash = a.hash;
+    }).catch(function(){});
+    function go(){
+      err.textContent = "";
+      sha256(pw.value).then(function(h){
+        var okHash = serverHash || "19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896";
+        if(h === okHash){
+          try{ localStorage.setItem(KEY, okHash); }catch(e){}
+          gate.hidden = true;
+          window.__hkiaLocked = false;
+          window.__hkiaAuthPending = false;
+          document.documentElement.classList.remove("locked");
+          window.dispatchEvent(new Event("hkia-unlocked"));
+        }else{
+          err.textContent = "密碼錯誤";
+          pw.value = ""; pw.focus();
+        }
+      });
+    }
+    document.getElementById("gateGo").addEventListener("click", go);
+    pw.addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
+    setTimeout(function(){ pw.focus(); }, 300);
+  }
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", initGate);
+  }else{
+    initGate();
+  }
+})();
+/* 日／夜模式：盡早套用，避免閃爍 */
+try{
+  var _t = localStorage.getItem("hkia-theme");
+  if(_t !== "light" && _t !== "dark"){
+    _t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+  }
+  document.documentElement.setAttribute("data-theme", _t);
+  var _mc = document.querySelector('meta[name="theme-color"]');
+  if(_mc) _mc.setAttribute("content", _t === "light" ? "#ffffff" : "#0b1c2c");
+}catch(e){ document.documentElement.setAttribute("data-theme", "dark"); }
+</script>
+<style>
+  /* 鎖定嗰陣閂埋主內容，唔好閃一下（gate 本身唔閂） */
+  html.locked header, html.locked .stickybar, html.locked main, html.locked #fabSearch{ visibility:hidden; }
+  /* 大字模式（長者用）：淨係航班表放大，頂部唔郁 */
+  html.large table{font-size:clamp(14px, 4.2vw, 17px) !important;}
+  html.large thead th{font-size:1em; padding:12px 4px 10px;}
+  html.large tbody td{padding:10px 4px;}
+  /* 大字模式：APT 細一號等 3 個字母顯示晒；到港離港英文細啲唔逼埋 */
+  html.large td.apc{font-size:.82em; letter-spacing:0;}
+  html.large thead th .hen{font-size:.7em; margin-left:2px; letter-spacing:0;}
+  html.large thead th .hzh{letter-spacing:1px;}
+  html.large #largeBtn{background:var(--cxgreen); color:#fff; border-color:var(--cxgreen);}
+  :root{
+    --bg:#0b1c2c; --bg2:#10263c; --card:#132c44; --line:#1f3a55;
+    --text:#e8f1f8; --muted:#8fa8bd; --dim:#8fa8bd; --strong:#ffffff;
+    --accent:#ffb300; --accent2:#54c1b3;
+    --input-bg:#0a1928; --placeholder:#5b748c;
+    --row-line:rgba(31,58,85,.55);
+    --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
+    --red:#ef5350; --green:#9ccc65; --green2:#8bc34a; --blue:#4fc3f7;
+    --cxgreen:#54c1b3;
+    --stN:#ffb74d; --stW:#ab47bc;
+    --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72);
+    --header-bg:rgba(11,28,44,.96);
+  }
+  [data-theme="light"]{
+    --bg:#ffffff; --bg2:#f5f5f5; --card:#ffffff; --line:#ddd;
+    --text:#111; --muted:#666; --dim:#888; --strong:#000;
+    --accent:#b97a00; --accent2:#006b6e;
+    --input-bg:#f9f9f9; --placeholder:#aaa;
+    --row-line:#eee;
+    --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
+    --red:#d32f2f; --green:#2e7d32; --green2:#1b5e20; --blue:#0288d1;
+    --cxgreen:#006b6e;
+    --stN:#e65100; --stW:#8e24aa;
+    --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45);
+    --header-bg:rgba(255,255,255,.96);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  button{transition:transform .12s ease;}
+  button:active{transform:scale(.96);}
+  html,body{margin:0; padding:0;}
+  /* 橫向滑動由網頁自己處理，唔好觸發瀏覽器嘅右滑返回 */
+  html{overscroll-behavior-x:none;}
+  body{touch-action:pan-y pinch-zoom;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","PingFang TC","Microsoft JhengHei",sans-serif;
+    font-size:14px; line-height:1.45;
+  }
+  /* ---------- header（碌走唔固定，同舊版一模一樣） ---------- */
+  header{
+    background:var(--header-bg);
+    border-bottom:1px solid var(--line);
+    padding:10px 16px 10px 24px; padding-right:104px;
+  }
+  header .row1{display:flex; align-items:center; gap:14px;}
+  .plane-ico{height:40px; width:auto; flex:none;}
+  /* 夜晚模式：飛機 logo 調光到同 HKG 一樣色 */
+  [data-theme="dark"] .plane-ico{filter:brightness(1.65) saturate(1.1);}
+  [data-theme="dark"] #gate .glogo{filter:brightness(1.65) saturate(1.1);}
+  /* 關於掣同 HKG 一樣色 */
+  #aboutBtn{color:var(--accent2);}
+  .titleblock{display:flex; flex-direction:column; gap:4px;}
+  header h2{font-size:19px; margin:0; letter-spacing:4px; line-height:1.1;}
+  header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
+  header .caps .hkg{color:var(--accent2); font-weight:800;}
+  #aboutBtn{margin-left:auto; align-self:flex-start; margin-top:2px;}
+  .linkbtn{
+    background:none; border:0;
+    color:var(--muted); font-size:12px; cursor:pointer; padding:6px 2px; letter-spacing:2px;
+  }
+  .linkbtn:active{opacity:.55;}
+  /* ---------- sticky 頂部 ---------- */
+  .stickybar{
+    position:-webkit-sticky; position:sticky; top:0; z-index:10;
+    background:rgba(11,28,44,.85);
+    -webkit-backdrop-filter:blur(14px) saturate(1.3);
+    backdrop-filter:blur(14px) saturate(1.3);
+    border-bottom:1px solid var(--line);
+  }
+  [data-theme="light"] .stickybar{ background:rgba(255,255,255,.85); }
+  .stickyinner{max-width:1100px; margin:0 auto; padding:0 8px;}
+  /* 右下角浮動搜尋掣（單手用） */
+  #fabSearch{
+    position:fixed; right:16px; bottom:24px; z-index:40;
+    width:52px; height:52px; border-radius:50%;
+    border:1px solid var(--line); background:var(--card); color:var(--cxgreen);
+    cursor:pointer;
+    box-shadow:0 4px 12px rgba(0,0,0,.35);
+    display:flex; align-items:center; justify-content:center;
+  }
+  #fabSearch:active{ transform:scale(.92); }
+  #stickyTs{padding:6px 0 10px; font-size:11px; display:flex; align-items:center; gap:8px;}
+  .ts{font-size:12px; color:var(--muted); margin-top:2px;}
+  .ts b{color:var(--accent); font-weight:600;}
+  .tsbtns{margin-left:auto; display:flex; gap:14px; align-items:center; flex:0 0 auto;}
+  .tsbtn{
+    width:38px; height:38px; border-radius:50%; flex:0 0 auto;
+    border:1px solid var(--line); background:var(--card); color:var(--text);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .tsbtn:active{transform:scale(.92);}
+  .tsbtn svg{width:19px; height:19px;}
+  .dates{display:flex; gap:8px; padding:0 2px;}
+  .dates button{
+    flex:1; background:var(--input-bg); border:1px solid var(--line); color:var(--muted);
+    border-radius:10px; padding:3px 4px; font-size:11px; cursor:pointer; line-height:1.3; letter-spacing:1px;
+  }
+  .dates button small{font-size:10px; opacity:.8;}
+  .dates button.on{border-color:var(--accent2); color:var(--strong); font-weight:600;}
+  .countrow{display:flex; justify-content:space-between; align-items:center; padding:10px 4px 0; gap:8px; flex-wrap:wrap;}
+  .hidecargo{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap;}
+  .hidecargo input{accent-color:var(--accent2);}
+  .rainbtn{font-size:16px; background:transparent; border:1px solid var(--line); border-radius:8px; padding:2px 8px; cursor:pointer; opacity:.45;}
+  .rainbtn.on{opacity:1; border-color:var(--accent2); background:rgba(0,107,110,.12);}
+  .searchrow{padding:10px 2px;}
+  #watchpills{display:flex; flex-wrap:wrap; gap:6px;}
+  #watchpills[hidden]{display:none;}
+  .watchpill{
+    display:inline-flex; align-items:center; gap:6px;
+    margin-top:6px; padding:4px 6px 4px 10px; border-radius:14px;
+    background:var(--card); border:1px solid var(--accent);
+    color:var(--text); font-size:12px;
+  }
+  .watchpill[hidden]{display:none;}
+  .watchpill button{
+    background:none; border:none; color:var(--muted);
+    font-size:14px; cursor:pointer; padding:0 4px; line-height:1;
+  }
+  /* 泊位到位提醒 */
+  #watchalert{
+    position:fixed; left:50%; top:16%; transform:translateX(-50%);
+    z-index:200; width:min(92vw, 420px);
+  }
+  #watchalert[hidden]{display:none;}
+  .wa-box{
+    background:var(--card); border:2px solid var(--accent);
+    border-radius:14px; padding:16px; box-shadow:0 8px 32px rgba(0,0,0,.45);
+  }
+  .wa-title{font-size:16px; font-weight:700; color:var(--accent); margin-bottom:8px;}
+  .wa-list{font-size:14px; line-height:1.9; margin-bottom:12px;}
+  .wa-ok{
+    background:var(--accent); color:#fff; border:none; border-radius:20px;
+    padding:8px 24px; font-size:14px; cursor:pointer; width:100%;
+  }
+  .swrap{position:relative;}
+  .swrap input{
+    width:100%; background:var(--input-bg); border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-size:16px; padding:9px 40px 9px 12px; outline:none;
+  }
+  .swrap input::placeholder{color:var(--placeholder);}
+  .swrap input::-webkit-search-cancel-button{-webkit-appearance:none; appearance:none;}
+  .qclear{
+    display:none; position:absolute; right:4px; top:50%; transform:translateY(-50%);
+    width:32px; height:32px; border:0; background:transparent; color:var(--dim);
+    font-size:15px; line-height:1; padding:0; cursor:pointer;
+  }
+  .swrap.hasq .qclear{display:block;}
+  /* 手機版計數列逼埋一行：字稍細、間距收窄 */
+  @media (max-width:719px){
+    .countrow{gap:6px;}
+    .hidecargo{font-size:11px;}
+  }
+  /* ---------- 表格 ---------- */
+  main{padding:8px 8px 32px; max-width:1100px; margin:0 auto;}
+  /* 基準：iPhone 17 Pro 402px 闊時 13px；其他機按比例自動縮放 */
+  table{width:100%; border-collapse:collapse; font-size:clamp(11.5px, 3.233vw, 14.5px); font-variant-numeric:tabular-nums; table-layout:fixed;}
+  thead th{
+    position:sticky; top:calc(var(--barH,0px) - 1px); background:var(--card); z-index:5;
+    font-size:.846em; padding:9px 4px 8px; border-bottom:2px solid var(--line);
+    text-align:left; white-space:nowrap; color:var(--text); letter-spacing:1px;
+    vertical-align:baseline;
+  }
+  thead th .hzh{font-size:1.091em; font-weight:700; color:var(--text); letter-spacing:2px;}
+  thead th .hen{font-size:.909em; font-weight:400; opacity:.7; margin-left:4px; letter-spacing:1px;}
+  thead th.tcol, tbody td.tcol{text-align:center;}
+  thead th.bayh, tbody td.bayc{text-align:right; padding-right:8px; border-right:1px solid var(--row-line);}
+  thead th.apth{text-align:center; letter-spacing:1px;}
+  tbody td.apc{text-align:center; font-size:.923em; letter-spacing:1px;}
+  thead th:first-child, tbody td:first-child{border-left:1px solid var(--row-line);}
+  thead th:first-child{padding-left:10px;}
+  tbody td{padding:7px 4px; white-space:nowrap; border-bottom:1px solid var(--row-line); overflow:hidden; text-overflow:ellipsis;}
+  tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
+  tbody tr.rw:active td{background:rgba(128,128,128,.14);}
+  @media (hover:hover){ tbody tr.rw:hover td{background:rgba(128,128,128,.12);} }
+  td.fid{font-weight:600; overflow:visible;} /* 隔籬航班欄永遠係空嘅，★✓ 唔夠位可以借用 */
+  .tmark.inspk{color:var(--red); opacity:1; font-size:14px;}
+  .twrap{position:relative; display:inline-block;}
+  .twrap .tmark.inspk.ab{position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:2px;}
+  /* 同區泊位高亮：實色 pill */
+  .sthl{border-radius:4px; padding:1px 7px; color:#fff; font-weight:700; white-space:nowrap;}
+  .sthl.stS{background:var(--blue);}
+  .sthl.stN{background:var(--stN);}
+  .sthl.stW{background:var(--stW);}
+  .sthl.stR{background:var(--dim);}
+  td.time{font-weight:600; overflow:visible;}
+  .tchg{color:var(--red); font-weight:700;}
+  .tmark.tchg{color:var(--red);}
+  .tsta{color:var(--dim);}
+  .tsta .tmark{color:var(--dim);}
+  .tmark{font-size:.923em; font-weight:600; margin-left:2px; letter-spacing:.5px; opacity:.85;}
+  .ddate{display:inline; font-size:.769em; color:var(--muted); margin-left:3px; white-space:nowrap;}
+  /* 泊位右邊色 bar */
+  .st{font-weight:600;}
+  .stchg{color:var(--red);}
+  /* 取消 */
+  tr.cancelled td{opacity:.5;}
+  .cbadge{
+    display:inline-block; font-size:.615em; background:var(--badge-bg); color:var(--badge-fg);
+    border:1px solid var(--badge-bd); border-radius:3px; padding:0 2px; margin-left:2px;
+    line-height:1.4; vertical-align:2px;
+    vertical-align:1px; font-weight:400;
+  }
+  .cbadge.cancel{background:rgba(211,47,47,.14); color:var(--red); border-color:var(--red); font-weight:700;}
+  /* 而家分隔線：時間對準 ETA 欄中心（20+19+10=49%） */
+  tr.nowline td{padding:6px 3px; border-bottom:1px solid var(--row-line); border-right:1px solid var(--row-line);}
+  .nl{display:flex; align-items:center; gap:8px; color:var(--accent); font-size:13px; font-weight:700; letter-spacing:2px; white-space:nowrap;}
+  .nl::before{content:""; flex:490; height:2px; background:var(--accent); opacity:.45;}
+  .nl::after{content:""; flex:510; height:2px; background:var(--accent); opacity:.45;}
+  /* 詳情 */
+  tr.rw{cursor:pointer; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;}
+  tr.drow td{background:var(--input-bg); border-bottom:1px solid var(--line); padding:8px 12px; white-space:normal;}
+  .ddetail{font-size:12px; color:var(--text); line-height:1.8;}
+  .ddetail span{color:var(--muted);}
+  .adir{display:inline-block; min-width:16px; font-weight:700;}
+  /* 表身：航班編號／航點／Bay 統一黑色（離港編號國泰綠）；時間＋標記用深藍色 */
+  tbody td{color:var(--strong); font-weight:600;}
+  [data-theme="dark"] tbody td{color:var(--strong);}
+  tr.rw.dep td.fid{color:var(--cxgreen);}
+  td.time{color:#1a3f85;}
+  [data-theme="dark"] td.time{color:#7f9fd8;}
+  .tmark{color:#1a3f85;}
+  [data-theme="dark"] .tmark{color:#7f9fd8;}
+  [data-theme="dark"] .tmark.inspk{color:var(--red);}
+  [data-theme="dark"] .tmark.tchg{color:var(--red);}
+  [data-theme="dark"] .tsta .tmark{color:var(--dim);}
+  tr.rw.noted td{background:rgba(201,162,39,.10);}
+  tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(201,162,39,.6);}
+  tr.rw.noted td:last-child{box-shadow:inset -3px 0 0 rgba(201,162,39,.6);}
+  [data-theme="light"] tr.rw.noted td{background:rgba(201,162,39,.22);}
+  [data-theme="light"] tr.rw.noted td:first-child{box-shadow:inset 3px 0 0 rgba(176,141,34,.95);}
+  [data-theme="light"] tr.rw.noted td:last-child{box-shadow:inset -3px 0 0 rgba(176,141,34,.95);}
+  .nst{font-size:14px; margin-left:2px; color:#b08d22;}
+  .noteinput{background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:4px 6px; font-size:16px; width:55%;}
+  .nbtn{background:var(--input-bg); border:1px solid var(--line); color:var(--text); border-radius:4px; padding:3px 8px; font-size:12px; font-family:inherit; cursor:pointer; margin-left:4px;}
+  .notewrap{display:flex; align-items:center; flex-wrap:wrap; gap:4px;}
+  .expandbar{padding:10px; text-align:center;}
+  .expandbar button{
+    background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
+    padding:8px 18px; font-size:13px; cursor:pointer;
+  }
+  tr.xrow td{padding:8px 4px; text-align:center; border-right:1px solid var(--row-line);}
+  tr.xrow .xrowbtn{
+    background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:20px;
+    padding:8px 18px; font-size:13px; cursor:pointer;
+  }
+  /* 下拉更新 */
+  #ptr{
+    position:fixed; top:10px; left:50%; z-index:45; pointer-events:none;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    transform:translate(-50%,-80px); opacity:0;
+    transition:transform .22s ease-out, opacity .22s;
+  }
+  #ptr .ptrspin{
+    width:26px; height:26px; border-radius:50%;
+    border:3px solid var(--line); border-top-color:var(--accent);
+  }
+  #ptr.refreshing .ptrspin{ animation:ptrspin .7s linear infinite; }
+  @keyframes ptrspin{ to{ transform:rotate(360deg); } }
+  #ptr .ptrlabel{ font-size:11px; color:var(--muted); white-space:nowrap; }
+  /* 關於 */
+  #aboutOverlay{
+    position:fixed; inset:0; z-index:60; background:var(--overlay-bg);
+    display:none; align-items:center; justify-content:center; padding:22px;
+  }
+  #aboutOverlay.open{display:flex;}
+  .about-card{
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px;
+    max-width:430px; width:100%; padding:20px; box-shadow:0 8px 32px rgba(0,0,0,.5);
+    max-height:84vh; overflow-y:auto;
+  }
+  .about-card h3{margin:0 0 10px; font-size:17px;}
+  .about-card h4{margin:14px 0 6px; font-size:12px; letter-spacing:2px; color:var(--accent2); font-weight:700;}
+  .about-card h4:first-of-type{margin-top:2px;}
+  .about-card ul{margin:0 0 10px; padding-left:20px; font-size:13px;}
+  .about-card li{margin-bottom:7px;}
+  .about-card button{
+    width:100%; background:var(--accent2); border:0; border-radius:8px;
+    color:var(--tab-on-fg); font-size:14px; font-weight:700; padding:10px; cursor:pointer;
+  }
+  .linkbtn{
+    background:none; border:1px solid var(--line); border-radius:14px;
+    color:var(--accent2); font-size:12px; cursor:pointer; padding:5px 12px;
+  }
+  /* 密碼門 */
+  #gate{position:fixed; inset:0; z-index:9999; background:var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px;}
+  #gate[hidden]{display:none;}
+  #gate .gcard{background:var(--card); border:1px solid var(--line); border-radius:18px;
+    padding:36px 32px 28px; display:flex; flex-direction:column; align-items:center; gap:12px;
+    width:min(88vw, 320px); box-shadow:0 8px 32px rgba(0,0,0,.12);}
+  #gate .glogo{height:48px; width:auto;}
+  #gate .gtitle{font-size:22px; font-weight:800; letter-spacing:6px; text-indent:6px;}
+  #gate .gsub{font-size:11px; letter-spacing:3px; color:var(--muted); margin-bottom:8px;}
+  #gate .gsub .hkg{color:var(--accent2); font-weight:800;}
+  #gate input{font-size:20px; padding:12px 14px; border:1px solid var(--line); border-radius:12px;
+    background:var(--input-bg); color:var(--text); text-align:center; width:100%; box-sizing:border-box;}
+  #gate input:focus{outline:none; border-color:var(--accent2);}
+  #gate button{font-size:16px; padding:12px 28px; border:0; border-radius:12px; width:100%;
+    background:var(--accent2); color:#fff; font-weight:700; cursor:pointer; margin-top:4px;}
+  #gate .gerr{color:var(--red); font-size:13px; min-height:18px; text-align:center;}
+</style>
+<script data-goatcounter="https://xiaojian.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+<script>
+/* 訪問記錄：只記時間+瀏覽器+OS+設備ID，不記 IP */
+try{(function(){
+  var ua=navigator.userAgent||'';
+  var b='?',o='?';
+  /* 每部機一個隨機設備 ID，存 localStorage */
+  var did=null;
+  try{
+    did=localStorage.getItem('hkia-device-id');
+    if(!did){
+      did='xxxx-xxxx'.replace(/x/g,function(){return (Math.random()*16|0).toString(16);})+Date.now().toString(36).slice(-4);
+      localStorage.setItem('hkia-device-id',did);
+    }
+  }catch(e){}
+  if(/Edg\//.test(ua))b='Edge';
+  else if(/OPR\//.test(ua))b='Opera';
+  else if(/Chrome\//.test(ua))b='Chrome';
+  else if(/Safari\//.test(ua))b='Safari';
+  else if(/Firefox\//.test(ua))b='Firefox';
+  if(/iPhone|iPad|iPod/.test(ua))o='iOS';
+  else if(/Android/.test(ua))o='Android';
+  else if(/Mac OS/.test(ua))o='macOS';
+  else if(/Windows/.test(ua))o='Windows';
+  else if(/Linux/.test(ua))o='Linux';
+  fetch('https://xiaojian-visit-log.xiaojian-hk.workers.dev/log',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({browser:b,os:o,page:location.pathname,device:did})
+  }).catch(function(){});
+})();}catch(e){}
+</script>
+</head>
+<body>
+<div id="gate" hidden>
+  <div class="gcard">
+    <img class="glogo" src="plane-icon.png" alt="">
+    <div class="gtitle">航班資訊</div>
+    <div class="gsub">FLIGHT INFORMATION · <span class="hkg">HKG</span></div>
+    <input id="gatePw" type="password" inputmode="numeric" placeholder="請輸入密碼" autocomplete="off">
+    <button id="gateGo">進入</button>
+    <div class="gerr" id="gateErr"></div>
+  </div>
+</div>
+
+<div id="aboutOverlay" role="dialog" aria-modal="true" aria-label="關於">
+  <div class="about-card">
+    <h3>關於航班資訊</h3>
+    <h4>操作</h4>
+    <ul>
+      <li>長按航班：加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
+      <li>長按泊位：高亮所有同區泊位（再長按取消，長按另一區轉過去）。</li>
+      <li>連點兩下：跳返時間線；連點三下：開搜尋。</li>
+    </ul>
+    <h4>提醒</h4>
+    <ul>
+      <li>搜尋欄輸入 <b>W63+</b>：之後有新航班入該泊位，就彈 banner 通知。</li>
+      <li>搜尋欄輸入 <b>CX123+</b>：嗰班機一有泊位，就彈 banner 通知。</li>
+      <li>撳 <b>🌧</b>：機場未來 3 小時降雨機率 ≥50% 就彈 banner 通知（Open-Meteo 預報）。</li>
+    </ul>
+    <h4>數據</h4>
+    <ul>
+      <li>每 15 分鐘自動更新（閒置先會靜靜換）；亦可向下拉手動更新；點擊右上角 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="width:1em;height:1em;vertical-align:-0.15em;"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg> 圖標。</li>
+      <li>航班資料來自公開渠道；天氣來自 Open-Meteo。</li>
+    </ul>
+    <div style="color:var(--muted);font-size:11px;text-align:center;margin:8px 0 4px;">穩定版 v5</div>
+    <button id="aboutClose">關閉</button>
+  </div>
+</div>
+
+<header>
+  <div class="row1">
+    <img class="plane-ico" src="plane-icon.png" alt="" aria-hidden="true">
+    <div class="titleblock">
+      <h2>關注航班</h2>
+      <span class="caps">WATCHLIST · <span class="hkg">HKG</span></span>
+    </div>
+    <button id="backBtn" class="linkbtn">← 返回</button>
+  </div>
+</header>
+
+<div class="stickybar"><div class="stickyinner">
+  <div id="staleWarn" hidden style="background:#fff3e0; color:#e65100; font-size:12px; padding:6px 12px; border-radius:6px; margin-bottom:6px; text-align:center;">⚠️ 數據已超過 <b id="staleAge">—</b> 未更新，自動更新可能已停止</div>
+  <div id="hkoWarn" hidden style="background:rgba(211,47,47,.10); color:var(--red); font-size:12px; padding:6px 12px; border-radius:6px; margin-bottom:6px; text-align:center; font-weight:600;"></div>
+  <div class="ts" id="stickyTs"><span>資料擷取時間：<b id="headTs">—</b><b id="headCount" hidden></b>　<span id="hkoTemp" style="color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:3px;vertical-align:middle;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:11px;height:11px;"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span id="hkoTempTx">赤鱲角 —°C</span></span>　<span id="adCount" style="color:var(--muted);white-space:nowrap;vertical-align:middle;">到港 — / 離港 —</span></span><span class="tsbtns">
+      <button id="largeBtn" class="tsbtn" title="大字模式" aria-label="切換大字模式" style="font-weight:700; font-size:15px;">大</button>
+      <button id="themeBtn" class="tsbtn" title="日／夜模式" aria-label="切換日夜模式">
+        <svg id="icoSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/></svg>
+        <svg id="icoMoon" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M20.6 14.5A8.8 8.8 0 0 1 9.5 3.4a.7.7 0 0 0-.9-.9 10.2 10.2 0 1 0 12.9 12.9.7.7 0 0 0-.9-.9z"/></svg>
+      </button>
+      <button id="refreshBtn" class="tsbtn" aria-label="更新">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      </button>
+    </span>
+  </div>
+  <div class="dates" id="datePills"></div>
+  <div class="countrow">
+    <label class="hidecargo"><input type="checkbox" id="hidePax"> 隱藏客運</label>
+    <label class="hidecargo"><input type="checkbox" id="hideCargo" checked> 隱藏貨運</label>
+    <label class="hidecargo"><input type="checkbox" id="showHas" checked> 指定地勤</label>
+    <label class="hidecargo"><input type="checkbox" id="hideCX"> 隱藏國泰</label>
+    <button id="rainWatch" class="rainbtn" title="機場降雨提醒">🌧</button>
+  </div>
+  <div class="searchrow">
+    <div class="swrap">
+      <input id="q" type="search" placeholder="搜尋 Flight ID／來往地／泊位／備註…" autocomplete="off">
+      <button id="qclear" class="qclear" aria-label="清除">✕</button>
+    </div>
+    <div id="watchpills" hidden></div>
+  </div>
+</div></div>
+
+<main>
+  <div id="ptr" aria-hidden="true"><div class="ptrspin"></div><div class="ptrlabel">下拉更新</div></div>
+  <table>
+    <colgroup>
+      <col style="width:20%"><col style="width:19%"><col style="width:11%"><col style="width:17%"><col style="width:17%"><col style="width:16%">
+    </colgroup>
+    <thead>
+      <tr>
+        <th><span class="hzh">到港</span><span class="hen">ARR</span></th>
+        <th><span class="hzh">離港</span><span class="hen">DEP</span></th>
+        <th class="apth">APT</th>
+        <th class="tcol">ETA</th>
+        <th class="tcol">ETD</th>
+        <th class="bayh">Bay</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="expandbar" id="expandBar" style="display:none">
+    <button id="expandBtn"></button>
+  </div>
+</main>
+
+<button id="fabSearch" aria-label="搜尋"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="width:24px;height:24px;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+
+<div id="watchalert" hidden>
+  <div class="wa-box">
+    <div class="wa-title">🔔 <span id="waBay"></span> 有航班到位</div>
+    <div id="waList" class="wa-list"></div>
+    <button id="waOk" class="wa-ok">知道了</button>
+  </div>
+</div>
+
+<script>window.__WATCH_ONLY = true;</script>
+<script src="js/10-core.js"></script>
+<script src="js/20-render.js"></script>
+<script src="js/30-watch.js"></script>
+<script src="js/40-ui.js"></script>
+  <script>
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("./sw.js").then(function(reg){
+        /* 開頁自動 check 有冇新版 SW */
+        function checkSwUpdate(){ try{ reg.update(); }catch(e){} }
+        checkSwUpdate();
+        document.addEventListener("visibilitychange", function(){
+          if(!document.hidden) checkSwUpdate();
+        });
+        /* 有新 SW 裝好→彈 banner，一撳即 reload 用新版 */
+        reg.addEventListener("updatefound", function(){
+          var nw = reg.installing;
+          if(!nw) return;
+          nw.addEventListener("statechange", function(){
+            if(nw.state === "activated" && !document.getElementById("swUpdateBar")){
+              var b = document.createElement("div");
+              b.id = "swUpdateBar";
+              b.textContent = "有新版本，撳呢度更新";
+              b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#006b6e;color:#fff;text-align:center;padding:10px 12px;font-size:14px;font-weight:600;cursor:pointer;";
+              b.addEventListener("click", function(){ location.reload(); });
+              document.body.appendChild(b);
+            }
+          });
+        });
+      }).catch(function(){});
+    });
+  }
+  </script>
+</body>
+</html>
