@@ -418,15 +418,15 @@
 
   /* 捲到「時間線上 8 班」嘅位置（大字模式：4 班） */
   function scrollToEightAbove(){
-    var rows = document.querySelectorAll("#rows tr.rw");
-    var largeMode = window.__hkiaLarge && window.__hkiaLarge();
-    /* 時間線喺 list index 18（大字 12）；平時上面留 8 班（index 10 置頂），大字留 4 班（index 8 置頂） */
-    var target = rows[largeMode ? 8 : 10];
+    var nl = document.querySelector("tr.nowline");
     var thr = document.querySelector("thead th");
-    if(target && thr){
+    if(nl && thr){
+      /* 動態搵 nowline，上面留 8 班（唔 hardcode index） */
+      var rw = document.querySelector("tr.rw");
+      var rowH = rw ? rw.getBoundingClientRect().height : 34;
       var thRect = thr.getBoundingClientRect();
-      var top = thRect.top + thRect.height;
-      window.scrollTo(0, window.scrollY + target.getBoundingClientRect().top - top);
+      var wantTop = thRect.top + thRect.height + 8 * rowH;
+      window.scrollTo(0, window.scrollY + (nl.getBoundingClientRect().top - wantTop));
     }else{
       window.scrollTo(0, 0);
     }
