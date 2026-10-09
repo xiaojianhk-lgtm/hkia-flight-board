@@ -354,7 +354,13 @@
         (d.temperature && d.temperature.data || []).forEach(function(t){
           if(t.place === "赤鱲角") found = t.value;
         });
-        el.textContent = "赤鱲角 " + (found !== null ? found + "°C" : "—°C");
+        /* 加埋天文台更新時間，等用戶知個數係新鮮嘅 */
+        var tm = "";
+        try{
+          var m = /T(\d{2}):(\d{2})/.exec(d.updateTime || "");
+          if(m) tm = " " + m[1] + ":" + m[2];
+        }catch(e){}
+        el.textContent = "赤鱲角 " + (found !== null ? found + "°C" + tm : "—°C");
       })
       .catch(function(){ el.textContent = "赤鱲角 —°C"; });
   }
