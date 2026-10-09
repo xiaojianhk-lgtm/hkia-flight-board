@@ -343,10 +343,12 @@
   setInterval(checkHkoWarn, 15 * 60 * 1000);
 
   /* ---------- 機場溫度（天文台 rhrread，赤鱲角） ---------- */
+  var lastTempFetch = 0;
   function checkHkoTemp(){
     var el = $("hkoTempTx");
     if(!el) el = $("hkoTemp");
     if(!el) return;
+    lastTempFetch = Date.now();
     fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc", {cache:"no-store"})
       .then(function(r){ return r.json(); })
       .then(function(d){
@@ -364,13 +366,20 @@
       })
       .catch(function(){ el.textContent = "赤鱲角 —°C"; });
   }
+  /* 超過 12 分鐘冇攞過就補攞（對付 iOS 背景 throttle） */
+  function maybeRefreshTemp(){
+    if(Date.now() - lastTempFetch > 12 * 60 * 1000) checkHkoTemp();
+  }
   checkHkoTemp();
   setInterval(checkHkoTemp, 15 * 60 * 1000);
   window.__hkiaCheckTemp = checkHkoTemp; /* 俾下拉更新手動觸發 */
   /* PWA 切返嚟（重開）都更新溫度 */
   document.addEventListener("visibilitychange", function(){
-    if(!document.hidden) checkHkoTemp();
+    if(!document.hidden) maybeRefreshTemp();
   });
+  /* 用戶郁個頁（碌／撳）嗰陣，如果溫度舊都補攞 */
+  document.addEventListener("touchstart", maybeRefreshTemp, {passive:true});
+  document.addEventListener("scroll", maybeRefreshTemp, {passive:true});
 
   /* 密碼版本驗證：開頁嗰陣對一次 auth.json */
   if(window.__hkiaVerifyAuth) window.__hkiaVerifyAuth();
