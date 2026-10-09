@@ -44,7 +44,7 @@
   var hlArea = null;
 
   var HAS_PAX_CODES = ["CX","PX","JX","KE","JL","QR","FJ","BI","LH","LX","DL","UO","AK","FD","Z2","QZ","GK","9G"];
-  var HAS_CARGO_CODES = ["CX","LD","QY","3V","C6","D4","MS","CK","AK","Z2"];
+  var HAS_CARGO_CODES = ["CX","LD","QY","3V","C6","D4","MS","CK","AK","Z2","GH"];
   var LCC_HIDE = ["UO","Z2","QZ","AK","FD"];
   function isHasFlight(f){
     var code = opId(f).replace(/\s/g,"").substring(0,2).toUpperCase();
@@ -153,7 +153,6 @@
   function badge(f){
     var h = "";
     if(f.cancelled) h += '<span class="cbadge cancel">取消</span>';
-    if(f.cargo && isHasFlight(f)) h += '<span class="cbadge gh">gh</span>';
     return h;
   }
 
