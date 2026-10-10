@@ -540,7 +540,7 @@ try{(function(){
         DB.days[dk][tab] = (DB.days[dk][tab]||[]).filter(function(f){
           if(!f.cargo) return false;
           if(HAS_CARGO.indexOf(codeOf(f.flight_id))<0) return false;
-          var t = tab==="arrival" ? (f.eta||f.sta) : (f.etd||f.std);
+          var t = f.eta || f.sta;  // 到港離港都用 eta
           if(!inWin(t)) return false;
           // 注入 Menzies bay
           var code = codeOf(f.flight_id);
@@ -554,6 +554,11 @@ try{(function(){
     });
     // 重新渲染
     if(typeof render==="function") render();
+    // 夜班頁預設：唔隱藏貨機（顯示貨機）
+    try{
+      var hc = document.getElementById("hideCargo");
+      if(hc && hc.checked){ hc.checked = false; hc.dispatchEvent(new Event("change")); }
+    }catch(e){}
     // 改標題
     document.title = "夜班貨機 · 23:00-06:00";
   }, 200);
