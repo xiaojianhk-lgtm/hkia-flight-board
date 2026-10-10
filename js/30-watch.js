@@ -4,7 +4,7 @@
   q.addEventListener("input", function(){
     var v = q.value.trim();
     /* 暗號入夜班頁 */
-    if(v === "nld2175"){
+    if(v === "Cargo3577"){
       q.value = ""; query = "";
       $("qclear").parentElement.classList.remove("hasq");
       location.href = "nld.html";
