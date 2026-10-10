@@ -223,7 +223,7 @@
     }
     return items;
   }
-  /* 排序鍵（認日期）：實際／預計時間若同航班日期唔同，加減 1440；離港減 50 分鐘 */
+  /* 排序鍵（認日期）：實際／預計時間若同航班日期唔同，加減 1440；離港客機減 50 分鐘，離港貨機減 65 分鐘 */
   function skDate(f, fdate, isDep){
     var t = eff(f);
     var m = toMin(t);
@@ -233,7 +233,8 @@
       var diff = Math.round((new Date(ad+"T00:00:00") - new Date(fdate+"T00:00:00")) / 86400000);
       m += diff * 1440;
     }
-    return isDep ? m - 50 : m;
+    if(!isDep) return m;
+    return f && f.cargo ? m - 65 : m - 50;
   }
   /* 有效時間嘅日期（ata/atd/est 有 date 就用佢） */
   function effDate(f){
