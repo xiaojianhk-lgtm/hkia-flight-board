@@ -40,7 +40,7 @@
       var key = itemKey(it);
       var ilv = inspLevel(typ, f);
       var adir = "<span class='adir'>"+(typ==="arrival"?"↓":"↑")+"</span>";
-      var fidCell = "<td class='fid'>"+(typ==="arrival"?adir:"")+esc(opId(f))+dateTag(f)+badge(f)+(hn?" <span class='nst'>★</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
+      var fidCell = "<td class='fid'>"+(typ==="arrival"?adir:"")+"<span class='fidtxt'>"+esc(opId(f))+"</span>"+dateTag(f)+badge(f)+(hn?" <span class='nst'>★</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
       var tMark2 = ilv>=2 ? "<span class='tmark inspk ab'>✓</span>" : "";
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
