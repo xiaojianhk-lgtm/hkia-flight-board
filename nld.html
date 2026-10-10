@@ -527,11 +527,7 @@ try{(function(){
     var m = /(\d{1,2}):(\d{2})/.exec(t);
     return m ? parseInt(m[1],10)*60+parseInt(m[2],10) : -1;
   }
-  function inWin(t){
-    var m = t2m(t);
-    return m>=0 && (m>=23*60 || m<6*60);
-  }
-  // 等 DB 載入後過濾（每 3 秒檢查，確保主頁 15 分鐘更新後都過濾）
+  // 等 DB 載入後：過濾 HAS 貨機＋注入 Menzies bay（唔限時間，顯示全日）
   function applyNldFilter(){
     if(!window.DB || !DB.days) return false;
     var mcs = DB.mcs_bays || {};
@@ -542,8 +538,6 @@ try{(function(){
         var filtered = orig.filter(function(f){
           if(!f.cargo) return false;
           if(HAS_CARGO.indexOf(codeOf(f.flight_id))<0) return false;
-          var t = f.eta || f.sta;
-          if(!inWin(t)) return false;
           var code = codeOf(f.flight_id);
           if(MCS4[code]){
             var key = (f.flight_id||"").replace(/\s/g,"");
