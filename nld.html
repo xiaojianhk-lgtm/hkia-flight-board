@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#006b6e">
+<title>夜班貨機 · 23:00-06:00</title>
+<style>
+:root{ --bg:#f5f5f5; --fg:#1a1a1a; --card:#fff; --line:#ddd; --green:#006b6e; --muted:#888; }
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0b1c2c; --fg:#e8e8e8; --card:#122a3f; --line:#2a3f55; --green:#54c1b3; --muted:#888; }
+}
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); color:var(--fg); font-family:-apple-system,"PingFang HK","Microsoft JhengHei",sans-serif; font-size:14px; }
+header{ position:sticky; top:0; background:var(--card); border-bottom:1px solid var(--line); padding:10px 12px; z-index:10; }
+header h1{ margin:0; font-size:16px; color:var(--green); }
+header .sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+#gate{ position:fixed; inset:0; background:var(--bg); z-index:99; display:flex; align-items:center; justify-content:center; }
+#gate .box{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:24px; text-align:center; }
+#gate input{ font-size:18px; padding:8px 12px; border:1px solid var(--line); border-radius:4px; width:120px; text-align:center; margin:8px 0; }
+#gate button{ font-size:15px; padding:8px 20px; background:var(--green); color:#fff; border:none; border-radius:4px; }
+#gate .err{ color:#d32f2f; font-size:13px; min-height:18px; }
+table{ width:100%; border-collapse:collapse; }
+thead th{ position:sticky; top:57px; background:var(--card); border-bottom:2px solid var(--line); padding:8px 4px; font-size:12px; color:var(--muted); text-align:center; z-index:5; }
+tbody td{ border-bottom:1px solid var(--line); padding:8px 4px; text-align:center; vertical-align:middle; }
+td.fid{ font-weight:600; text-align:left; padding-left:8px; }
+td.bay{ font-weight:600; }
+.loading{ text-align:center; padding:40px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div id="gate">
+  <div class="box">
+    <div style="font-size:15px;margin-bottom:4px;">夜班貨機</div>
+    <input type="password" id="pw" inputmode="numeric" placeholder="密碼" autocomplete="off">
+    <div class="err" id="err"></div>
+    <button id="go">進入</button>
+  </div>
+</div>
+
+<header>
+  <h1>夜班貨機 <span style="font-weight:normal;font-size:13px;">23:00–06:00</span></h1>
+  <div class="sub" id="meta">載入中…</div>
+</header>
+
+<table>
+  <thead><tr>
+    <th>到港</th><th>離港</th><th>航點</th><th>ETA</th><th>ETD</th><th>Bay</th>
+  </tr></thead>
+  <tbody id="tb"><tr><td colspan="6" class="loading">載入中…</td></tr></tbody>
+</table>
+
+<script>
+(function(){
+  var PIN = "2175";
+  // sessionStorage：呢次 browser session 入過就唔使再打
+  try{ if(sessionStorage.getItem("nld-ok")==="1"){ document.getElementById("gate").style.display="none"; boot(); return; } }catch(e){}
+  var pw = document.getElementById("pw"), err = document.getElementById("err");
+  pw.focus();
+  function go(){
+    if(pw.value === PIN){
+      try{ sessionStorage.setItem("nld-ok","1"); }catch(e){}
+      document.getElementById("gate").style.display="none";
+      boot();
+    }else{ err.textContent = "密碼錯誤"; pw.value=""; pw.focus(); }
+  }
+  document.getElementById("go").onclick = go;
+  pw.onkeydown = function(e){ if(e.key==="Enter") go(); };
+
+  var HAS_CARGO = ["CX","LD","QY","3V","C6","D4","MS","CK","AK","Z2","GH"];
+  var MCS4 = {CX:1, LD:1, AK:1, QY:1};  // 呢四間先有 Menzies bay
+
+  function boot(){
+    fetch("data.json?_="+Date.now(), {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(d){
+      render(d);
+    }).catch(function(){
+      document.getElementById("tb").innerHTML = '<tr><td colspan="6" class="loading">載入失敗</td></tr>';
+    });
+  }
+
+  function codeOf(fid){
+    var m = /^([A-Z0-9]{2})/.exec((fid||"").toUpperCase().replace(/\s/g,""));
+    return m ? m[1] : "";
+  }
+  // 時間轉做分鐘（for 23:00-06:00 判斷）
+  function t2m(t){
+    if(!t) return -1;
+    var m = /(\d{1,2}):(\d{2})/.exec(t);
+    if(!m) return -1;
+    return parseInt(m[1],10)*60 + parseInt(m[2],10);
+  }
+  function inWindow(t){
+    var m = t2m(t);
+    if(m < 0) return false;
+    return m >= 23*60 || m < 6*60;  // 23:00-06:00
+  }
+
+  function render(d){
+    var mcs = d.mcs_bays || {};
+    var rows = [];
+    var days = d.days || {};
+    // 用今日同聽日（23:00-06:00 跨午夜）
+    var dateKeys = Object.keys(days).sort();
+    dateKeys.forEach(function(dk){
+      var day = days[dk];
+      ["arrival","departure"].forEach(function(tab){
+        (day[tab]||[]).forEach(function(f){
+          if(!f.cargo) return;
+          var code = codeOf(f.flight_id);
+          if(HAS_CARGO.indexOf(code) < 0) return;
+          var t = tab==="arrival" ? (f.eta||f.sta) : (f.etd||f.std);
+          if(!inWindow(t)) return;
+          // bay：MCS 四間用 mcs_bays，其他用 HKIA stand
+          var bay = "—";
+          if(MCS4[code]){
+            // mcs key 係 "CX 123" 格式，flight_id 係 "CX123"，要轉
+            var fidSp = (f.flight_id||"").replace(/^([A-Z0-9]{2})(\d)/, "$1 $2");
+            if(mcs[fidSp]) bay = mcs[fidSp];
+            else if(mcs[f.flight_id]) bay = mcs[f.flight_id];
+          }else{
+            if(f.stand && f.stand !== "—") bay = f.stand;
+          }
+          rows.push({
+            tab: tab,
+            fid: f.flight_id,
+            dest: tab==="arrival" ? (f.origin||"") : (f.destination||""),
+            eta: tab==="arrival" ? (f.eta||f.sta||"") : "",
+            etd: tab==="departure" ? (f.etd||f.std||"") : "",
+            bay: bay,
+            sortT: t2m(t)
+          });
+        });
+      });
+    });
+    // 按時間排序
+    rows.sort(function(a,b){ return a.sortT - b.sortT; });
+
+    var tb = document.getElementById("tb");
+    if(!rows.length){
+      tb.innerHTML = '<tr><td colspan="6" class="loading">呢段時間冇 HAS 貨機</td></tr>';
+    }else{
+      tb.innerHTML = rows.map(function(r){
+        return "<tr>" +
+          "<td class='fid'>"+(r.tab==="arrival"?esc(r.fid):"")+"</td>" +
+          "<td class='fid'>"+(r.tab==="departure"?esc(r.fid):"")+"</td>" +
+          "<td>"+esc(r.dest)+"</td>" +
+          "<td>"+esc(r.eta)+"</td>" +
+          "<td>"+esc(r.etd)+"</td>" +
+          "<td class='bay'>"+esc(r.bay)+"</td>" +
+          "</tr>";
+      }).join("");
+    }
+    document.getElementById("meta").textContent =
+      "資料擷取時間：" + (d.generated_at||"—") + " · " + rows.length + " 班";
+  }
+  function esc(s){ return String(s||"").replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+})();
+</script>
+</body>
+</html>
