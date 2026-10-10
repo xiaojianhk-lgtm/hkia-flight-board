@@ -232,12 +232,12 @@
       return;
     }
     row.scrollIntoView({block:"center", behavior:"smooth"});
-    var fidCell = row.querySelector("td.fid");
-    if(fidCell) fidCell.classList.add("hl-flight");
+    var fidTxt = row.querySelector("td.fid .fidtxt");
+    if(fidTxt) fidTxt.classList.add("hl");
   }
   function clearFlightHighlight(){
-    var els = document.querySelectorAll("td.fid.hl-flight");
-    for(var i=0; i<els.length; i++) els[i].classList.remove("hl-flight");
+    var els = document.querySelectorAll(".fidtxt.hl");
+    for(var i=0; i<els.length; i++) els[i].classList.remove("hl");
   }
 
   /* ---------- 指定航班泊位提醒（隱藏功能：搜尋欄輸入 FLIGHT@） ---------- */
