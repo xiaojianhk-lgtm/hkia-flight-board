@@ -3,6 +3,13 @@
   var q = $("q");
   q.addEventListener("input", function(){
     var v = q.value.trim();
+    /* 暗號入夜班頁 */
+    if(v === "nld2175"){
+      q.value = ""; query = "";
+      $("qclear").parentElement.classList.remove("hasq");
+      location.href = "nld.html";
+      return;
+    }
     /* BAY@：靜默加入 bay 關注（唔顯示 pill，淨係去關注頁睇） */
     var mBayAt = /^([A-Za-z]?\d+)@$/.exec(v);
     if(mBayAt){
