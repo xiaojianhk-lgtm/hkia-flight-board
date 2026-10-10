@@ -36,14 +36,14 @@ HKG_LAT, HKG_LON = 22.3080, 113.9185
 MCS_URL = "https://fv.menziescnac.com/data2?page=1&ha_filter=&flight_id={fid}&date_filter=today&arr_dep={ad}"
 MCS_AIRLINES = ["CX", "LD", "AK", "QY"]  # 淨係呢四間要 bay
 
-def fetch_mcs_bays():
-    """23:00-06:00 先抓；回 {flight_id: bay}，key 係 'CX 123' 格式（Menzies 嘅 Flight 欄）。"""
+def fetch_mcs_bays(old_bays=None):
+    """23:00-04:00 先抓；回 {flight_id: bay}。舊 bay 會保留（Menzies 冇咗唔代表冇 bay）。"""
     now = datetime.now(HKT)
     h = now.hour
     # 23:00-04:00 先抓（04:00 後唔使再抓；顯示窗口照舊 23:00-06:00）
     if not (h >= 23 or h < 4):
-        return {}
-    bays = {}
+        return old_bays or {}
+    bays = dict(old_bays) if old_bays else {}
     for al in MCS_AIRLINES:
         for ad in ("a", "d"):
             url = MCS_URL.format(fid=al, ad=ad)
@@ -410,7 +410,7 @@ def main() -> int:
         "generated_at": now.strftime("%Y-%m-%d %H:%M") + " HKT",
         "dates": dates,
         "days": days,
-        "mcs_bays": fetch_mcs_bays(),
+        "mcs_bays": fetch_mcs_bays(old_payload.get("mcs_bays") if old_payload else None),
     }
     # 輕量版：淨係頭 3 日（昨天/今天/明天，UI 顯示用），細 ~30%
     slim_payload = {
