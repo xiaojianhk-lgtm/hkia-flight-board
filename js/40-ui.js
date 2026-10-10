@@ -78,6 +78,21 @@
   });
   $("hidePax").addEventListener("change", function(){ hidePax = !!this.checked; expanded=false; render(); });
   $("hideCargo").addEventListener("change", function(){ hideCargo = !!this.checked; expanded=false; render(); });
+  /* 連撳標題 5 下 → 夜班貨機頁（私人入口，備用） */
+  (function(){
+    var tb = document.querySelector("header .titleblock");
+    if(!tb) return;
+    var taps = 0, lastT = 0;
+    tb.addEventListener("click", function(){
+      var now = Date.now();
+      if(now - lastT > 800) taps = 0;
+      taps++; lastT = now;
+      if(taps >= 5){
+        taps = 0;
+        location.href = "nld.html";
+      }
+    });
+  })();
   /* 長按「隱藏貨運」3 秒 → 夜班貨機頁（私人） */
   (function(){
     var lbl = document.querySelector("label.hidecargo");
