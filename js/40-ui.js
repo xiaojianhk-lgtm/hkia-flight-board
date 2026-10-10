@@ -78,26 +78,7 @@
   });
   $("hidePax").addEventListener("change", function(){ hidePax = !!this.checked; expanded=false; render(); });
   $("hideCargo").addEventListener("change", function(){ hideCargo = !!this.checked; expanded=false; render(); });
-  /* 長按「隱藏貨運」3 秒 → 夜班貨機頁（私人，備用；主力用搜尋暗號 nld2175） */
-  (function(){
-    var lbl = document.querySelector("label.hidecargo");
-    if(!lbl) return;
-    var timer = null;
-    function start(e){
-      timer = setTimeout(function(){
-        timer = null;
-        // 直接跳去 nld.html，嗰邊有密碼門（唔用 prompt，因為 timer 入面會被 block）
-        location.href = "nld.html";
-      }, 3000);
-    }
-    function cancel(){ if(timer){ clearTimeout(timer); timer = null; } }
-    lbl.addEventListener("touchstart", start, {passive:true});
-    lbl.addEventListener("touchend", cancel);
-    lbl.addEventListener("touchcancel", cancel);
-    lbl.addEventListener("mousedown", start);
-    lbl.addEventListener("mouseup", cancel);
-    lbl.addEventListener("mouseleave", cancel);
-  })();
+  /* （已取消長按入口，改用搜尋暗號 Cargo3577） */
   $("showHas").addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); });
   $("hideCX").addEventListener("change", function(){ hideCX = !!this.checked; expanded=false; render(); });
   function toggleExpand(){
