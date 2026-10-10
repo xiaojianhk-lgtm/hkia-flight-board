@@ -137,7 +137,7 @@
         var parts = w.date.split("-");
         if(parts.length === 3) dateLabel = " " + parts[1] + "/" + parts[2];
       }
-      d.innerHTML = "已關注 <span>"+esc(fid)+dateLabel+"</span> <button aria-label='取消提醒' data-unwatchflight='"+esc(fid)+"'>✕</button>";
+      d.innerHTML = "已關注 <span class='gotoflight' data-gotoflight='"+esc(fid)+"' style='cursor:pointer;text-decoration:underline;'>"+esc(fid)+dateLabel+"</span> <button aria-label='取消提醒' data-unwatchflight='"+esc(fid)+"'>✕</button>";
       box.appendChild(d);
     });
     var hasVisible = Object.keys(watchBays).some(function(b){ return !watchBays[b].silent; }) ||
@@ -198,10 +198,47 @@
   $("waOk").addEventListener("click", function(){ $("watchalert").hidden = true; });
   document.addEventListener("click", function(e){
     var b = e.target.closest && e.target.closest("[data-unwatch]");
-    if(b){ disarmWatch(b.getAttribute("data-unwatch")); }
+    if(b){ disarmWatch(b.getAttribute("data-unwatch")); return; }
     var f = e.target.closest && e.target.closest("[data-unwatchflight]");
-    if(f){ disarmFlightWatch(f.getAttribute("data-unwatchflight")); }
+    if(f){ disarmFlightWatch(f.getAttribute("data-unwatchflight")); return; }
+    /* 撳 pill 跳去航班＋高亮 */
+    var g = e.target.closest && e.target.closest("[data-gotoflight]");
+    if(g){
+      e.preventDefault();
+      gotoFlight(g.getAttribute("data-gotoflight"));
+      return;
+    }
+    /* 撳其他地方取消高亮 */
+    clearFlightHighlight();
   });
+
+  /* 跳去指定航班＋高亮航班編號 */
+  function gotoFlight(fid){
+    clearFlightHighlight();
+    if(!window.lastItems) return;
+    var idx = -1;
+    for(var i=0; i<lastItems.length; i++){
+      try{
+        if(opId(lastItems[i].f).toUpperCase() === fid.toUpperCase()){ idx = i; break; }
+      }catch(e){}
+    }
+    if(idx < 0){
+      showToast("搵唔到 " + fid + "（可能唔喺今日／被篩走咗）");
+      return;
+    }
+    var row = document.querySelector("tr.rw[data-k='"+idx+"']");
+    if(!row){
+      showToast("搵唔到 " + fid);
+      return;
+    }
+    row.scrollIntoView({block:"center", behavior:"smooth"});
+    var fidCell = row.querySelector("td.fid");
+    if(fidCell) fidCell.classList.add("hl-flight");
+  }
+  function clearFlightHighlight(){
+    var els = document.querySelectorAll("td.fid.hl-flight");
+    for(var i=0; i<els.length; i++) els[i].classList.remove("hl-flight");
+  }
 
   /* ---------- 指定航班泊位提醒（隱藏功能：搜尋欄輸入 FLIGHT@） ---------- */
   var flightWatches = {};  /* flightId -> {seenBay:""} */
