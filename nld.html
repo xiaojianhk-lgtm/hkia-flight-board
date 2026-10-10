@@ -437,10 +437,11 @@ try{(function(){
   <div class="row1">
     <img class="plane-ico" src="plane-icon.png" alt="" aria-hidden="true">
     <div class="titleblock">
-      <h2>航班資訊</h2>
-      <span class="caps">FLIGHT INFORMATION · <span class="hkg">HKG</span></span>
+      <h2>夜班貨機</h2>
+      <span class="caps">NIGHT CARGO · <span class="hkg">HKG</span></span>
     </div>
     <button id="aboutBtn" class="linkbtn">關於</button>
+    <button id="backBtn" class="linkbtn" onclick="location.href='hkiaflight.html'" style="margin-left:8px;">←主頁</button>
   </div>
 </header>
 
@@ -530,38 +531,42 @@ try{(function(){
     var m = t2m(t);
     return m>=0 && (m>=23*60 || m<6*60);
   }
-  // 等 DB 載入後過濾
-  var iv = setInterval(function(){
-    if(!window.DB || !DB.days) return;
-    clearInterval(iv);
+  // 等 DB 載入後過濾（每 3 秒檢查，確保主頁 15 分鐘更新後都過濾）
+  function applyNldFilter(){
+    if(!window.DB || !DB.days) return false;
     var mcs = DB.mcs_bays || {};
+    var changed = false;
     Object.keys(DB.days).forEach(function(dk){
       ["arrival","departure"].forEach(function(tab){
-        DB.days[dk][tab] = (DB.days[dk][tab]||[]).filter(function(f){
+        var orig = DB.days[dk][tab]||[];
+        var filtered = orig.filter(function(f){
           if(!f.cargo) return false;
           if(HAS_CARGO.indexOf(codeOf(f.flight_id))<0) return false;
-          var t = f.eta || f.sta;  // 到港離港都用 eta
+          var t = f.eta || f.sta;
           if(!inWin(t)) return false;
-          // 注入 Menzies bay
           var code = codeOf(f.flight_id);
           if(MCS4[code]){
             var key = (f.flight_id||"").replace(/\s/g,"");
-            if(mcs[key]) f.stand = mcs[key];
+            if(mcs[key] && f.stand !== mcs[key]){ f.stand = mcs[key]; changed = true; }
           }
           return true;
         });
+        if(filtered.length !== orig.length){ DB.days[dk][tab] = filtered; changed = true; }
       });
     });
-    // 重新渲染
-    if(typeof render==="function") render();
-    // 夜班頁預設：唔隱藏貨機（顯示貨機）
+    return changed;
+  }
+  setInterval(function(){
+    if(applyNldFilter() && typeof render==="function") render();
+    if(document.title.indexOf("夜班")<0) document.title = "夜班貨機 · 23:00-06:00";
+  }, 3000);
+  setTimeout(function(){
+    if(applyNldFilter() && typeof render==="function") render();
     try{
       var hc = document.getElementById("hideCargo");
       if(hc && hc.checked){ hc.checked = false; hc.dispatchEvent(new Event("change")); }
     }catch(e){}
-    // 改標題
-    document.title = "夜班貨機 · 23:00-06:00";
-  }, 200);
+  }, 800);
 })();
 </script>
   <script>
