@@ -572,28 +572,30 @@ try{(function(){
     if(applyNldFilter() && typeof render==="function") render();
     if(document.title.indexOf("通宵")<0) document.title = "通宵貨機 · 23:00-06:00";
   }, 3000);
-  setTimeout(function(){
-    if(applyNldFilter() && typeof render==="function") render();
-    try{
-      var hc = document.getElementById("hideCargo");
-      if(hc && hc.checked){ hc.checked = false; hc.dispatchEvent(new Event("change")); }
-    }catch(e){}
-    // 顯示內容（之前隱藏避免閃客機界面）
-    try{ document.body.classList.add("nld-ready"); }catch(e){}
-    // 跳返時間線（上面留 8 班）
-    setTimeout(function(){
+  // 即時 filter：每 100ms 檢查，一有 DB 即濾，唔等 800ms
+  var quickIv = setInterval(function(){
+    if(window.DB && DB.days){
+      clearInterval(quickIv);
+      if(applyNldFilter() && typeof render==="function") render();
       try{
-        var nl = document.querySelector("tr.nowline");
-        var thr = document.querySelector("thead th");
-        if(nl && thr){
-          var rw = document.querySelector("tr.rw");
-          var rowH = rw ? rw.getBoundingClientRect().height : 34;
-          var y = nl.getBoundingClientRect().top + window.scrollY - thr.getBoundingClientRect().height - rowH*8 - 8;
-          window.scrollTo(0, Math.max(0, y));
-        }
+        var hc = document.getElementById("hideCargo");
+        if(hc && hc.checked){ hc.checked = false; hc.dispatchEvent(new Event("change")); }
       }catch(e){}
-    }, 300);
-  }, 800);
+      try{ document.body.classList.add("nld-ready"); }catch(e){}
+      setTimeout(function(){
+        try{
+          var nl = document.querySelector("tr.nowline");
+          var thr = document.querySelector("thead th");
+          if(nl && thr){
+            var rw = document.querySelector("tr.rw");
+            var rowH = rw ? rw.getBoundingClientRect().height : 34;
+            var y = nl.getBoundingClientRect().top + window.scrollY - thr.getBoundingClientRect().height - rowH*8 - 8;
+            window.scrollTo(0, Math.max(0, y));
+          }
+        }catch(e){}
+      }, 300);
+    }
+  }, 100);
 })();
 </script>
   <script>
