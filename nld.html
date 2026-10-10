@@ -532,11 +532,6 @@ try{(function(){
     var m = /^([A-Z0-9]{2})/.exec((fid||"").toUpperCase().replace(/\s/g,""));
     return m ? m[1] : "";
   }
-  function t2m(t){
-    if(!t) return -1;
-    var m = /(\d{1,2}):(\d{2})/.exec(t);
-    return m ? parseInt(m[1],10)*60+parseInt(m[2],10) : -1;
-  }
   // 等 DB 載入後：過濾 HAS 貨機＋注入 Menzies bay（唔限時間，顯示全日）
   var prevMcs = {};  // 記住上次嘅 bay，轉 bay 變紅
   function applyNldFilter(){
