@@ -40,8 +40,8 @@ def fetch_mcs_bays():
     """23:00-06:00 先抓；回 {flight_id: bay}，key 係 'CX 123' 格式（Menzies 嘅 Flight 欄）。"""
     now = datetime.now(HKT)
     h = now.hour
-    # 23:00-06:00（跨午夜）
-    if not (h >= 23 or h < 6):
+    # 23:00-04:00 先抓（04:00 後唔使再抓；顯示窗口照舊 23:00-06:00）
+    if not (h >= 23 or h < 4):
         return {}
     bays = {}
     for al in MCS_AIRLINES:
