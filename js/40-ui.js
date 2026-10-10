@@ -86,13 +86,8 @@
     function start(e){
       timer = setTimeout(function(){
         timer = null;
-        var pw = prompt("夜班貨機密碼：");
-        if(pw === "2175"){
-          try{ sessionStorage.setItem("nld-ok","1"); }catch(e){}
-          location.href = "nld.html";
-        }else if(pw !== null){
-          alert("密碼錯誤");
-        }
+        // 直接跳去 nld.html，嗰邊有密碼門（唔用 prompt，因為 timer 入面會被 block）
+        location.href = "nld.html";
       }, 3000);
     }
     function cancel(){ if(timer){ clearTimeout(timer); timer = null; } }
