@@ -527,9 +527,8 @@
   ["touchstart","touchmove","mousedown","keydown","wheel","scroll"].forEach(function(ev){
     window.addEventListener(ev, function(){ lastActive = Date.now(); }, {passive:true});
   });
-  setInterval(function(){
+  function checkFlightUpdate(){
     if(!DB || document.visibilityState !== "visible") return;
-    if(Date.now() - lastActive < 60000 && !watchCount() && !flightWatchCount()) return;
     if(detailKey || noteEditingKey) return;
     if(document.activeElement === q) return;
     if(overlay.classList.contains("open")) return;
@@ -550,10 +549,15 @@
         }
       })
       .catch(function(){});
+  }
+  setInterval(function(){
+    if(Date.now() - lastActive < 60000 && !watchCount() && !flightWatchCount()) return;
+    checkFlightUpdate();
   }, 15*60*1000);
   document.addEventListener("visibilitychange", function(){
     if(document.visibilityState === "visible" && DB){
-      // 回來即檢查一次（簡單起見交給 interval）
+      checkFlightUpdate();
+      if(window.__hkiaCheckTemp) window.__hkiaCheckTemp();
     }
   });
   /* 雙擊到港／離港標題欄：主頁↔關注頁跳轉（隱藏功能） */
