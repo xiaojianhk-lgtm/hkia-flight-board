@@ -32,6 +32,46 @@ DATE_RE = re.compile(r"\((\d{1,2})/(\d{1,2})/(\d{4})\)")
 
 HKG_LAT, HKG_LON = 22.3080, 113.9185
 
+# Menzies CNAC Flightviewer（夜班貨機 bay 專用）
+MCS_URL = "https://fv.menziescnac.com/data2?page=1&ha_filter=&flight_id={fid}&date_filter=today&arr_dep={ad}"
+MCS_AIRLINES = ["CX", "LD", "AK", "QY"]  # 淨係呢四間要 bay
+
+def fetch_mcs_bays():
+    """23:00-06:00 先抓；回 {flight_id: bay}，key 係 'CX 123' 格式（Menzies 嘅 Flight 欄）。"""
+    now = datetime.now(HKT)
+    h = now.hour
+    # 23:00-06:00（跨午夜）
+    if not (h >= 23 or h < 6):
+        return {}
+    bays = {}
+    for al in MCS_AIRLINES:
+        for ad in ("a", "d"):
+            url = MCS_URL.format(fid=al, ad=ad)
+            try:
+                req = urllib.request.Request(url, headers={
+                    "Referer": "https://fv.menziescnac.com/",
+                    "User-Agent": "Mozilla/5.0",
+                })
+                with urllib.request.urlopen(req, timeout=TIMEOUT_SECS) as resp:
+                    d = json.load(resp)
+                for r in d.get("rows") or []:
+                    # 淨係要貨機（T=F/H）
+                    if r.get("T") not in ("F", "H"):
+                        continue
+                    flt = (r.get("Flight") or "").strip()
+                    # 去掉 codeshare 括號，例如 "CX5651[UO651]" -> "CX5651"
+                    if "[" in flt:
+                        flt = flt.split("[")[0].strip()
+                    st = (r.get("ST") or "").strip()
+                    # ST 可能係 "X25(X15)"，攞括號前嗰個（最新）
+                    if st and "(" in st:
+                        st = st.split("(")[0].strip()
+                    if flt and st and st.lower() != "none":
+                        bays[flt] = st
+            except Exception as exc:
+                print(f"WARN: mcs {al}/{ad} failed ({exc})", file=sys.stderr)
+    return bays
+
 def _load_coords():
     try:
         p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "airport_coords.json")
@@ -370,12 +410,14 @@ def main() -> int:
         "generated_at": now.strftime("%Y-%m-%d %H:%M") + " HKT",
         "dates": dates,
         "days": days,
+        "mcs_bays": fetch_mcs_bays(),
     }
     # 輕量版：淨係頭 3 日（昨天/今天/明天，UI 顯示用），細 ~30%
     slim_payload = {
         "generated_at": payload["generated_at"],
         "dates": dates[:3],
         "days": {d: days[d] for d in dates[:3]},
+        "mcs_bays": payload["mcs_bays"],
     }
 
     # Idempotent: only rewrite when the data actually changed, so the CI
@@ -383,7 +425,7 @@ def main() -> int:
     # (stand_old is part of days, so a newly detected / cleared stand change
     # counts as a change.)
     if old_payload is not None:
-        if old_payload.get("dates") == dates[:3] and old_payload.get("days") == slim_payload["days"]:
+        if old_payload.get("dates") == dates[:3] and old_payload.get("days") == slim_payload["days"] and old_payload.get("mcs_bays") == slim_payload["mcs_bays"]:
             total = sum(len(v) for d in days.values() for v in d.values())
             print(f"OK: no change ({total} flights), kept {out_path}")
             return 0
