@@ -113,10 +113,9 @@ td.bay{ font-weight:600; }
           // bay：MCS 四間用 mcs_bays，其他用 HKIA stand
           var bay = "—";
           if(MCS4[code]){
-            // mcs key 係 "CX 123" 格式，flight_id 係 "CX123"，要轉
-            var fidSp = (f.flight_id||"").replace(/^([A-Z0-9]{2})(\d)/, "$1 $2");
-            if(mcs[fidSp]) bay = mcs[fidSp];
-            else if(mcs[f.flight_id]) bay = mcs[f.flight_id];
+            // mcs key 冇空格（"LD681"），flight_id 有空格（"LD 681"），要去掉
+            var fidNoSp = (f.flight_id||"").replace(/\s/g,"");
+            if(mcs[fidNoSp]) bay = mcs[fidNoSp];
           }else{
             if(f.stand && f.stand !== "—") bay = f.stand;
           }
