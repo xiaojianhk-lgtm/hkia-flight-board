@@ -1,11 +1,11 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v94";
+var CACHE = "hkia-v95";
 var ASSETS = [
   "./hkiaflight.html",
   "./watch.html",
   "./nld.html",
   "./manifest.json",
-  "./manifest-nld.json",
+  "./manifest-night.json",
   "./plane-icon.png",
   "./apple-touch-icon.png",
   "./apple-touch-icon-night.png",
