@@ -48,6 +48,13 @@ tbody tr:last-child td{ border-bottom:none; }
 td.fid{ font-weight:600; text-align:left; padding-left:8px; }
 td.bay{ font-weight:600; }
 .loading{ text-align:center; padding:40px; color:var(--muted); }
+/* 分區標題 */
+h2.sect{
+  font-size:15px; margin:16px 0 0; padding:8px 12px;
+  color:var(--cxgreen); letter-spacing:2px;
+  border-bottom:1px solid var(--line);
+}
+h2.sect .cnt{ font-size:12px; color:var(--muted); letter-spacing:0; font-weight:normal; }
 /* 跟主頁一樣嘅 scrollbar 同字體縮放 */
 html{ scrollbar-gutter:stable; }
 </style>
@@ -68,11 +75,20 @@ html{ scrollbar-gutter:stable; }
   <div class="meta" id="meta">載入中…</div>
 </header>
 
+<h2 class="sect">到港 <span class="cnt" id="cntArr"></span></h2>
 <table>
   <thead><tr>
-    <th>到港</th><th>離港</th><th>航點</th><th>ETA</th><th>ETD</th><th>Bay</th>
+    <th>航班</th><th>航點</th><th>ETA</th><th>Bay</th>
   </tr></thead>
-  <tbody id="tb"><tr><td colspan="6" class="loading">載入中…</td></tr></tbody>
+  <tbody id="tbArr"><tr><td colspan="4" class="loading">載入中…</td></tr></tbody>
+</table>
+
+<h2 class="sect">離港 <span class="cnt" id="cntDep"></span></h2>
+<table>
+  <thead><tr>
+    <th>航班</th><th>航點</th><th>ETD</th><th>Bay</th>
+  </tr></thead>
+  <tbody id="tbDep"><tr><td colspan="4" class="loading">載入中…</td></tr></tbody>
 </table>
 
 <script>
@@ -105,7 +121,8 @@ html{ scrollbar-gutter:stable; }
     fetch("data.json?_="+Date.now(), {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(d){
       render(d);
     }).catch(function(){
-      document.getElementById("tb").innerHTML = '<tr><td colspan="6" class="loading">載入失敗</td></tr>';
+      document.getElementById("tbArr").innerHTML = '<tr><td colspan="4" class="loading">載入失敗</td></tr>';
+      document.getElementById("tbDep").innerHTML = '<tr><td colspan="4" class="loading">載入失敗</td></tr>';
     });
   }
 
@@ -165,23 +182,22 @@ html{ scrollbar-gutter:stable; }
     // 按時間排序
     rows.sort(function(a,b){ return a.sortT - b.sortT; });
 
-    var tb = document.getElementById("tb");
-    if(!rows.length){
-      tb.innerHTML = '<tr><td colspan="6" class="loading">呢段時間冇 HAS 貨機</td></tr>';
-    }else{
-      tb.innerHTML = rows.map(function(r){
-        return "<tr>" +
-          "<td class='fid'>"+(r.tab==="arrival"?esc(r.fid):"")+"</td>" +
-          "<td class='fid'>"+(r.tab==="departure"?esc(r.fid):"")+"</td>" +
-          "<td>"+esc(r.dest)+"</td>" +
-          "<td>"+esc(r.eta)+"</td>" +
-          "<td>"+esc(r.etd)+"</td>" +
-          "<td class='bay'>"+esc(r.bay)+"</td>" +
-          "</tr>";
-      }).join("");
-    }
+    var arr = rows.filter(function(r){ return r.tab==="arrival"; });
+    var dep = rows.filter(function(r){ return r.tab==="departure"; });
+
+    var tbA = document.getElementById("tbArr");
+    var tbD = document.getElementById("tbDep");
+    tbA.innerHTML = arr.length ? arr.map(function(r){
+      return "<tr><td class='fid'>"+esc(r.fid)+"</td><td>"+esc(r.dest)+"</td><td>"+esc(r.eta)+"</td><td class='bay'>"+esc(r.bay)+"</td></tr>";
+    }).join("") : '<tr><td colspan="4" class="loading">呢段時間冇到港貨機</td></tr>';
+    tbD.innerHTML = dep.length ? dep.map(function(r){
+      return "<tr><td class='fid'>"+esc(r.fid)+"</td><td>"+esc(r.dest)+"</td><td>"+esc(r.etd)+"</td><td class='bay'>"+esc(r.bay)+"</td></tr>";
+    }).join("") : '<tr><td colspan="4" class="loading">呢段時間冇離港貨機</td></tr>';
+
+    document.getElementById("cntArr").textContent = arr.length ? "· " + arr.length + " 班" : "";
+    document.getElementById("cntDep").textContent = dep.length ? "· " + dep.length + " 班" : "";
     document.getElementById("meta").textContent =
-      "資料擷取時間：" + (d.generated_at||"—") + " · " + rows.length + " 班";
+      "資料擷取時間：" + (d.generated_at||"—");
   }
   function esc(s){ return String(s||"").replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 })();
