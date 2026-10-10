@@ -536,6 +536,7 @@ try{(function(){
     return m ? parseInt(m[1],10)*60+parseInt(m[2],10) : -1;
   }
   // 等 DB 載入後：過濾 HAS 貨機＋注入 Menzies bay（唔限時間，顯示全日）
+  var prevMcs = {};  // 記住上次嘅 bay，轉 bay 變紅
   function applyNldFilter(){
     if(!window.DB || !DB.days) return false;
     var mcs = DB.mcs_bays || {};
@@ -549,13 +550,20 @@ try{(function(){
           var code = codeOf(f.flight_id);
           if(MCS4[code]){
             var key = (f.flight_id||"").replace(/\s/g,"");
-            if(mcs[key] && f.stand !== mcs[key]){ f.stand = mcs[key]; changed = true; }
+            if(mcs[key]){
+              // bay 轉咗：記舊值，等主頁個 stchg 變紅
+              if(prevMcs[key] && prevMcs[key] !== mcs[key] && f.stand !== mcs[key]){
+                f.stand_old = prevMcs[key];
+              }
+              if(f.stand !== mcs[key]){ f.stand = mcs[key]; changed = true; }
+            }
           }
           return true;
         });
         if(filtered.length !== orig.length){ DB.days[dk][tab] = filtered; changed = true; }
       });
     });
+    prevMcs = Object.assign({}, mcs);
     return changed;
   }
   setInterval(function(){
