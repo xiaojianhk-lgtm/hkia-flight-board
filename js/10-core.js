@@ -43,7 +43,7 @@
   /* 同區高亮狀態（唔 save，純睇嘢用） */
   var hlArea = null;
 
-  var HAS_PAX_CODES = ["CX","PX","JX","KE","JL","QR","FJ","BI","LH","LX","DL","UO","AK","FD","Z2","QZ","GK","9G"];
+  var HAS_PAX_CODES = ["CX","PX","JX","KE","JL","QR","FJ","BI","LH","LX","DL","UO","AK","FD","Z2","QZ","GK","9G","7C"];
   var HAS_CARGO_CODES = ["CX","LD","QY","3V","C6","D4","MS","CK","AK","Z2","GH"];
   var LCC_HIDE = ["UO","Z2","QZ","AK","FD"];
   function isHasFlight(f){
