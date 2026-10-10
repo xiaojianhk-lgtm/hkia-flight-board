@@ -514,6 +514,14 @@ try{(function(){
 <script src="js/30-watch.js"></script>
 <script src="js/40-ui.js"></script>
 <script>
+/* 主題初始化：跟 localStorage，預設 dark */
+(function(){
+  var t = "dark";
+  try{ t = localStorage.getItem("hkia-theme") || "dark"; }catch(e){}
+  document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
+<script>
 /* 夜班模式：過濾 23:00-06:00 HAS 貨機，注入 Menzies bay */
 (function(){
   var HAS_CARGO = ["CX","LD","QY","3V","C6","D4","MS","CK","AK","Z2","GH"];
