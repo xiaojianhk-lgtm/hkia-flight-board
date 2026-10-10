@@ -78,6 +78,31 @@
   });
   $("hidePax").addEventListener("change", function(){ hidePax = !!this.checked; expanded=false; render(); });
   $("hideCargo").addEventListener("change", function(){ hideCargo = !!this.checked; expanded=false; render(); });
+  /* 長按「隱藏貨運」3 秒 → 夜班貨機頁（私人） */
+  (function(){
+    var lbl = document.querySelector("label.hidecargo");
+    if(!lbl) return;
+    var timer = null;
+    function start(e){
+      timer = setTimeout(function(){
+        timer = null;
+        var pw = prompt("夜班貨機密碼：");
+        if(pw === "2175"){
+          try{ sessionStorage.setItem("nld-ok","1"); }catch(e){}
+          location.href = "nld.html";
+        }else if(pw !== null){
+          alert("密碼錯誤");
+        }
+      }, 3000);
+    }
+    function cancel(){ if(timer){ clearTimeout(timer); timer = null; } }
+    lbl.addEventListener("touchstart", start, {passive:true});
+    lbl.addEventListener("touchend", cancel);
+    lbl.addEventListener("touchcancel", cancel);
+    lbl.addEventListener("mousedown", start);
+    lbl.addEventListener("mouseup", cancel);
+    lbl.addEventListener("mouseleave", cancel);
+  })();
   $("showHas").addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); });
   $("hideCX").addEventListener("change", function(){ hideCX = !!this.checked; expanded=false; render(); });
   function toggleExpand(){
