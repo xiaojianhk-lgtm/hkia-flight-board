@@ -288,12 +288,13 @@
     var frId = opId(f).toLowerCase().replace(/^([a-z]+)0+(\d)/, "$1$2");
     h += "<div style='margin-top:6px;white-space:nowrap;'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button> "+
          "<a class='nbtn' style='text-decoration:none;display:inline-block;font-family:inherit;line-height:normal;vertical-align:baseline;' href='https://www.flightradar24.com/data/flights/"+frId+"' rel='noopener'>✈️ Flightradar24</a>";
-    // 到港先有飛行時間（avg_dur 如 "3h30m" → "3.5h"）
+    // 到港先有飛行時間（avg_dur 如 "3h30m" → "~03:30"）
     if(typ === "arrival" && f.avg_dur){
       var dm = /(\d+)h(\d+)m/.exec(f.avg_dur) || /(\d+)h/.exec(f.avg_dur);
       if(dm){
-        var dh = parseInt(dm[1], 10) + (dm[2] ? parseInt(dm[2], 10)/60 : 0);
-        h += " <span class='nbtn' style='cursor:default;'>FLT Time: "+dh.toFixed(1)+"h</span>";
+        var hh = dm[1].padStart(2, "0");
+        var mm = dm[2] ? dm[2].padStart(2, "0") : "00";
+        h += " <span class='nbtn' style='cursor:default;'>FLT Time: ~"+hh+":"+mm+"</span>";
       }
     }
     h += "</div>";
