@@ -33,7 +33,7 @@ DATE_RE = re.compile(r"\((\d{1,2})/(\d{1,2})/(\d{4})\)")
 HKG_LAT, HKG_LON = 22.3080, 113.9185
 
 # Menzies CNAC Flightviewer（夜班貨機 bay 專用）
-MCS_URL = "https://fv.menziescnac.com/data2?page=1&ha_filter=&flight_id={fid}&date_filter=today&arr_dep={ad}"
+MCS_URL = "https://fv.menziescnac.com/data2?page={page}&ha_filter=&flight_id={fid}&date_filter=today&arr_dep={ad}"
 MCS_AIRLINES = ["CX", "LD", "AK", "QY"]  # 淨係呢四間要 bay
 
 def fetch_mcs_bays(old_bays=None):
@@ -46,30 +46,39 @@ def fetch_mcs_bays(old_bays=None):
     bays = dict(old_bays) if old_bays else {}
     for al in MCS_AIRLINES:
         for ad in ("a", "d"):
-            url = MCS_URL.format(fid=al, ad=ad)
-            try:
-                req = urllib.request.Request(url, headers={
-                    "Referer": "https://fv.menziescnac.com/",
-                    "User-Agent": "Mozilla/5.0",
-                })
-                with urllib.request.urlopen(req, timeout=TIMEOUT_SECS) as resp:
-                    d = json.load(resp)
-                for r in d.get("rows") or []:
-                    # 淨係要貨機（T=F/H）
-                    if r.get("T") not in ("F", "H"):
-                        continue
-                    flt = (r.get("Flight") or "").strip()
-                    # 去掉 codeshare 括號，例如 "CX5651[UO651]" -> "CX5651"
-                    if "[" in flt:
-                        flt = flt.split("[")[0].strip()
-                    st = (r.get("ST") or "").strip()
-                    # ST 可能係 "X25(X15)"，攞括號前嗰個（最新）
-                    if st and "(" in st:
-                        st = st.split("(")[0].strip()
-                    if flt and st and st.lower() != "none":
-                        bays[flt] = st
-            except Exception as exc:
-                print(f"WARN: mcs {al}/{ad} failed ({exc})", file=sys.stderr)
+            # 跑晒所有頁（total_pages）
+            page = 1
+            while True:
+                url = MCS_URL.format(page=page, fid=al, ad=ad)
+                try:
+                    req = urllib.request.Request(url, headers={
+                        "Referer": "https://fv.menziescnac.com/",
+                        "User-Agent": "Mozilla/5.0",
+                    })
+                    with urllib.request.urlopen(req, timeout=TIMEOUT_SECS) as resp:
+                        d = json.load(resp)
+                    for r in d.get("rows") or []:
+                        # 淨係要貨機（T=F/H）
+                        if r.get("T") not in ("F", "H"):
+                            continue
+                        flt = (r.get("Flight") or "").strip()
+                        # 去掉 codeshare 括號，例如 "CX5651[UO651]" -> "CX5651"
+                        if "[" in flt:
+                            flt = flt.split("[")[0].strip()
+                        st = (r.get("ST") or "").strip()
+                        # ST 可能係 "X25(X15)"，攞括號前嗰個（最新）
+                        if st and "(" in st:
+                            st = st.split("(")[0].strip()
+                        if flt and st and st.lower() != "none":
+                            bays[flt] = st
+                    # 檢查仲有冇下一頁
+                    total = d.get("total_pages") or 1
+                    if page >= total:
+                        break
+                    page += 1
+                except Exception as exc:
+                    print(f"WARN: mcs {al}/{ad} p{page} failed ({exc})", file=sys.stderr)
+                    break
     return bays
 
 def _load_coords():
