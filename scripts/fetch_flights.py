@@ -37,13 +37,25 @@ MCS_URL = "https://fv.menziescnac.com/data2?page={page}&ha_filter=&flight_id={fi
 MCS_AIRLINES = ["CX", "LD", "AK", "QY"]  # 淨係呢四間要 bay
 
 def fetch_mcs_bays(old_bays=None):
-    """23:00-04:00 先抓；回 {flight_id: bay}。舊 bay 會保留（Menzies 冇咗唔代表冇 bay）。"""
+    """23:00-04:00 先抓；回 {flight_id: bay}。舊 bay 會保留（Menzies 冇咗唔代表冇 bay）。
+    保險掣：連續 3 轉都失敗就停到聽晚，唔死纏爛打。"""
     now = datetime.now(HKT)
     h = now.hour
     # 23:00-04:00 先抓（04:00 後唔使再抓；顯示窗口照舊 23:00-06:00）
     if not (h >= 23 or h < 4):
         return old_bays or {}
+    # 保險掣：檢查失敗計數
+    cb_file = "/tmp/mcs_circuit_breaker"
+    try:
+        with open(cb_file) as f:
+            fails = int(f.read().strip() or "0")
+        if fails >= 3:
+            print("MCS: circuit breaker open, skip", file=sys.stderr)
+            return old_bays or {}
+    except:
+        fails = 0
     bays = dict(old_bays) if old_bays else {}
+    success = False
     for al in MCS_AIRLINES:
         for ad in ("a", "d"):
             # 跑晒所有頁（total_pages）
@@ -74,11 +86,18 @@ def fetch_mcs_bays(old_bays=None):
                     # 檢查仲有冇下一頁
                     total = d.get("total_pages") or 1
                     if page >= total:
+                        success = True
                         break
                     page += 1
                 except Exception as exc:
                     print(f"WARN: mcs {al}/{ad} p{page} failed ({exc})", file=sys.stderr)
                     break
+    # 更新保險掣計數
+    try:
+        with open(cb_file, "w") as f:
+            f.write("0" if success else str(fails + 1))
+    except:
+        pass
     return bays
 
 def _load_coords():
