@@ -39,12 +39,12 @@ MCS_DATES = ["today", "tomorrow"]
 MCS_AIRLINES = ["CX", "LD", "AK", "QY"]  # 淨係呢四間要 bay
 
 def fetch_mcs_bays(old_bays=None):
-    """23:00-04:00 先抓；回 {flight_id: bay}。舊 bay 會保留（Menzies 冇咗唔代表冇 bay）。
+    """23:00-02:00 先抓；回 {flight_id: bay}。舊 bay 會保留（Menzies 冇咗唔代表冇 bay）。
     保險掣：連續 3 轉都失敗就停到聽晚，唔死纏爛打。"""
     now = datetime.now(HKT)
     h = now.hour
-    # 23:00-04:00 先抓（04:00 後唔使再抓；顯示窗口照舊 23:00-06:00）
-    if not (h >= 23 or h < 4):
+    # 23:00-02:00 先抓（02:00 後唔使再抓）
+    if not (h >= 23 or h < 2):
         return old_bays or {}
     # 保險掣：檢查失敗計數
     cb_file = "/tmp/mcs_circuit_breaker"
