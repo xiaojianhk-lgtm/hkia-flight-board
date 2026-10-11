@@ -533,10 +533,10 @@ try{(function(){
     return m ? m[1] : "";
   }
   // 等 DB 載入後：過濾 HAS 貨機＋注入 Menzies bay（唔限時間，顯示全日）
-  var prevMcs = {};  // 記住上次嘅 bay，轉 bay 變紅
+  var prevCgb = {};  // 記住上次嘅 bay，轉 bay 變紅
   function applyNldFilter(){
     if(!window.DB || !DB.days) return false;
-    var mcs = DB.mcs_bays || {};
+    var cgb = DB.cargo_bays || {};
     var changed = false;
     Object.keys(DB.days).forEach(function(dk){
       ["arrival","departure"].forEach(function(tab){
@@ -547,12 +547,12 @@ try{(function(){
           var code = codeOf(f.flight_id);
           if(MCS4[code]){
             var key = (f.flight_id||"").replace(/\s/g,"");
-            if(mcs[key]){
+            if(cgb[key]){
               // bay 轉咗：記舊值，等主頁個 stchg 變紅
-              if(prevMcs[key] && prevMcs[key] !== mcs[key] && f.stand !== mcs[key]){
-                f.stand_old = prevMcs[key];
+              if(prevCgb[key] && prevCgb[key] !== cgb[key] && f.stand !== cgb[key]){
+                f.stand_old = prevCgb[key];
               }
-              if(f.stand !== mcs[key]){ f.stand = mcs[key]; changed = true; }
+              if(f.stand !== cgb[key]){ f.stand = cgb[key]; changed = true; }
             }
           }
           return true;
@@ -560,7 +560,7 @@ try{(function(){
         if(filtered.length !== orig.length){ DB.days[dk][tab] = filtered; changed = true; }
       });
     });
-    prevMcs = Object.assign({}, mcs);
+    prevCgb = Object.assign({}, cgb);
     return changed;
   }
   setInterval(function(){
