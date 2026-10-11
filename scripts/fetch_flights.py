@@ -36,7 +36,7 @@ HKG_LAT, HKG_LON = 22.3080, 113.9185
 MCS_URL = "https://fv.menziescnac.com/data2?page={page}&ha_filter=&flight_id={fid}&date_filter={df}&arr_dep={ad}"
 MCS_AIRLINES = ["CX", "LD", "AK", "QY"]  # 淨係呢四間要 bay
 
-def fetch_mcs_bays(old_bays=None):
+def fetch_cargo_bays(old_bays=None):
     """23:00-02:00 先抓；回 {flight_id: bay}。舊 bay 會保留（Menzies 冇咗唔代表冇 bay）。
     保險掣：連續 3 轉都失敗就停到聽晚，唔死纏爛打。"""
     now = datetime.now(HKT)
@@ -449,7 +449,7 @@ def main() -> int:
     mcs_result = {}
     def _fetch_mcs():
         try:
-            mcs_result.update(fetch_mcs_bays(old_payload.get("mcs_bays") if old_payload else None))
+            mcs_result.update(fetch_cargo_bays(old_payload.get("cargo_bays") if old_payload else None))
         except Exception as e:
             print(f"WARN: mcs thread failed ({e})", file=sys.stderr)
     mcs_thread = threading.Thread(target=_fetch_mcs, daemon=True)
@@ -457,22 +457,22 @@ def main() -> int:
     mcs_thread.join(timeout=90)
     if mcs_thread.is_alive():
         print("WARN: mcs fetch timeout 90s, 用舊 bay", file=sys.stderr)
-        mcs_bays = old_payload.get("mcs_bays") if old_payload else {}
+        cargo_bays = old_payload.get("cargo_bays") if old_payload else {}
     else:
-        mcs_bays = mcs_result
+        cargo_bays = mcs_result
 
     payload = {
         "generated_at": now.strftime("%Y-%m-%d %H:%M") + " HKT",
         "dates": dates,
         "days": days,
-        "mcs_bays": mcs_bays,
+        "cargo_bays": cargo_bays,
     }
     # 輕量版：淨係頭 3 日（昨天/今天/明天，UI 顯示用），細 ~30%
     slim_payload = {
         "generated_at": payload["generated_at"],
         "dates": dates[:3],
         "days": {d: days[d] for d in dates[:3]},
-        "mcs_bays": payload["mcs_bays"],
+        "cargo_bays": payload["cargo_bays"],
     }
 
     # Idempotent: only rewrite when the data actually changed, so the CI
@@ -480,7 +480,7 @@ def main() -> int:
     # (stand_old is part of days, so a newly detected / cleared stand change
     # counts as a change.)
     if old_payload is not None:
-        if old_payload.get("dates") == dates[:3] and old_payload.get("days") == slim_payload["days"] and old_payload.get("mcs_bays") == slim_payload["mcs_bays"]:
+        if old_payload.get("dates") == dates[:3] and old_payload.get("days") == slim_payload["days"] and old_payload.get("cargo_bays") == slim_payload["cargo_bays"]:
             total = sum(len(v) for d in days.values() for v in d.values())
             print(f"OK: no change ({total} flights), kept {out_path}")
             return 0
