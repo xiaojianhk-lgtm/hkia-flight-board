@@ -33,7 +33,9 @@ DATE_RE = re.compile(r"\((\d{1,2})/(\d{1,2})/(\d{4})\)")
 HKG_LAT, HKG_LON = 22.3080, 113.9185
 
 # Menzies CNAC Flightviewer（夜班貨機 bay 專用）
-MCS_URL = "https://fv.menziescnac.com/data2?page={page}&ha_filter=&flight_id={fid}&date_filter=today&arr_dep={ad}"
+MCS_URL = "https://fv.menziescnac.com/data2?page={page}&ha_filter=&flight_id={fid}&date_filter={df}&arr_dep={ad}"
+# 跨午夜要問埋聽日同昨日（23:00 嘅機可能係昨日，01:00 嘅機可能係聽日）
+MCS_DATES = ["today", "tomorrow"]
 MCS_AIRLINES = ["CX", "LD", "AK", "QY"]  # 淨係呢四間要 bay
 
 def fetch_mcs_bays(old_bays=None):
@@ -58,10 +60,11 @@ def fetch_mcs_bays(old_bays=None):
     success = False
     for al in MCS_AIRLINES:
         for ad in ("a", "d"):
-            # 跑晒所有頁（total_pages）
-            page = 1
-            while True:
-                url = MCS_URL.format(page=page, fid=al, ad=ad)
+            for df in MCS_DATES:
+                # 跑晒所有頁（total_pages）
+                page = 1
+                while True:
+                    url = MCS_URL.format(page=page, fid=al, ad=ad, df=df)
                 try:
                     req = urllib.request.Request(url, headers={
                         "Referer": "https://fv.menziescnac.com/",
@@ -90,7 +93,7 @@ def fetch_mcs_bays(old_bays=None):
                         break
                     page += 1
                 except Exception as exc:
-                    print(f"WARN: mcs {al}/{ad} p{page} failed ({exc})", file=sys.stderr)
+                    print(f"WARN: mcs {al}/{ad}/{df} p{page} failed ({exc})", file=sys.stderr)
                     break
     # 更新保險掣計數
     try:
