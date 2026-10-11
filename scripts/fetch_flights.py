@@ -438,11 +438,28 @@ def main() -> int:
         os.replace(tmp_map, prefix_path)
         print(f"OK: stand_prefix.json updated ({len(prefix_map)} mappings)")
 
+    # Menzies 唔 block 主數據：用 thread＋timeout，慢過 90 秒就用舊 bay
+    import threading
+    mcs_result = {}
+    def _fetch_mcs():
+        try:
+            mcs_result.update(fetch_mcs_bays(old_payload.get("mcs_bays") if old_payload else None))
+        except Exception as e:
+            print(f"WARN: mcs thread failed ({e})", file=sys.stderr)
+    mcs_thread = threading.Thread(target=_fetch_mcs, daemon=True)
+    mcs_thread.start()
+    mcs_thread.join(timeout=90)
+    if mcs_thread.is_alive():
+        print("WARN: mcs fetch timeout 90s, 用舊 bay", file=sys.stderr)
+        mcs_bays = old_payload.get("mcs_bays") if old_payload else {}
+    else:
+        mcs_bays = mcs_result
+
     payload = {
         "generated_at": now.strftime("%Y-%m-%d %H:%M") + " HKT",
         "dates": dates,
         "days": days,
-        "mcs_bays": fetch_mcs_bays(old_payload.get("mcs_bays") if old_payload else None),
+        "mcs_bays": mcs_bays,
     }
     # 輕量版：淨係頭 3 日（昨天/今天/明天，UI 顯示用），細 ~30%
     slim_payload = {
