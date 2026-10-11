@@ -44,11 +44,17 @@ def fetch_mcs_bays(old_bays=None):
     # 23:00-02:00 先抓（02:00 後唔使再抓）
     if not (h >= 23 or h < 2):
         return old_bays or {}
-    # 保險掣：檢查失敗計數
+    # 保險掣：檢查失敗計數（23:00 新一晚開始就 reset）
     cb_file = "/tmp/mcs_circuit_breaker"
     try:
-        with open(cb_file) as f:
-            fails = int(f.read().strip() or "0")
+        if h == 23:
+            # 新一晚，reset
+            with open(cb_file, "w") as f:
+                f.write("0")
+            fails = 0
+        else:
+            with open(cb_file) as f:
+                fails = int(f.read().strip() or "0")
         if fails >= 3:
             print("MCS: circuit breaker open, skip", file=sys.stderr)
             return old_bays or {}
