@@ -91,9 +91,7 @@ def rough_duration(iata: str) -> str:
     a = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
     km = 12742 * math.asin(math.sqrt(a))
     speed = 750 if km < 1500 else 850  # km/h，短途慢啲
-    # buffer：短途爬升下降佔比大，唔使加咁多
-    buf = 15 if km < 1000 else (25 if km < 3000 else 30)
-    mins = round(km / speed * 60 + buf)
+    mins = round(km / speed * 60)
     mins = round(mins / 5) * 5  # 取至 5 分鐘，大致就得
     h, m = divmod(mins, 60)
     return f"{h}h{m:02d}m" if m else f"{h}h"
