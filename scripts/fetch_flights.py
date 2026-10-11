@@ -65,36 +65,36 @@ def fetch_mcs_bays(old_bays=None):
                 page = 1
                 while True:
                     url = MCS_URL.format(page=page, fid=al, ad=ad, df=df)
-                try:
-                    req = urllib.request.Request(url, headers={
-                        "Referer": "https://fv.menziescnac.com/",
-                        "User-Agent": "Mozilla/5.0",
-                    })
-                    with urllib.request.urlopen(req, timeout=TIMEOUT_SECS) as resp:
-                        d = json.load(resp)
-                    for r in d.get("rows") or []:
-                        # 淨係要貨機（T=F/H）
-                        if r.get("T") not in ("F", "H"):
-                            continue
-                        flt = (r.get("Flight") or "").strip()
-                        # 去掉 codeshare 括號，例如 "CX5651[UO651]" -> "CX5651"
-                        if "[" in flt:
-                            flt = flt.split("[")[0].strip()
-                        st = (r.get("ST") or "").strip()
-                        # ST 可能係 "X25(X15)"，攞括號前嗰個（最新）
-                        if st and "(" in st:
-                            st = st.split("(")[0].strip()
-                        if flt and st and st.lower() != "none":
-                            bays[flt] = st
-                    # 檢查仲有冇下一頁
-                    total = d.get("total_pages") or 1
-                    if page >= total:
-                        success = True
+                    try:
+                        req = urllib.request.Request(url, headers={
+                            "Referer": "https://fv.menziescnac.com/",
+                            "User-Agent": "Mozilla/5.0",
+                        })
+                        with urllib.request.urlopen(req, timeout=TIMEOUT_SECS) as resp:
+                            d = json.load(resp)
+                        for r in d.get("rows") or []:
+                            # 淨係要貨機（T=F/H）
+                            if r.get("T") not in ("F", "H"):
+                                continue
+                            flt = (r.get("Flight") or "").strip()
+                            # 去掉 codeshare 括號，例如 "CX5651[UO651]" -> "CX5651"
+                            if "[" in flt:
+                                flt = flt.split("[")[0].strip()
+                            st = (r.get("ST") or "").strip()
+                            # ST 可能係 "X25(X15)"，攞括號前嗰個（最新）
+                            if st and "(" in st:
+                                st = st.split("(")[0].strip()
+                            if flt and st and st.lower() != "none":
+                                bays[flt] = st
+                        # 檢查仲有冇下一頁
+                        total = d.get("total_pages") or 1
+                        if page >= total:
+                            success = True
+                            break
+                        page += 1
+                    except Exception as exc:
+                        print(f"WARN: mcs {al}/{ad}/{df} p{page} failed ({exc})", file=sys.stderr)
                         break
-                    page += 1
-                except Exception as exc:
-                    print(f"WARN: mcs {al}/{ad}/{df} p{page} failed ({exc})", file=sys.stderr)
-                    break
     # 更新保險掣計數
     try:
         with open(cb_file, "w") as f:
