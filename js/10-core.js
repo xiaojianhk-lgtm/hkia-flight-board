@@ -293,7 +293,7 @@
       var dm = /(\d+)h(\d+)m/.exec(f.avg_dur) || /(\d+)h/.exec(f.avg_dur);
       if(dm){
         var dh = parseInt(dm[1], 10) + (dm[2] ? parseInt(dm[2], 10)/60 : 0);
-        h += " <span class='nbtn' style='opacity:.75;cursor:default;font-size:.85em;'>Flight Time: "+dh.toFixed(1)+"h</span>";
+        h += " <span class='nbtn' style='cursor:default;'>FLT Time: "+dh.toFixed(1)+"h</span>";
       }
     }
     h += "</div>";
