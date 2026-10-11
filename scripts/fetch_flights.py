@@ -34,8 +34,6 @@ HKG_LAT, HKG_LON = 22.3080, 113.9185
 
 # Menzies CNAC Flightviewer（夜班貨機 bay 專用）
 MCS_URL = "https://fv.menziescnac.com/data2?page={page}&ha_filter=&flight_id={fid}&date_filter={df}&arr_dep={ad}"
-# 跨午夜要問埋聽日同昨日（23:00 嘅機可能係昨日，01:00 嘅機可能係聽日）
-MCS_DATES = ["today", "tomorrow"]
 MCS_AIRLINES = ["CX", "LD", "AK", "QY"]  # 淨係呢四間要 bay
 
 def fetch_mcs_bays(old_bays=None):
@@ -58,9 +56,11 @@ def fetch_mcs_bays(old_bays=None):
         fails = 0
     bays = dict(old_bays) if old_bays else {}
     success = False
+    # 跨午夜：23:xx 要問埋聽日（01:00 嘅機係聽日），00:xx 後唔使
+    dates = ["today", "tomorrow"] if h >= 23 else ["today"]
     for al in MCS_AIRLINES:
         for ad in ("a", "d"):
-            for df in MCS_DATES:
+            for df in dates:
                 # 跑晒所有頁（total_pages）
                 page = 1
                 while True:
