@@ -60,7 +60,11 @@ def fetch_cargo_bays(old_bays=None):
             return old_bays or {}
     except:
         fails = 0
-    bays = dict(old_bays) if old_bays else {}
+    # 新一晚 22:00：唔沿用尋晚嘅 bay，重新開始（key 冇日期，唔清會污染）
+    if h == 22:
+        bays = {}
+    else:
+        bays = dict(old_bays) if old_bays else {}
     success = False
     # 跨午夜：23:xx 要問埋聽日（01:00 嘅機係聽日），00:xx 後唔使
     dates = ["today", "tomorrow"] if h >= 22 else ["today"]
