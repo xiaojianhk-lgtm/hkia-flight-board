@@ -32,86 +32,6 @@ DATE_RE = re.compile(r"\((\d{1,2})/(\d{1,2})/(\d{4})\)")
 
 HKG_LAT, HKG_LON = 22.3080, 113.9185
 
-# Menzies CNAC Flightviewer（夜班貨機 bay 專用）
-MCS_URL = "https://fv.menziescnac.com/data2?page={page}&ha_filter=&flight_id={fid}&date_filter={df}&arr_dep={ad}"
-MCS_AIRLINES = ["CX", "LD", "AK", "QY"]  # 淨係呢四間要 bay
-
-def fetch_cargo_bays(old_bays=None):
-    """23:00-02:00 先抓；回 {flight_id: bay}。舊 bay 會保留（Menzies 冇咗唔代表冇 bay）。
-    保險掣：連續 3 轉都失敗就停到聽晚，唔死纏爛打。"""
-    now = datetime.now(HKT)
-    h = now.hour
-    # 23:00-02:00 先抓（02:00 後唔使再抓）
-    if not (h >= 22 or h < 2):
-        return old_bays or {}
-    # 保險掣：檢查失敗計數（23:00 新一晚開始就 reset）
-    cb_file = "/tmp/mcs_circuit_breaker"
-    try:
-        if h == 22:
-            # 新一晚，reset
-            with open(cb_file, "w") as f:
-                f.write("0")
-            fails = 0
-        else:
-            with open(cb_file) as f:
-                fails = int(f.read().strip() or "0")
-        if fails >= 3:
-            print("MCS: circuit breaker open, skip", file=sys.stderr)
-            return old_bays or {}
-    except:
-        fails = 0
-    # 新一晚 22:00：唔沿用尋晚嘅 bay，重新開始（key 冇日期，唔清會污染）
-    if h == 22:
-        bays = {}
-    else:
-        bays = dict(old_bays) if old_bays else {}
-    success = False
-    # 跨午夜：23:xx 要問埋聽日（01:00 嘅機係聽日），00:xx 後唔使
-    dates = ["today", "tomorrow"] if h >= 22 else ["today"]
-    for al in MCS_AIRLINES:
-        for ad in ("a", "d"):
-            for df in dates:
-                # 跑晒所有頁（total_pages）
-                page = 1
-                while True:
-                    url = MCS_URL.format(page=page, fid=al, ad=ad, df=df)
-                    try:
-                        req = urllib.request.Request(url, headers={
-                            "Referer": "https://fv.menziescnac.com/",
-                            "User-Agent": "Mozilla/5.0",
-                        })
-                        with urllib.request.urlopen(req, timeout=TIMEOUT_SECS) as resp:
-                            d = json.load(resp)
-                        for r in d.get("rows") or []:
-                            # 淨係要貨機（T=F/H）
-                            if r.get("T") not in ("F", "H"):
-                                continue
-                            flt = (r.get("Flight") or "").strip()
-                            # 去掉 codeshare 括號，例如 "CX5651[UO651]" -> "CX5651"
-                            if "[" in flt:
-                                flt = flt.split("[")[0].strip()
-                            st = (r.get("ST") or "").strip()
-                            # ST 可能係 "X25(X15)"，攞括號前嗰個（最新）
-                            if st and "(" in st:
-                                st = st.split("(")[0].strip()
-                            if flt and st and st.lower() != "none":
-                                bays[flt] = st
-                        # 檢查仲有冇下一頁
-                        total = d.get("total_pages") or 1
-                        if page >= total:
-                            success = True
-                            break
-                        page += 1
-                    except Exception as exc:
-                        print(f"WARN: mcs {al}/{ad}/{df} p{page} failed ({exc})", file=sys.stderr)
-                        break
-    # 更新保險掣計數
-    try:
-        with open(cb_file, "w") as f:
-            f.write("0" if success else str(fails + 1))
-    except:
-        pass
-    return bays
 
 def _load_coords():
     try:
@@ -448,42 +368,16 @@ def main() -> int:
         os.replace(tmp_map, prefix_path)
         print(f"OK: stand_prefix.json updated ({len(prefix_map)} mappings)")
 
-    # Menzies 唔 block 主數據：用 thread＋timeout，慢過 90 秒就用舊 bay
-    import threading
-    def _get_old_bays():
-        if not old_payload:
-            return {}
-        cb = old_payload.get("cargo_bays")
-        if cb is None:
-            cb = old_payload.get("mcs_bays")
-        return cb if cb is not None else {}
-    mcs_result = {}
-    def _fetch_mcs():
-        try:
-            mcs_result.update(fetch_cargo_bays(_get_old_bays()))
-        except Exception as e:
-            print(f"WARN: mcs thread failed ({e})", file=sys.stderr)
-    mcs_thread = threading.Thread(target=_fetch_mcs, daemon=True)
-    mcs_thread.start()
-    mcs_thread.join(timeout=180)
-    if mcs_thread.is_alive():
-        print("WARN: mcs fetch timeout 180s, 用舊 bay", file=sys.stderr)
-        cargo_bays = _get_old_bays()
-    else:
-        cargo_bays = mcs_result
-
     payload = {
         "generated_at": now.strftime("%Y-%m-%d %H:%M") + " HKT",
         "dates": dates,
         "days": days,
-        "cargo_bays": cargo_bays,
     }
     # 輕量版：淨係頭 3 日（昨天/今天/明天，UI 顯示用），細 ~30%
     slim_payload = {
         "generated_at": payload["generated_at"],
         "dates": dates[:3],
         "days": {d: days[d] for d in dates[:3]},
-        "cargo_bays": payload["cargo_bays"],
     }
 
     # Idempotent: only rewrite when the data actually changed, so the CI
@@ -491,10 +385,7 @@ def main() -> int:
     # (stand_old is part of days, so a newly detected / cleared stand change
     # counts as a change.)
     if old_payload is not None:
-        _ob = old_payload.get("cargo_bays")
-        if _ob is None:
-            _ob = old_payload.get("mcs_bays")
-        if old_payload.get("dates") == dates[:3] and old_payload.get("days") == slim_payload["days"] and _ob == slim_payload["cargo_bays"]:
+        if old_payload.get("dates") == dates[:3] and old_payload.get("days") == slim_payload["days"]:
             total = sum(len(v) for d in days.values() for v in d.values())
             print(f"OK: no change ({total} flights), kept {out_path}")
             return 0
