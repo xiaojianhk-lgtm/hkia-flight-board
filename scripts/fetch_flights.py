@@ -42,12 +42,12 @@ def fetch_cargo_bays(old_bays=None):
     now = datetime.now(HKT)
     h = now.hour
     # 23:00-02:00 先抓（02:00 後唔使再抓）
-    if not (h >= 23 or h < 2):
+    if not (h >= 22 or h < 2):
         return old_bays or {}
     # 保險掣：檢查失敗計數（23:00 新一晚開始就 reset）
     cb_file = "/tmp/mcs_circuit_breaker"
     try:
-        if h == 23:
+        if h == 22:
             # 新一晚，reset
             with open(cb_file, "w") as f:
                 f.write("0")
@@ -63,7 +63,7 @@ def fetch_cargo_bays(old_bays=None):
     bays = dict(old_bays) if old_bays else {}
     success = False
     # 跨午夜：23:xx 要問埋聽日（01:00 嘅機係聽日），00:xx 後唔使
-    dates = ["today", "tomorrow"] if h >= 23 else ["today"]
+    dates = ["today", "tomorrow"] if h >= 22 else ["today"]
     for al in MCS_AIRLINES:
         for ad in ("a", "d"):
             for df in dates:
