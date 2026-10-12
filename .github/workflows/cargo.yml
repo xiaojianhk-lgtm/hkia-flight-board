@@ -1,0 +1,35 @@
+name: Refresh cargo bays
+
+on:
+  # 通宵貨機 bay 後備：每日 22:00–02:00 HKT（= 14:00–18:59 UTC）每 15 分鐘跑一次。
+  # 主力係外部 cron（Muse），呢度做後備。
+  # script 自己會 check 時間，唔係窗口內會直接退出。
+  schedule:
+    - cron: "*/15 14-18 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  cargo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Menzies cargo bays
+        run: python3 scripts/fetch_cargo.py
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet -- cargo-bays.json; then
+            echo "No change in cargo-bays.json"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add cargo-bays.json
+          git commit -m "Update cargo bays $(date -u +%Y-%m-%dT%H:%MZ)"
+          git pull --rebase origin main
+          git push
