@@ -518,6 +518,15 @@
       }
     })
     .catch(function(e){
+      // 主站攞唔到 data.json：試下後備站（淨試一次，唔 loop）
+      var BACKUP = "https://hkia-flight-board.pages.dev";
+      if(location.origin !== BACKUP && !sessionStorage.getItem("bk-tried")){
+        sessionStorage.setItem("bk-tried", "1");
+        // 後備站對應路徑：hkiaflight.html / nld.html / watch.html
+        var page = location.pathname.split("/").pop() || "hkiaflight.html";
+        location.href = BACKUP + "/" + page + location.search + location.hash;
+        return;
+      }
       $("rows").innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--red);padding:24px;'>載入失敗："+esc(e.message)+"</td></tr>";
     });
   }
