@@ -528,6 +528,17 @@ try{(function(){
 (function(){
   var HAS_CARGO = ["CX","LD","QY","3V","C6","D4","MS","CK","AK","Z2","GH"];
   var MCS4 = {CX:1, LD:1, AK:1, QY:1};
+  // 獨立載入 cargo-bays.json（同主頁 data.json 分開）
+  window.CARGO_BAYS = {};
+  fetch("cargo-bays.json", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(j){
+    window.CARGO_BAYS = j.bays || {};
+  }).catch(function(){});
+  // 定時更新（每 5 分鐘）
+  setInterval(function(){
+    fetch("cargo-bays.json", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(j){
+      window.CARGO_BAYS = j.bays || {};
+    }).catch(function(){});
+  }, 5*60*1000);
   function codeOf(fid){
     var m = /^([A-Z0-9]{2})/.exec((fid||"").toUpperCase().replace(/\s/g,""));
     return m ? m[1] : "";
@@ -536,7 +547,7 @@ try{(function(){
   var prevCgb = {};  // 記住上次嘅 bay，轉 bay 變紅
   function applyNldFilter(){
     if(!window.DB || !DB.days) return false;
-    var cgb = DB.cargo_bays || {};
+    var cgb = window.CARGO_BAYS || {};
     var changed = false;
     Object.keys(DB.days).forEach(function(dk){
       ["arrival","departure"].forEach(function(tab){
