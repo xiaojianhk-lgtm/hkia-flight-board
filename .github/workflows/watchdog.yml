@@ -1,0 +1,56 @@
+name: Watchdog - keep data fresh
+
+on:
+  # 每 15 分鐘檢查一次。如果 data.json 夠新（<20分鐘），咩都唔做即刻完。
+  # 得個 data 舊過 20 分鐘（即係 Muse 個 cron 死咗），先至抓數據補上。
+  # 咁平時唔會同主 cron 撞，淨係後備。
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check data freshness
+        id: check
+        run: |
+          GEN=$(python3 -c "import json; print(json.load(open('data.json')).get('generated_at',''))")
+          echo "generated_at=$GEN"
+          # 轉做分鐘差
+          NOW=$(date -u +%s)
+          # "2026-10-13 06:00 HKT" -> 用 date 解析（HKT = UTC+8）
+          GEN_TS=$(date -u -d "$(echo $GEN | sed 's/ HKT//') +8 hours" +%s 2>/dev/null || echo 0)
+          if [ "$GEN_TS" = "0" ]; then
+            echo "stale=true" >> $GITHUB_OUTPUT
+            echo "解析唔到時間，當舊處理"
+          else
+            DIFF=$(( (NOW - GEN_TS) / 60 ))
+            echo "相差 ${DIFF} 分鐘"
+            if [ "$DIFF" -gt 20 ]; then
+              echo "stale=true" >> $GITHUB_OUTPUT
+            else
+              echo "stale=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Fetch and push if stale
+        if: steps.check.outputs.stale == 'true'
+        run: |
+          python3 scripts/fetch_flights.py
+          if git diff --quiet -- data.json data-full.json; then
+            echo "No change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json data-full.json
+          git commit -m "Watchdog: refresh stale data $(date -u +%Y-%m-%dT%H:%MZ)"
+          git pull --rebase origin main
+          git push
