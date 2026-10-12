@@ -2,9 +2,9 @@ name: Refresh flight data
 
 on:
   # 主力係外部 15 分鐘 cron（Muse）。呢度做後備：就算外部 cron 死咗，
-  # GitHub Actions 都會每小時補跑一次（queue 可能 delay，但好過冇）。
+  # GitHub Actions 都會每 30 分鐘補跑一次（queue 可能 delay，但好過冇）。
   schedule:
-    - cron: "0 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch: {}
 
 permissions:
