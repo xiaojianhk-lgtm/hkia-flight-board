@@ -139,6 +139,10 @@
     if(c === "N") return "stN";
     if(c === "W") return "stW";
     if(c === "R" || /^\d+$/.test(s)) return "stR";
+    if(c === "X"){
+      var n = parseInt(s.substring(1), 10);
+      if(n >= 1 && n <= 8) return "stX";
+    }
     return "";
   }
   function standHtml(typ, f){
