@@ -31,13 +31,18 @@
     else if(w){ delete w.insp; if(!w.note && !w.stand) delete WATCH[k]; }
     saveWatch();
   }
-  /* 泊位區（S/N/W/R，數字歸R組；冇泊位返 ""） */
+  /* 泊位區（S/N/W/R/X1-8，數字歸R組；冇泊位返 ""） */
   function standArea(typ, f){
     var s = ((manualStand(typ, f) || f.stand || "").trim().toUpperCase());
     if(!s || s === "—") return "";
     var c = s.charAt(0);
     if(c === "S" || c === "N" || c === "W") return c;
     if(c === "R" || /^\d+$/.test(s)) return "R";
+    // X1-X8 貨機區（通宵貨機用）
+    if(c === "X"){
+      var n = parseInt(s.substring(1), 10);
+      if(n >= 1 && n <= 8) return "X";
+    }
     return "";
   }
   /* 同區高亮狀態（唔 save，純睇嘢用） */
