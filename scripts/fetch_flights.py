@@ -465,9 +465,9 @@ def main() -> int:
             print(f"WARN: mcs thread failed ({e})", file=sys.stderr)
     mcs_thread = threading.Thread(target=_fetch_mcs, daemon=True)
     mcs_thread.start()
-    mcs_thread.join(timeout=90)
+    mcs_thread.join(timeout=180)
     if mcs_thread.is_alive():
-        print("WARN: mcs fetch timeout 90s, 用舊 bay", file=sys.stderr)
+        print("WARN: mcs fetch timeout 180s, 用舊 bay", file=sys.stderr)
         cargo_bays = _get_old_bays()
     else:
         cargo_bays = mcs_result
