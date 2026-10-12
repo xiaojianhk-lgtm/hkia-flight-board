@@ -450,10 +450,17 @@ def main() -> int:
 
     # Menzies 唔 block 主數據：用 thread＋timeout，慢過 90 秒就用舊 bay
     import threading
+    def _get_old_bays():
+        if not old_payload:
+            return {}
+        cb = old_payload.get("cargo_bays")
+        if cb is None:
+            cb = old_payload.get("mcs_bays")
+        return cb if cb is not None else {}
     mcs_result = {}
     def _fetch_mcs():
         try:
-            mcs_result.update(fetch_cargo_bays((old_payload.get("cargo_bays") or old_payload.get("mcs_bays")) if old_payload else None))
+            mcs_result.update(fetch_cargo_bays(_get_old_bays()))
         except Exception as e:
             print(f"WARN: mcs thread failed ({e})", file=sys.stderr)
     mcs_thread = threading.Thread(target=_fetch_mcs, daemon=True)
@@ -461,7 +468,7 @@ def main() -> int:
     mcs_thread.join(timeout=90)
     if mcs_thread.is_alive():
         print("WARN: mcs fetch timeout 90s, 用舊 bay", file=sys.stderr)
-        cargo_bays = (old_payload.get("cargo_bays") or old_payload.get("mcs_bays")) if old_payload else {}
+        cargo_bays = _get_old_bays()
     else:
         cargo_bays = mcs_result
 
@@ -484,7 +491,10 @@ def main() -> int:
     # (stand_old is part of days, so a newly detected / cleared stand change
     # counts as a change.)
     if old_payload is not None:
-        if old_payload.get("dates") == dates[:3] and old_payload.get("days") == slim_payload["days"] and (old_payload.get("cargo_bays") or old_payload.get("mcs_bays")) == slim_payload["cargo_bays"]:
+        _ob = old_payload.get("cargo_bays")
+        if _ob is None:
+            _ob = old_payload.get("mcs_bays")
+        if old_payload.get("dates") == dates[:3] and old_payload.get("days") == slim_payload["days"] and _ob == slim_payload["cargo_bays"]:
             total = sum(len(v) for d in days.values() for v in d.values())
             print(f"OK: no change ({total} flights), kept {out_path}")
             return 0
