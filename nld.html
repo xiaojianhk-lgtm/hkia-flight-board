@@ -534,7 +534,7 @@ try{(function(){
   var MCS4 = {CX:1, LD:1, AK:1, QY:1};
   // 獨立載入 cargo-bays.json（同主頁 data.json 分開）
   window.CARGO_BAYS = {};
-  fetch("cargo-bays.json", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(j){
+  fetch("cargo-bays.json?t="+Date.now(), {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(j){
     window.CARGO_BAYS = j.bays || {};
     try{
       var bt = document.getElementById("bayTs");
@@ -543,7 +543,7 @@ try{(function(){
   }).catch(function(){});
   // 定時更新（每 5 分鐘）
   setInterval(function(){
-    fetch("cargo-bays.json", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(j){
+    fetch("cargo-bays.json?t="+Date.now(), {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(j){
       window.CARGO_BAYS = j.bays || {};
       try{
         var bt2 = document.getElementById("bayTs");
