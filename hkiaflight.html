@@ -461,9 +461,11 @@ try{(function(){
   else if(/Mac OS/.test(ua))o='macOS';
   else if(/Windows/.test(ua))o='Windows';
   else if(/Linux/.test(ua))o='Linux';
+  var model='';
+  if(o==='Android'){var mm=ua.match(/Android[\s\d.]+;\s*([^;)\)]+)/);if(mm)model=mm[1].trim();}
   fetch('https://xiaojian-visit-log.xiaojian-hk.workers.dev/log',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({browser:b,os:o,page:location.pathname,device:did})
+    body:JSON.stringify({browser:b,os:o,model:model,page:location.pathname,device:did})
   }).catch(function(){});
 })();}catch(e){}
 </script>
