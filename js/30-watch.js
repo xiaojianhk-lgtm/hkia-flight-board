@@ -331,7 +331,7 @@
 
   /* ---- 機場降雨提醒 ---- */
   var RAIN_KEY = "hkia-rain-watch-v1";
-  var rainWatch = { on:false, alertedAt:"" };
+  var rainWatch = { on:true, alertedAt:"" };  /* 預設開，掣已移除 */
   try{
     var rw = JSON.parse(localStorage.getItem(RAIN_KEY) || "null");
     if(rw && typeof rw.on === "boolean") rainWatch = rw;
