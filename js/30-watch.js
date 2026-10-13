@@ -374,12 +374,12 @@
     var html = "<div>最高機率 <b>"+prob+"%</b>（約 "+hh+":"+mm+"）</div><div style='color:var(--muted);font-size:12px;margin-top:4px'>資料來源：Open-Meteo 預報</div>";
     queueAlert("🌧 機場未來 3 小時可能有雨", html);
   }
-  $("rainWatch").addEventListener("click", function(){
+  (function(){ var _rw=$("rainWatch"); if(_rw) _rw.addEventListener("click", function(){
     rainWatch.on = !rainWatch.on;
     if(!rainWatch.on) rainWatch.alertedAt = "";
     saveRainWatch(); updateRainBtn();
     if(rainWatch.on) checkRainWatch();
-  });
+  }); })();
   updateRainBtn();
 
   /* ---------- 天文台警告 banner（打風／暴雨先顯示） ---------- */
