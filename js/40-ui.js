@@ -87,18 +87,12 @@
     function setMode(m){
       var isCargo = (m === "cargo");
       hideCargo = !isCargo; hidePax = isCargo;
-      try{ localStorage.setItem("hkia-mode-v1", m); }catch(e){}
       var btns = seg.querySelectorAll("button");
       for(var i=0;i<btns.length;i++){
         btns[i].classList.toggle("on", btns[i].getAttribute("data-mode") === m);
       }
       expanded = false; render();
     }
-    // 開頁還原上次模式
-    try{
-      var _m = localStorage.getItem("hkia-mode-v1");
-      if(_m === "cargo") setMode("cargo");
-    }catch(e){}
     seg.addEventListener("click", function(e){
       var b = e.target.closest ? e.target.closest("button[data-mode]") : null;
       if(b) setMode(b.getAttribute("data-mode"));
