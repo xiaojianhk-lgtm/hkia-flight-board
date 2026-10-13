@@ -1,6 +1,11 @@
 /* HKIA flight board - 10-core.js */
   var DB = null, dateIdx = 1, query = "";
   var hideCargo = true, hidePax = false, onlyHas = true, hideCX = false;
+  /* 客/貨模式（localStorage 記住；nld.html 冇掣，強制貨運） */
+  try{
+    var _m = localStorage.getItem("hkia-mode-v1");
+    if(_m === "cargo"){ hideCargo = false; hidePax = true; }
+  }catch(e){}
   var expanded = false, detailKey = null, lastItems = [];
   var DATE_NAMES = ["昨天","今天","明天"];
 
