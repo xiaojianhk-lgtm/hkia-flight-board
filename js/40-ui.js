@@ -87,20 +87,26 @@
     function setMode(m){
       var isCargo = (m === "cargo");
       hideCargo = !isCargo; hidePax = isCargo;
+      try{ localStorage.setItem("hkia-mode-v1", m); }catch(e){}
       var btns = seg.querySelectorAll("button");
       for(var i=0;i<btns.length;i++){
         btns[i].classList.toggle("on", btns[i].getAttribute("data-mode") === m);
       }
       expanded = false; render();
     }
+    // 開頁還原上次模式
+    try{
+      var _m = localStorage.getItem("hkia-mode-v1");
+      if(_m === "cargo") setMode("cargo");
+    }catch(e){}
     seg.addEventListener("click", function(e){
       var b = e.target.closest ? e.target.closest("button[data-mode]") : null;
       if(b) setMode(b.getAttribute("data-mode"));
     });
   })();
   /* （已取消長按入口，改用搜尋暗號 Cargo3577） */
-  (function(){ var _sh=$("showHas"); if(_sh) _sh.addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); }); })();
-  (function(){ var _hc=$("hideCX"); if(_hc) _hc.addEventListener("change", function(){ hideCX = !!this.checked; expanded=false; render(); }); })();
+  $("showHas").addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); });
+  $("hideCX").addEventListener("change", function(){ hideCX = !!this.checked; expanded=false; render(); });
   function toggleExpand(){
     if(!expanded){
       /* 展開前記住「而家」線喺畫面嘅位置，render 後放返同一位置，唔跳 */
