@@ -557,6 +557,7 @@ try{(function(){
   }
   // 等 DB 載入後：過濾 HAS 貨機＋注入 Menzies bay（唔限時間，顯示全日）
   var prevCgb = {};  // 記住上次嘅 bay，轉 bay 變紅
+  try{ prevCgb = JSON.parse(localStorage.getItem("nld-prevcgb-v1")||"{}"); }catch(e){ prevCgb = {}; }
   function applyNldFilter(){
     if(!window.DB || !DB.days) return false;
     var cgb = window.CARGO_BAYS || {};
@@ -584,6 +585,7 @@ try{(function(){
       });
     });
     prevCgb = Object.assign({}, cgb);
+    try{ localStorage.setItem("nld-prevcgb-v1", JSON.stringify(prevCgb)); }catch(e){}
     return changed;
   }
   setInterval(function(){
