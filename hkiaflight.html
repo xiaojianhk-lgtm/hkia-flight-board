@@ -233,6 +233,9 @@ try{
   .dates button.on{border-color:var(--accent2); color:var(--strong); font-weight:600;}
   .countrow{display:flex; justify-content:space-between; align-items:center; padding:10px 4px 0; gap:8px; flex-wrap:wrap;}
   .hidecargo{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;}
+  .modeseg{display:flex; background:var(--row-line); border-radius:8px; padding:2px; gap:2px;}
+  .modeseg button{border:none; background:transparent; color:var(--muted); font-size:12px; font-weight:600; padding:5px 14px; border-radius:6px; cursor:pointer; white-space:nowrap;}
+  .modeseg button.on{background:var(--accent2); color:#fff;}
   .hidecargo input{accent-color:var(--accent2);}
   .rainbtn{font-size:16px; background:transparent; border:1px solid var(--line); border-radius:8px; padding:2px 8px; cursor:pointer; opacity:.45;}
   .rainbtn.on{opacity:1; border-color:var(--accent2); background:rgba(0,107,110,.12);}
@@ -534,8 +537,9 @@ try{(function(){
   </div>
   <div class="dates" id="datePills"></div>
   <div class="countrow">
-    <label class="hidecargo"><input type="checkbox" id="hidePax"> 隱藏客運</label>
-    <label class="hidecargo"><input type="checkbox" id="hideCargo" checked> 隱藏貨運</label>
+    <div class="modeseg" id="modeSeg">
+      <button data-mode="pax" class="on">客運</button><button data-mode="cargo">貨運</button>
+    </div>
     <label class="hidecargo"><input type="checkbox" id="showHas" checked> 指定地勤</label>
     <label class="hidecargo"><input type="checkbox" id="hideCX"> 隱藏國泰</label>
     <button id="rainWatch" class="rainbtn" title="機場降雨提醒">🌧</button>
