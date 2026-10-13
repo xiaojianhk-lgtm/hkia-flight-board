@@ -99,8 +99,8 @@
     });
   })();
   /* （已取消長按入口，改用搜尋暗號 Cargo3577） */
-  $("showHas").addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); });
-  $("hideCX").addEventListener("change", function(){ hideCX = !!this.checked; expanded=false; render(); });
+  (function(){ var _sh=$("showHas"); if(_sh) _sh.addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); }); })();
+  (function(){ var _hc=$("hideCX"); if(_hc) _hc.addEventListener("change", function(){ hideCX = !!this.checked; expanded=false; render(); }); })();
   function toggleExpand(){
     if(!expanded){
       /* 展開前記住「而家」線喺畫面嘅位置，render 後放返同一位置，唔跳 */
