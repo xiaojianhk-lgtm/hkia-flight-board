@@ -566,8 +566,24 @@ try{(function(){
     return m ? m[1] : "";
   }
   // 等 DB 載入後：過濾 HAS 貨機＋注入 Menzies bay（唔限時間，顯示全日）
-  var prevCgb = {};  // 記住上次嘅 bay，轉 bay 變紅
-  try{ prevCgb = JSON.parse(localStorage.getItem("nld-prevcgb-v1")||"{}"); }catch(e){ prevCgb = {}; }
+  var prevCgb = {};  // 記住上次嘅 bay，轉 bay 變紅（淨比今晚22:00後）
+  try{
+    var _pc = JSON.parse(localStorage.getItem("nld-prevcgb-v1")||"null");
+    if(_pc && _pc.bays){
+      // 檢查係咪今晚22:00後存嘅
+      var now = new Date();
+      // 跨午夜：如果而家係凌晨0-2點，22:00係尋日
+      var cutoffDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if(now.getHours() < 3) cutoffDay.setDate(cutoffDay.getDate() - 1);
+      var cutoff = new Date(cutoffDay.getFullYear(), cutoffDay.getMonth(), cutoffDay.getDate(), 22, 0, 0);
+      if(_pc.savedAt && _pc.savedAt >= cutoff.getTime()){
+        prevCgb = _pc.bays;
+      }
+      // 唔係今晚嘅就當冇，唔變紅
+    } else if(_pc){
+      prevCgb = _pc;  // 舊格式（冇時間），當冇
+    }
+  }catch(e){ prevCgb = {}; }
   function applyNldFilter(){
     if(!window.DB || !DB.days) return false;
     var cgb = window.CARGO_BAYS || {};
@@ -594,8 +610,7 @@ try{(function(){
         if(filtered.length !== orig.length){ DB.days[dk][tab] = filtered; changed = true; }
       });
     });
-    prevCgb = Object.assign({}, cgb);
-    try{ localStorage.setItem("nld-prevcgb-v1", JSON.stringify(prevCgb)); }catch(e){}
+    try{ localStorage.setItem("nld-prevcgb-v1", JSON.stringify({savedAt: Date.now(), bays: cgb})); }catch(e){}
     return changed;
   }
   setInterval(function(){
