@@ -164,6 +164,7 @@
   .hidecargo{font-size:13px; color:var(--muted); display:flex; align-items:center; gap:5px; cursor:pointer; white-space:nowrap; padding:4px 2px; border-bottom:2px solid transparent; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;}
   .hidecargo input{display:none;}
   .hidecargo:has(input:checked){color:var(--text); font-weight:600; border-bottom-color:var(--accent2);}
+  .hidecargo .twoline{font-size:12px; line-height:1.3; text-align:center;}
   .modeseg{display:flex; background:var(--row-line); border-radius:8px; padding:2px; gap:2px;}
   .modeseg button{border:none; background:transparent; color:var(--muted); font-size:12px; font-weight:600; padding:5px 14px; border-radius:6px; cursor:pointer; white-space:nowrap;}
   .modeseg button.on{background:var(--accent2); color:#fff;}
@@ -479,8 +480,8 @@ try{(function(){
   </div>
   <div class="dates" id="datePills"></div>
   <div class="countrow">
-    <label class="hidecargo"><input type="checkbox" id="showHas" checked> 自己友</label>
-    <label class="hidecargo"><input type="checkbox" id="hideCX"> 配角</label>
+    <label class="hidecargo"><input type="checkbox" id="showHas" checked> <span class="twoline">We<br>handle</span></label>
+    <label class="hidecargo"><input type="checkbox" id="hideCX"> <span class="twoline">Other<br>airlines</span></label>
   </div>
   <div class="searchrow">
     <div class="swrap">
