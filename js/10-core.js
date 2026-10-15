@@ -85,7 +85,7 @@
   /* 到港時間顯示：已降落＋A、預計＋E、只有STA淺灰＋S（排序照用 eff） */
   function arrTimeHtml(f){
     var noAta = !(f.ata && f.ata !== "—");
-    var estShown = f.est && f.est !== "—" && f.est !== f.eta;
+    var estShown = f.est && f.est !== "—";  /* 有est就出E，唔理同eta同唔同 */
     if(!noAta){
       /* L=落地（Landed），A=到閘口（At gate） */
       var landed = /^landed/i.test(f.status_raw || "");
