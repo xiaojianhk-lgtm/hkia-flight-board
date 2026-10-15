@@ -581,7 +581,7 @@ try{(function(){
       }
       // 唔係今晚嘅就當冇，唔變紅
     } else if(_pc){
-      prevCgb = _pc;  // 舊格式（冇時間），當冇
+      prevCgb = {};  // 舊格式（冇時間），當冇，唔變紅
     }
   }catch(e){ prevCgb = {}; }
   function applyNldFilter(){
