@@ -170,55 +170,6 @@
     render();
   });
 
-  /* 推送 Watch 管理（經 ntfy） */
-  (function(){
-    var WORKER = "https://hkia-push.xiaojian-hk.workers.dev";
-    var input = $("watchInput"), addBtn = $("watchAddBtn"), listEl = $("watchList"), msgEl = $("watchMsg");
-    if(!input || !addBtn) return;
-    function setMsg(t){ if(msgEl) msgEl.textContent = t; }
-    async function refresh(){
-      try{
-        var r = await fetch(WORKER + "/push/watch/list");
-        var d = await r.json();
-        if(!d.ok || !listEl) return;
-        if(!d.watches.length){ listEl.innerHTML = '<div style="color:var(--muted);">未有 watch</div>'; return; }
-        listEl.innerHTML = d.watches.map(function(w){
-          var label = w.type === "flight" ? "✈️ " + w.value : "🅿️ " + w.value;
-          return '<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid var(--line);">'
-            + '<span>' + label + '</span>'
-            + '<button data-watch-del="' + w.id + '" style="padding:2px 8px; font-size:11px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--muted);">刪</button></div>';
-        }).join("");
-        listEl.querySelectorAll("[data-watch-del]").forEach(function(b){
-          b.addEventListener("click", async function(){
-            await fetch(WORKER + "/push/watch/remove", {
-              method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id: b.getAttribute("data-watch-del") })
-            });
-            refresh();
-          });
-        });
-      }catch(e){ setMsg("載入失敗"); }
-    }
-    addBtn.addEventListener("click", async function(){
-      var v = (input.value || "").trim().toUpperCase().replace(/\s/g, "");
-      if(!v){ setMsg("打個航班號或 Bay"); return; }
-      // 判斷係航班定 bay：有數字+字母開頭係航班，W/S/N開頭+數字係 bay
-      var type = /^[WSN]\d+$/i.test(v) ? "bay" : "flight";
-      // 如果係航班，去掉 + 號
-      if(type === "flight") v = v.replace(/\+$/, "");
-      try{
-        var r = await fetch(WORKER + "/push/watch/add", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type, value: v })
-        });
-        var d = await r.json();
-        if(d.ok){ input.value = ""; setMsg("✅ 已加"); refresh(); }
-        else setMsg("失敗");
-      }catch(e){ setMsg("失敗：" + e.message); }
-    });
-    refresh();
-  })();
-
   /* 長按：Bay 格=高亮同區泊位，其他位=加備註／手動泊位 */
   var pressOnBay = false;
   function pressStart(e){
