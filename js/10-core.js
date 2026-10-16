@@ -302,7 +302,7 @@
     var frId = _op;
     if(_m && IATA2ICAO[_m[1]]) frId = IATA2ICAO[_m[1]] + _m[2];
     h += "<div style='margin-top:6px;white-space:nowrap;'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button> "+
-         "<button class='nbtn' data-act='fr24' data-fr24='"+frId+"'>✈️ Flightradar24</button>";
+         "<a class='nbtn' style='text-decoration:none;display:inline-block;' href='https://www.flightradar24.com/"+frId+"' target='_blank' rel='noopener'>✈️ Flightradar24</a>";
     // 到港先有飛行時間（avg_dur 如 "3h30m" → "~03:30"）
     if(typ === "arrival" && f.avg_dur){
       var dm = /(\d+)h(\d+)m/.exec(f.avg_dur) || /(\d+)h/.exec(f.avg_dur);
