@@ -170,57 +170,53 @@
     render();
   });
 
-  /* Web Push 訂閱 */
+  /* 推送 Watch 管理（經 ntfy） */
   (function(){
-    var btn = $("pushSubBtn"), msg = $("pushSubMsg");
-    if(!btn) return;
-    // Worker URL（之後要改做實際 deploy 咗嘅 URL）
     var WORKER = "https://hkia-push.xiaojian-hk.workers.dev";
-    function setMsg(t){ if(msg) msg.textContent = t; }
-    btn.addEventListener("click", async function(){
-      if(!("serviceWorker" in navigator) || !("PushManager" in window)){
-        setMsg("呢部機唔支援推送"); return;
-      }
+    var input = $("watchInput"), addBtn = $("watchAddBtn"), listEl = $("watchList"), msgEl = $("watchMsg");
+    if(!input || !addBtn) return;
+    function setMsg(t){ if(msgEl) msgEl.textContent = t; }
+    async function refresh(){
       try{
-        var perm = await Notification.requestPermission();
-        if(perm !== "granted"){ setMsg("未允許通知"); return; }
-        setMsg("訂閱緊...");
-        var reg = await navigator.serviceWorker.ready;
-        // 攞 VAPID public key
-        var keyRes = await fetch(WORKER + "/push/vapid-public");
-        var vapidPub = await keyRes.text();
-        var sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlToUint8(vapidPub)
+        var r = await fetch(WORKER + "/push/watch/list");
+        var d = await r.json();
+        if(!d.ok || !listEl) return;
+        if(!d.watches.length){ listEl.innerHTML = '<div style="color:var(--muted);">未有 watch</div>'; return; }
+        listEl.innerHTML = d.watches.map(function(w){
+          var label = w.type === "flight" ? "✈️ " + w.value : "🅿️ " + w.value;
+          return '<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid var(--line);">'
+            + '<span>' + label + '</span>'
+            + '<button data-watch-del="' + w.id + '" style="padding:2px 8px; font-size:11px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--muted);">刪</button></div>';
+        }).join("");
+        listEl.querySelectorAll("[data-watch-del]").forEach(function(b){
+          b.addEventListener("click", async function(){
+            await fetch(WORKER + "/push/watch/remove", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: b.getAttribute("data-watch-del") })
+            });
+            refresh();
+          });
         });
-        // 送去 backend
-        await fetch(WORKER + "/push/subscribe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(sub.toJSON())
-        });
-        setMsg("✅ 已啟用推送通知");
-        btn.textContent = "🔔 推送已啟用";
-      }catch(e){
-        setMsg("失敗：" + (e.message || e));
-      }
-    });
-    function urlToUint8(b64){
-      var pad = "=".repeat((4 - b64.length % 4) % 4);
-      var b = (b64 + pad).replace(/-/g, "+").replace(/_/g, "/");
-      var raw = atob(b);
-      var out = new Uint8Array(raw.length);
-      for(var i=0;i<raw.length;i++) out[i] = raw.charCodeAt(i);
-      return out;
+      }catch(e){ setMsg("載入失敗"); }
     }
-    // 開頁檢查下係咪已經訂閱咗
-    (async function(){
+    addBtn.addEventListener("click", async function(){
+      var v = (input.value || "").trim().toUpperCase().replace(/\s/g, "");
+      if(!v){ setMsg("打個航班號或 Bay"); return; }
+      // 判斷係航班定 bay：有數字+字母開頭係航班，W/S/N開頭+數字係 bay
+      var type = /^[WSN]\d+$/i.test(v) ? "bay" : "flight";
+      // 如果係航班，去掉 + 號
+      if(type === "flight") v = v.replace(/\+$/, "");
       try{
-        var reg = await navigator.serviceWorker.ready;
-        var sub = await reg.pushManager.getSubscription();
-        if(sub){ btn.textContent = "🔔 推送已啟用"; setMsg("已訂閱"); }
-      }catch(e){}
-    })();
+        var r = await fetch(WORKER + "/push/watch/add", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type, value: v })
+        });
+        var d = await r.json();
+        if(d.ok){ input.value = ""; setMsg("✅ 已加"); refresh(); }
+        else setMsg("失敗");
+      }catch(e){ setMsg("失敗：" + e.message); }
+    });
+    refresh();
   })();
 
   /* 長按：Bay 格=高亮同區泊位，其他位=加備註／手動泊位 */
