@@ -176,7 +176,7 @@
     if(pressTimer) clearTimeout(pressTimer);
     var row = rowFromEvent(e);
     if(!row) return;
-    if(e.target.closest && e.target.closest("[data-act]")) return;
+    if(e.target.closest && (e.target.closest("[data-act]") || e.target.closest("a[href*='flightradar24']"))) return;
     var it = lastItems[+row.getAttribute("data-k")];
     if(!it) return;
     pressItem = it;
