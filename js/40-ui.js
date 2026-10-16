@@ -147,10 +147,6 @@
       if(act === "note-save"){ commitNote(); }
       else if(act === "note-cancel" && it2){ deleteNote(it2.typ, it2.f); }
       else if(act === "copy-flight" && it2){ copyFlight(it2.typ, it2.f); }
-      else if(act === "fr24"){
-        var cs = actEl.getAttribute("data-fr24") || "";
-        openFr24(cs);
-      }
       return;
     }
 
@@ -173,28 +169,6 @@
     detailKey = (detailKey === k) ? null : k;
     render();
   });
-
-  /* FR24：試下攞 live ID 直跳 App，唔得就 fallback 普通 link */
-  function openFr24(callsign){
-    if(!callsign) return;
-    var fallback = "https://fr24.com/" + callsign;
-    try{
-      fetch("https://www.flightradar24.com/v1/search/web/find?query=" + encodeURIComponent(callsign) + "&limit=5")
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-          var results = (d && d.results) || [];
-          for(var i=0;i<results.length;i++){
-            var r = results[i];
-            if(r.type === "live" && r.id && r.detail && r.detail.callsign){
-              window.open("https://fr24.com/" + r.detail.callsign + "/" + r.id, "_blank");
-              return;
-            }
-          }
-          window.open(fallback, "_blank");
-        })
-        .catch(function(){ window.open(fallback, "_blank"); });
-    }catch(e){ window.open(fallback, "_blank"); }
-  }
 
   /* 長按：Bay 格=高亮同區泊位，其他位=加備註／手動泊位 */
   var pressOnBay = false;
