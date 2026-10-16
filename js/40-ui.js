@@ -401,14 +401,6 @@
     var isDbl = (tapTimes.length === 2) && (now - lastTapT < 400) &&
                 ((x-lastTapX)*(x-lastTapX) + (y-lastTapY)*(y-lastTapY) < 1600);
     lastTapT = now; lastTapX = x; lastTapY = y;
-    if(tapTimes.length >= 3){
-      tapTimes = [];
-      if($("aboutOverlay").classList.contains("open")) return;
-      if(document.activeElement === q) return;
-      e.preventDefault();
-      q.focus();
-      return;
-    }
     if(isDbl && !noteEditingKey &&
        !$("aboutOverlay").classList.contains("open") &&
        document.activeElement !== q &&
