@@ -259,19 +259,35 @@
   var PUSH_TOKEN = "f81b0bfe767f8302ef17f701077e3b65";
   function pushWatchAdd(type, value){
     try{
-      fetch(PUSH_WORKER + "/push/watch/add", {
-        method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
-        body: JSON.stringify({ type: type, value: value })
-      }).catch(function(){});
+      (async function(){
+        var endpoint = "";
+        try{
+          var reg = await navigator.serviceWorker.ready;
+          var sub = await reg.pushManager.getSubscription();
+          if(sub) endpoint = sub.endpoint || "";
+        }catch(e){}
+        fetch(PUSH_WORKER + "/push/watch/add", {
+          method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
+          body: JSON.stringify({ type: type, value: value, deviceEndpoint: endpoint })
+        }).catch(function(){});
+      })();
     }catch(e){}
   }
   function pushWatchRemove(type, value){
     try{
-      var id = type + ":" + (value || "").toUpperCase().replace(/\s/g, "");
-      fetch(PUSH_WORKER + "/push/watch/remove", {
-        method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
-        body: JSON.stringify({ id: id })
-      }).catch(function(){});
+      (async function(){
+        var endpoint = "";
+        try{
+          var reg = await navigator.serviceWorker.ready;
+          var sub = await reg.pushManager.getSubscription();
+          if(sub) endpoint = sub.endpoint || "";
+        }catch(e){}
+        var id = type + ":" + (value || "").toUpperCase().replace(/\s/g, "");
+        fetch(PUSH_WORKER + "/push/watch/remove", {
+          method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
+          body: JSON.stringify({ id: id, deviceEndpoint: endpoint })
+        }).catch(function(){});
+      })();
     }catch(e){}
   }
 
