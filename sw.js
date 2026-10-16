@@ -1,5 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v149";
+var CACHE = "hkia-v150";
 var ASSETS = [
   "./hkiaflight.html",
   "./watch.html",
@@ -61,18 +61,27 @@ self.addEventListener("fetch", function(e){
   );
 });
 
-/* Web Push：收到 push 顯示通知 */
+/* Web Push：收到 push，去 Worker 攞內容再顯示 */
 self.addEventListener("push", function(e){
-  var data = {};
-  try{ data = e.data ? e.data.json() : {}; }catch(err){}
-  var title = data.title || "航班資訊";
-  var opts = {
-    body: data.body || "",
-    icon: "./plane-icon.png",
-    badge: "./plane-icon.png",
-    data: { url: data.url || "./hkiaflight.html" }
-  };
-  e.waitUntil(self.registration.showNotification(title, opts));
+  e.waitUntil((async function(){
+    var title = "航班資訊", body = "有更新", url = "./hkiaflight.html";
+    try{
+      // 攞呢部機嘅 subscription endpoint
+      var reg = await self.registration.pushManager.getSubscription();
+      var ep = reg ? reg.endpoint : "";
+      var r = await fetch("https://hkia-push.xiaojian-hk.workers.dev/push/pending/get?ep=" + encodeURIComponent(ep));
+      var d = await r.json();
+      if(d.title) title = d.title;
+      if(d.body) body = d.body;
+      if(d.url) url = d.url;
+    }catch(err){}
+    return self.registration.showNotification(title, {
+      body: body,
+      icon: "./plane-icon.png",
+      badge: "./plane-icon.png",
+      data: { url: url }
+    });
+  })());
 });
 self.addEventListener("notificationclick", function(e){
   e.notification.close();
