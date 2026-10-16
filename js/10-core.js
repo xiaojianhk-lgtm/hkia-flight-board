@@ -295,10 +295,10 @@
     if(f.stand_old && f.stand_old !== f.stand){
       h += "<div><span>"+(typ==="arrival"?"泊位變動：":"閘口變動：")+"</span>"+esc(f.stand_old)+" → "+esc(f.stand)+"</div>";
     }
-    // FR24 用嘅 flight id：去空格＋去數字前導零（CX091→cx91）
-    var frId = opId(f).toLowerCase().replace(/^([a-z]+)0+(\d)/, "$1$2");
+    // FR24 用嘅 flight id：去空格轉大階（CX091→CX091），用 fr24.com 短 link 直跳 App
+    var frId = opId(f).replace(/\s/g, "").toUpperCase();
     h += "<div style='margin-top:6px;white-space:nowrap;'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button> "+
-         "<a class='nbtn' style='text-decoration:none;display:inline-block;font-family:inherit;line-height:normal;vertical-align:baseline;' href='https://www.flightradar24.com/data/flights/"+frId+"' rel='noopener'>✈️ Flightradar24</a>";
+         "<a class='nbtn' style='text-decoration:none;display:inline-block;font-family:inherit;line-height:normal;vertical-align:baseline;' href='https://fr24.com/"+frId+"' rel='noopener'>✈️ Flightradar24</a>";
     // 到港先有飛行時間（avg_dur 如 "3h30m" → "~03:30"）
     if(typ === "arrival" && f.avg_dur){
       var dm = /(\d+)h(\d+)m/.exec(f.avg_dur) || /(\d+)h/.exec(f.avg_dur);
