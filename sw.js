@@ -1,5 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v140";
+var CACHE = "hkia-v141";
 var ASSETS = [
   "./hkiaflight.html",
   "./watch.html",
@@ -59,4 +59,23 @@ self.addEventListener("fetch", function(e){
       });
     }).catch(function(){ return caches.match("./hkiaflight.html"); })
   );
+});
+
+/* Web Push：收到 push 顯示通知 */
+self.addEventListener("push", function(e){
+  var data = {};
+  try{ data = e.data ? e.data.json() : {}; }catch(err){}
+  var title = data.title || "航班資訊";
+  var opts = {
+    body: data.body || "",
+    icon: "./plane-icon.png",
+    badge: "./plane-icon.png",
+    data: { url: data.url || "./hkiaflight.html" }
+  };
+  e.waitUntil(self.registration.showNotification(title, opts));
+});
+self.addEventListener("notificationclick", function(e){
+  e.notification.close();
+  var url = (e.notification.data && e.notification.data.url) || "./hkiaflight.html";
+  e.waitUntil(clients.openWindow(url));
 });
