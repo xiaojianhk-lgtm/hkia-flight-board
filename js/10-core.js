@@ -295,14 +295,10 @@
     if(f.stand_old && f.stand_old !== f.stand){
       h += "<div><span>"+(typ==="arrival"?"泊位變動：":"閘口變動：")+"</span>"+esc(f.stand_old)+" → "+esc(f.stand)+"</div>";
     }
-    // FR24 用嘅 flight id：IATA轉ICAO（CX→CPA），用 fr24.com 短 link 直跳 App
-    var IATA2ICAO = {CX:"CPA",PX:"ANG",JX:"SJX",KE:"KAL",JL:"JAL",QR:"QTR",FJ:"FJI",BI:"RBA",LH:"DLH",LX:"SWR",DL:"DAL",UO:"HKE",AK:"AXM",FD:"AIQ",Z2:"APG",QZ:"AWQ",GK:"JJP","7C":"JJA",LD:"AHK",QY:"BOX",MS:"MSR",CK:"CKK"};
-    var _op = opId(f).replace(/\s/g, "").toUpperCase();
-    var _m = _op.match(/^([A-Z0-9]+)(\d+)$/);
-    var frId = _op;
-    if(_m && IATA2ICAO[_m[1]]) frId = IATA2ICAO[_m[1]] + _m[2];
+    // FR24 用嘅 flight id：去空格＋去數字前導零（CX091→cx91）
+    var frId = opId(f).toLowerCase().replace(/^([a-z]+)0+(\d)/, "$1$2");
     h += "<div style='margin-top:6px;white-space:nowrap;'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button> "+
-         "<a class='nbtn' style='text-decoration:none;display:inline-block;' href='https://www.flightradar24.com/"+frId+"' target='_blank' rel='noopener'>✈️ Flightradar24</a>";
+         "<a class='nbtn' style='text-decoration:none;display:inline-block;font-family:inherit;line-height:normal;vertical-align:baseline;' href='https://www.flightradar24.com/data/flights/"+frId+"' rel='noopener'>✈️ Flightradar24</a>";
     // 到港先有飛行時間（avg_dur 如 "3h30m" → "~03:30"）
     if(typ === "arrival" && f.avg_dur){
       var dm = /(\d+)h(\d+)m/.exec(f.avg_dur) || /(\d+)h/.exec(f.avg_dur);
