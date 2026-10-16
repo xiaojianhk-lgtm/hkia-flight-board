@@ -110,6 +110,7 @@
         watchBays[bay].silent = !!silent;
         flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
         saveBayWatch(); if(!silent) showWatchPill();
+        if(!silent) pushWatchAdd("bay", bay);
       })
       .catch(function(){
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
@@ -117,11 +118,15 @@
         watchBays[bay].silent = !!silent;
         flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
         saveBayWatch(); if(!silent) showWatchPill();
+        if(!silent) pushWatchAdd("bay", bay);
       });
   }
   function disarmWatch(bay){
-    if(bay){ delete watchBays[bay]; }
-    else{ watchBays = {}; }
+    if(bay){ delete watchBays[bay]; pushWatchRemove("bay", bay); }
+    else{ 
+      Object.keys(watchBays).forEach(function(b){ pushWatchRemove("bay", b); });
+      watchBays = {}; 
+    }
     saveBayWatch(); showWatchPill();
   }
   function showWatchPill(){
@@ -249,6 +254,26 @@
 
   /* ---------- 指定航班泊位提醒（隱藏功能：搜尋欄輸入 FLIGHT@） ---------- */
   var flightWatches = {};  /* flightId -> {seenBay:""} */
+
+  var PUSH_WORKER = "https://hkia-push.xiaojian-hk.workers.dev";
+  function pushWatchAdd(type, value){
+    try{
+      fetch(PUSH_WORKER + "/push/watch/add", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: type, value: value })
+      }).catch(function(){});
+    }catch(e){}
+  }
+  function pushWatchRemove(type, value){
+    try{
+      var id = type + ":" + (value || "").toUpperCase().replace(/\s/g, "");
+      fetch(PUSH_WORKER + "/push/watch/remove", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: id })
+      }).catch(function(){});
+    }catch(e){}
+  }
+
   var FW_KEY = "hkia-flightwatch-v1";
   function saveFlightWatch(){
     try{ localStorage.setItem(FW_KEY, JSON.stringify({flights:flightWatches})); }catch(e){}
@@ -289,10 +314,14 @@
     var bay = it ? flightBay(it.f) : "";
     flightWatches[fid] = { seenBay: bay, date: target, silent: !!silent };
     saveFlightWatch(); if(!silent) showWatchPill();
+    if(!silent) pushWatchAdd("flight", fid);
   }
   function disarmFlightWatch(fid){
-    if(fid){ delete flightWatches[fid]; }
-    else{ flightWatches = {}; }
+    if(fid){ delete flightWatches[fid]; pushWatchRemove("flight", fid); }
+    else{ 
+      Object.keys(flightWatches).forEach(function(f){ pushWatchRemove("flight", f); });
+      flightWatches = {}; 
+    }
     saveFlightWatch(); showWatchPill();
   }
   function checkFlightWatch(){
