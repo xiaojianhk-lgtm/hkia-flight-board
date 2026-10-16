@@ -522,10 +522,18 @@ try{(function(){
         如果對內容有疑問，或者想本站移除相關資料，歡迎聯繫 xiao.jian@me.com，我會儘快處理。
       </div>
     </details>
-    <div style="text-align:center; margin:8px 0;">
-      <button id="pushSubBtn" style="font-size:12px; padding:6px 12px; border:1px solid var(--line); border-radius:16px; background:transparent; color:var(--muted);">🔔 啟用推送通知</button>
-      <div id="pushSubMsg" style="font-size:11px; color:var(--muted); margin-top:4px;"></div>
-    </div>
+    <details style="margin:8px 0; font-size:12px; color:var(--muted);">
+      <summary style="cursor:pointer; text-align:center; color:var(--text);">🔔 推送通知設定</summary>
+      <div style="margin-top:8px; padding:0 4px;">
+        <div style="display:flex; gap:4px; margin-bottom:8px;">
+          <input id="watchInput" placeholder="航班號 (CX974) 或 Bay (W63)" style="flex:1; padding:6px 8px; font-size:12px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--text);">
+          <button id="watchAddBtn" style="padding:6px 12px; font-size:12px; border:1px solid var(--line); border-radius:8px; background:var(--accent); color:#fff;">加</button>
+        </div>
+        <div id="watchList" style="font-size:12px;"></div>
+        <div id="watchMsg" style="font-size:11px; color:var(--muted); margin-top:4px;"></div>
+        <div style="font-size:11px; color:var(--muted); margin-top:8px;">要收系統級推送，請裝 <b>ntfy</b> App 並訂閱 <b>hkia-shaw-2026</b></div>
+      </div>
+    </details>
     <button id="aboutClose">關閉</button>
   </div>
 </div>
