@@ -256,10 +256,11 @@
   var flightWatches = {};  /* flightId -> {seenBay:""} */
 
   var PUSH_WORKER = "https://hkia-push.xiaojian-hk.workers.dev";
+  var PUSH_TOKEN = "f81b0bfe767f8302ef17f701077e3b65";
   function pushWatchAdd(type, value){
     try{
       fetch(PUSH_WORKER + "/push/watch/add", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
         body: JSON.stringify({ type: type, value: value })
       }).catch(function(){});
     }catch(e){}
@@ -268,7 +269,7 @@
     try{
       var id = type + ":" + (value || "").toUpperCase().replace(/\s/g, "");
       fetch(PUSH_WORKER + "/push/watch/remove", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
         body: JSON.stringify({ id: id })
       }).catch(function(){});
     }catch(e){}
