@@ -170,6 +170,59 @@
     render();
   });
 
+  /* Web Push 訂閱 */
+  (function(){
+    var btn = $("pushSubBtn"), msg = $("pushSubMsg");
+    if(!btn) return;
+    // Worker URL（之後要改做實際 deploy 咗嘅 URL）
+    var WORKER = "https://hkia-push.xiaojian.workers.dev";
+    function setMsg(t){ if(msg) msg.textContent = t; }
+    btn.addEventListener("click", async function(){
+      if(!("serviceWorker" in navigator) || !("PushManager" in window)){
+        setMsg("呢部機唔支援推送"); return;
+      }
+      try{
+        var perm = await Notification.requestPermission();
+        if(perm !== "granted"){ setMsg("未允許通知"); return; }
+        setMsg("訂閱緊...");
+        var reg = await navigator.serviceWorker.ready;
+        // 攞 VAPID public key
+        var keyRes = await fetch(WORKER + "/push/vapid-public");
+        var vapidPub = await keyRes.text();
+        var sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlToUint8(vapidPub)
+        });
+        // 送去 backend
+        await fetch(WORKER + "/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(sub.toJSON())
+        });
+        setMsg("✅ 已啟用推送通知");
+        btn.textContent = "🔔 推送已啟用";
+      }catch(e){
+        setMsg("失敗：" + (e.message || e));
+      }
+    });
+    function urlToUint8(b64){
+      var pad = "=".repeat((4 - b64.length % 4) % 4);
+      var b = (b64 + pad).replace(/-/g, "+").replace(/_/g, "/");
+      var raw = atob(b);
+      var out = new Uint8Array(raw.length);
+      for(var i=0;i<raw.length;i++) out[i] = raw.charCodeAt(i);
+      return out;
+    }
+    // 開頁檢查下係咪已經訂閱咗
+    (async function(){
+      try{
+        var reg = await navigator.serviceWorker.ready;
+        var sub = await reg.pushManager.getSubscription();
+        if(sub){ btn.textContent = "🔔 推送已啟用"; setMsg("已訂閱"); }
+      }catch(e){}
+    })();
+  })();
+
   /* 長按：Bay 格=高亮同區泊位，其他位=加備註／手動泊位 */
   var pressOnBay = false;
   function pressStart(e){
