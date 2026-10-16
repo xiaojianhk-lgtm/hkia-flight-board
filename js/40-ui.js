@@ -502,6 +502,9 @@
   /* 瀏覽器唔好自動還原舊 scroll 位，定位由我哋控制 */
   try{ history.scrollRestoration = "manual"; }catch(e){}
   setBarH();
+  /* 保險：遲啲再量多次（字體／內容載入後高度可能變） */
+  setTimeout(setBarH, 500);
+  setTimeout(setBarH, 2000);
 
   /* 載入（如果鎖住咗，等解鎖先行） */
   function bootLoad(){
