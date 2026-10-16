@@ -175,7 +175,7 @@
     var btn = $("pushSubBtn"), msg = $("pushSubMsg");
     if(!btn) return;
     // Worker URL（之後要改做實際 deploy 咗嘅 URL）
-    var WORKER = "https://hkia-push.xiaojian.workers.dev";
+    var WORKER = "https://hkia-push.xiaojian-hk.workers.dev";
     function setMsg(t){ if(msg) msg.textContent = t; }
     btn.addEventListener("click", async function(){
       if(!("serviceWorker" in navigator) || !("PushManager" in window)){
