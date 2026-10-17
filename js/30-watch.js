@@ -303,6 +303,19 @@
     try{
       var fw = JSON.parse(localStorage.getItem(FW_KEY) || "null");
       if(fw && fw.flights) flightWatches = fw.flights;
+      // 自動清理：航班日期已過（早過今日）嘅 watch 自動刪除
+      var today = new Date();
+      var todayStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0") + "-" + String(today.getDate()).padStart(2,"0");
+      var changed = false;
+      Object.keys(flightWatches).forEach(function(fid){
+        var w = flightWatches[fid];
+        if(w && w.date && w.date < todayStr){
+          delete flightWatches[fid];
+          changed = true;
+          try{ pushWatchRemove("flight", fid); }catch(e){}
+        }
+      });
+      if(changed) saveFlightWatch();
     }catch(e){}
   }
   function flightWatchCount(){ return Object.keys(flightWatches).length; }
