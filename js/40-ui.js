@@ -187,10 +187,18 @@
     btn.addEventListener("click", async function(){
       if(!("serviceWorker" in navigator) || !("PushManager" in window)){ setMsg("唔支援"); return; }
       try{
+        var reg = await navigator.serviceWorker.ready;
+        var existing = await reg.pushManager.getSubscription();
+        if(existing){
+          // 已訂閱 → 取消訂閱
+          setMsg("取消緊...");
+          await existing.unsubscribe();
+          setMsg("已取消"); btn.textContent = "🔔 啟用推送通知";
+          return;
+        }
         var perm = await Notification.requestPermission();
         if(perm !== "granted"){ setMsg("未允許"); return; }
         setMsg("訂閱緊...");
-        var reg = await navigator.serviceWorker.ready;
         var keyRes = await fetch(WORKER + "/push/vapid-public");
         var vapidPub = await keyRes.text();
         var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlToUint8(vapidPub.trim()) });
