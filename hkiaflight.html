@@ -9,8 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
+
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="航班資訊">
 <meta name="theme-color" content="#006b6e">
@@ -188,10 +187,7 @@ try{
   header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
   header .caps .hkg{color:var(--accent2); font-weight:800;}
   #aboutBtn{margin-left:auto; align-self:flex-start; margin-top:2px;}
-  .linkbtn{
-    background:none; border:0;
-    color:var(--muted); font-size:12px; cursor:pointer; padding:6px 2px; letter-spacing:2px;
-  }
+  
   .linkbtn:active{opacity:.55;}
   /* ---------- sticky 頂部 ---------- */
   .stickybar{
@@ -243,9 +239,7 @@ try{
   .modeseg button{border:none; background:transparent; color:var(--muted); font-size:14px; padding:2px; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent; border-bottom:2px solid transparent;}
   .modeseg button.on{color:var(--text); font-weight:700; border-bottom-color:var(--accent2);}
   .modeseg .sep{color:var(--line); font-size:12px;}
-  .hidecargo input{accent-color:var(--accent2);}
-  .rainbtn{font-size:16px; background:transparent; border:1px solid var(--line); border-radius:8px; padding:2px 8px; cursor:pointer; opacity:.45;}
-  .rainbtn.on{opacity:1; border-color:var(--accent2); background:rgba(0,107,110,.12);}
+  
   .searchrow{padding:8px 2px 6px;}
   #watchpills{display:flex; flex-wrap:wrap; gap:6px;}
   #watchpills[hidden]{display:none;}
@@ -343,7 +337,7 @@ try{
   .cbadge{
     display:inline-block; font-size:.615em; background:var(--badge-bg); color:var(--badge-fg);
     border:1px solid var(--badge-bd); border-radius:3px; padding:0 2px; margin-left:2px;
-    line-height:1.4; vertical-align:2px;
+    line-height:1.4; 
     vertical-align:1px; font-weight:400;
   }
   .cbadge.cancel{background:rgba(211,47,47,.14); color:var(--red); border-color:var(--red); font-weight:700;}
@@ -500,7 +494,7 @@ try{(function(){
     <ul>
       <li>長按航班：加備註（客機）／手動泊位（貨機），存喺呢部機。</li>
       <li>長按泊位：高亮所有同區泊位（再長按取消，長按另一區轉過去）。</li>
-      <li>連點兩下：跳返時間線；連點三下：開搜尋。</li>
+      <li>連點兩下：跳返時間線。</li>
     </ul>
     <h4>提醒</h4>
     <ul>
