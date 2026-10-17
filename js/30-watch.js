@@ -266,6 +266,10 @@
           var sub = await reg.pushManager.getSubscription();
           if(sub) endpoint = sub.endpoint || "";
         }catch(e){}
+        if(!endpoint){
+          try{ showToast("請先去關於頁啟用推送通知"); }catch(e){}
+          return;
+        }
         fetch(PUSH_WORKER + "/push/watch/add", {
           method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
           body: JSON.stringify({ type: type, value: value, deviceEndpoint: endpoint })
@@ -383,10 +387,6 @@
     if(rw && typeof rw.on === "boolean") rainWatch = rw;
   }catch(e){}
   function saveRainWatch(){ try{ localStorage.setItem(RAIN_KEY, JSON.stringify(rainWatch)); }catch(e){} }
-  function updateRainBtn(){
-    var b = $("rainWatch");
-    if(b) b.classList.toggle("on", !!rainWatch.on);
-  }
   function checkRainWatch(){
     if(!rainWatch.on) return;
     fetch("https://api.open-meteo.com/v1/forecast?latitude=22.308&longitude=113.915&hourly=precipitation_probability&timezone=Asia%2FHong_Kong&forecast_days=2")
@@ -420,13 +420,7 @@
     var html = "<div>最高機率 <b>"+prob+"%</b>（約 "+hh+":"+mm+"）</div><div style='color:var(--muted);font-size:12px;margin-top:4px'>資料來源：Open-Meteo 預報</div>";
     queueAlert("🌧 機場未來 3 小時可能有雨", html);
   }
-  (function(){ var _rw=$("rainWatch"); if(_rw) _rw.addEventListener("click", function(){
-    rainWatch.on = !rainWatch.on;
-    if(!rainWatch.on) rainWatch.alertedAt = "";
-    saveRainWatch(); updateRainBtn();
-    if(rainWatch.on) checkRainWatch();
-  }); })();
-  updateRainBtn();
+
 
   /* ---------- 天文台警告 banner（打風／暴雨先顯示） ---------- */
   function checkHkoWarn(){
