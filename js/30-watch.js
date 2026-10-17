@@ -497,3 +497,30 @@
   if(window.__hkiaVerifyAuth) window.__hkiaVerifyAuth();
 
   loadWatch(); loadFlightWatch();
+
+  /* Web Push 撳入嚟：?highlight=CX479，跳去嗰班機＋高亮（同撳 pill 一樣） */
+  (function(){
+    try{
+      var m = location.search.match(/[?&]highlight=([^&]+)/);
+      if(!m) return;
+      var hl = decodeURIComponent(m[1]).toUpperCase();
+      var tries = 0;
+      var timer = setInterval(function(){
+        tries++;
+        if(window.lastItems && window.lastItems.length > 0){
+          clearInterval(timer);
+          if(/^[A-Z]{2}\d+/.test(hl)){
+            gotoFlight(hl);
+          }else{
+            try{
+              var sb = document.getElementById("searchBox");
+              if(sb){ sb.value = hl; sb.dispatchEvent(new Event("input")); }
+            }catch(e){}
+          }
+          try{ history.replaceState(null, "", location.pathname); }catch(e){}
+        }else if(tries > 50){
+          clearInterval(timer);
+        }
+      }, 200);
+    }catch(e){}
+  })();
