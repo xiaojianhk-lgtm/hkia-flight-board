@@ -410,6 +410,7 @@
     }
   }, {passive:true});
   function doPullRefresh(done){
+    if(!DB){ done("failed"); return; }
     if(window.__hkiaCheckTemp) window.__hkiaCheckTemp(); /* 順手更新機場溫度 */
     fetch("data.json?_="+Date.now(), {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
