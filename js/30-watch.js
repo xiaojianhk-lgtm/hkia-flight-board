@@ -526,7 +526,7 @@
             gotoFlight(hl);
           }else{
             try{
-              var sb = document.getElementById("searchBox");
+              var sb = document.getElementById("q");
               if(sb){ sb.value = hl; sb.dispatchEvent(new Event("input")); }
             }catch(e){}
           }
