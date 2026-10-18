@@ -253,12 +253,14 @@ function render(){
   var items = [];
   (DB.days[dk].arrival||[]).forEach(function(f){
     if(T1M_AIRLINES.indexOf(airlineOf(f)) < 0) return;
+    if(f.cargo) return; // T1M 淨係客機，濾走貨機
     var code = opCode(f);
     if(query && code.indexOf(query)<0 && (f.destination||"").toUpperCase().indexOf(query)<0) return;
     items.push({f:f, isArr:true, sk: toMin(effTime(f,true))});
   });
   (DB.days[dk].departure||[]).forEach(function(f){
     if(T1M_AIRLINES.indexOf(airlineOf(f)) < 0) return;
+    if(f.cargo) return; // T1M 淨係客機，濾走貨機
     var code = opCode(f);
     if(query && code.indexOf(query)<0 && (f.origin||"").toUpperCase().indexOf(query)<0) return;
     items.push({f:f, isArr:false, sk: toMin(effTime(f,false)) - 50}); // 客機 -50
