@@ -68,6 +68,10 @@ thead th.r, tbody td.r{text-align:right;}
 tbody td{padding:10px 4px; border-bottom:1px solid rgba(31,58,85,.5); font-weight:600;}
 td.time{color:var(--blue);}
 td .bay{border-left:1px solid var(--line); border-right:1px solid var(--line); padding-left:8px; padding-right:8px;}
+/* 時間標記（同主頁一樣） */
+.tmark{font-size:11px; margin-left:2px; opacity:.8;}
+.tchg{color:#ef5350 !important;}
+.tsta{opacity:.85;}
 .empty{text-align:center; color:var(--muted); padding:40px 20px; font-size:14px;}
 .loading{text-align:center; color:var(--muted); padding:40px; }
 .foot{padding:16px; text-align:center; font-size:11px; color:var(--muted);}
@@ -223,13 +227,27 @@ async function loadData(){
 }
 
 function fmtTime(f, isArr){
-  var est = f.est;
-  if(est && est!=="—" && est!=="") return {t: est.slice(0,5), m:"E"};
-  var eta = isArr ? f.eta : f.etd;
-  if(eta && eta!=="—" && eta!=="") return {t: String(eta).slice(0,5), m:"E"};
-  var st = isArr ? f.sta : f.std;
-  return {t: (st||"").slice(0,5), m:"S"};
+  // 同主頁一模一樣嘅時間邏輯
+  if(isArr){
+    var noAta = !(f.ata && f.ata !== "—");
+    var estShown = f.est && f.est !== "—";
+    if(!noAta){
+      var landed = /^landed/i.test(f.status_raw || "");
+      var mk = landed ? "L" : "A";
+      return {html: esc(f.ata)+'<span class="tmark">'+mk+'</span>', t: f.ata.slice(0,5)};
+    }
+    if(estShown) return {html: esc(f.est)+'<span class="tmark">E</span>', t: f.est.slice(0,5)};
+    return {html: '<span class="tsta">'+esc(f.eta||"—")+'<span class="tmark">S</span></span>', t: (f.eta||"").slice(0,5)};
+  }else{
+    var t = effTime(f,false);
+    var flown = f.atd && f.atd !== "—";
+    if(flown) return {html: esc(t)+'<span class="tmark">A</span>', t: t.slice(0,5)};
+    var changed = f.est && f.est !== "—" && f.est !== f.etd;
+    if(changed) return {html: '<span class="tchg">'+esc(t)+'</span><span class="tmark tchg">E</span>', t: t.slice(0,5)};
+    return {html: esc(t)+'<span class="tmark">E</span>', t: t.slice(0,5)};
+  }
 }
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
 
 function toMin(t){
   if(!t || t==="—") return 99999;
@@ -299,8 +317,8 @@ function render(){
     var fid = (isArr?"↓ ":"↑ ") + code;
     html += "<tr><td>"+(isArr?fid:"")+"</td><td>"+(!isArr?fid:"")+"</td>"+
       '<td class="c">'+apt+"</td>"+
-      "<td>"+(isArr?'<span style="color:var(--blue);font-weight:600;">'+tm.t+tm.m+"</span>":"")+"</td>"+
-      "<td>"+(!isArr?'<span style="color:var(--blue);font-weight:600;">'+tm.t+tm.m+"</span>":"")+"</td>"+
+      '<td class="time">'+(isArr?tm.html:"")+"</td>"+
+      '<td class="time">'+(!isArr?tm.html:"")+"</td>"+
       '<td class="r"><span class="bay">'+bay+"</span></td></tr>";
   });
   html += "</tbody></table>";
