@@ -272,7 +272,7 @@
         }
         fetch(PUSH_WORKER + "/push/watch/add", {
           method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
-          body: JSON.stringify({ type: type, value: value, deviceEndpoint: endpoint, date: date || "", seenBay: seenBay || "" })
+          body: JSON.stringify((function(){ var _d=""; try{ _d=localStorage.getItem("hkia-device-id")||""; }catch(e){} return { type: type, value: value, deviceId: _d, date: date || "", seenBay: seenBay || "" }; })())
         }).catch(function(){});
       })();
     }catch(e){}
@@ -289,7 +289,7 @@
         var id = type + ":" + (value || "").toUpperCase().replace(/\s/g, "");
         fetch(PUSH_WORKER + "/push/watch/remove", {
           method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
-          body: JSON.stringify({ id: id, deviceEndpoint: endpoint })
+          body: JSON.stringify((function(){ var _d=""; try{ _d=localStorage.getItem("hkia-device-id")||""; }catch(e){} return { id: id, deviceId: _d }; })())
         }).catch(function(){});
       })();
     }catch(e){}
