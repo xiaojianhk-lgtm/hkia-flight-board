@@ -321,14 +321,14 @@ function render(){
     if(T1M_AIRLINES.indexOf(airlineOf(f)) < 0) return;
     if(f.cargo) return; // T1M 淨係客機，濾走貨機
     var code = opCode(f);
-    if(query && code.indexOf(query)<0 && (f.destination||"").toUpperCase().indexOf(query)<0) return;
+    if(query && code.indexOf(query)<0 && (f.via||"").toUpperCase().indexOf(query)<0) return;
     items.push({f:f, isArr:true, sk: toMin(effTime(f,true))});
   });
   (DB.days[dk].departure||[]).forEach(function(f){
     if(T1M_AIRLINES.indexOf(airlineOf(f)) < 0) return;
     if(f.cargo) return; // T1M 淨係客機，濾走貨機
     var code = opCode(f);
-    if(query && code.indexOf(query)<0 && (f.origin||"").toUpperCase().indexOf(query)<0) return;
+    if(query && code.indexOf(query)<0 && (f.via||"").toUpperCase().indexOf(query)<0) return;
     items.push({f:f, isArr:false, sk: toMin(effTime(f,false)) - 50}); // 客機 -50
   });
   items.sort(function(a,b){ return a.sk - b.sk; });
@@ -359,7 +359,9 @@ function render(){
     }
     var f = it.f, isArr = it.isArr;
     var tm = fmtTime(f, isArr);
-    var apt = f.destination || f.origin || "";
+    /* 同主頁 apCode 一樣：via 攞到港最後一個／離港第一個航點 */
+    var parts = String(f.via||"").split(" / ").map(function(s){ return s.trim(); }).filter(Boolean);
+    var apt = parts.length ? (isArr ? parts[parts.length-1] : parts[0]) : "—";
     var bay = f.stand || "—";
     var code = opCode(f);
     var fid = (isArr?"↓ ":"↑ ") + code;
