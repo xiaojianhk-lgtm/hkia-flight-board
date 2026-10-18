@@ -1,5 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v157";
+var CACHE = "hkia-v158";
 var ASSETS = [
   "./hkiaflight.html",
   "./watch.html",
@@ -66,10 +66,7 @@ self.addEventListener("push", function(e){
   e.waitUntil((async function(){
     var title = "航班資訊", body = "有更新", url = "./hkiaflight.html";
     try{
-      // 攞呢部機嘅 subscription endpoint
-      var reg = await self.registration.pushManager.getSubscription();
-      var ep = reg ? reg.endpoint : "";
-      var r = await fetch("https://hkia-push.xiaojian-hk.workers.dev/push/pending/get?ep=" + encodeURIComponent(ep));
+      var r = await fetch("https://hkia-push.xiaojian-hk.workers.dev/push/pending/get");
       var d = await r.json();
       if(d.title) title = d.title;
       if(d.body) body = d.body;
@@ -86,5 +83,16 @@ self.addEventListener("push", function(e){
 self.addEventListener("notificationclick", function(e){
   e.notification.close();
   var url = (e.notification.data && e.notification.data.url) || "./hkiaflight.html";
-  e.waitUntil(clients.openWindow(url));
+  e.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(list){
+      for (var i = 0; i < list.length; i++) {
+        var c = list[i];
+        // 已開咗主頁就 focus 佢，唔開新窗
+        if (c.url.indexOf("hkiaflight.html") !== -1 || c.url.indexOf("watch.html") !== -1 || c.url.indexOf("nld.html") !== -1) {
+          if ("focus" in c) return c.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
+  );
 });
