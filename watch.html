@@ -121,9 +121,16 @@
       return Promise.resolve("UNSUPPORTED");
     }
     var serverAuth = null;
+    var authFetchFailed = false;
+    var gateGoBtn = document.getElementById("gateGo");
+    if(gateGoBtn) gateGoBtn.disabled = true; /* B1: 等密碼 list 載入完成先俾撳，防 race condition */
     fetch("https://xiaojian-visit-log.xiaojian-hk.workers.dev/api/auth-public", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(a){
       serverAuth = a;
-    }).catch(function(){});
+      if(gateGoBtn) gateGoBtn.disabled = false;
+    }).catch(function(){
+      authFetchFailed = true; /* B2: 記低係網絡失敗，唔係密碼錯 */
+      if(gateGoBtn) gateGoBtn.disabled = false;
+    });
     function go(){
       err.textContent = "";
       sha256(pw.value.trim()).then(function(h){
@@ -132,7 +139,8 @@
           if(serverAuth){
             ok = isValidHash(h, serverAuth, true);
           }else{
-            // fallback：舊共用密碼 hash（過渡期）
+            // fallback：舊共用密碼 hash（過渡期用，cutover 刪舊密碼時一併刪除呢段，唔好留低）
+            // B3: 硬編碼 hash 係已知風險，cutover 後必須清理
             ok = (h === "19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896");
           }
         }catch(e){
@@ -147,6 +155,10 @@
           document.documentElement.classList.remove("locked");
           window.dispatchEvent(new Event("hkia-unlocked"));
           logUsage(h); /* 記低邊個密碼俾邊部機用咗 */
+        }else if(authFetchFailed && !serverAuth){
+          /* B2: 網絡攞唔到密碼 list，唔係密碼錯 */
+          err.textContent = "網絡連接失敗，請檢查網絡後再試";
+          pw.focus();
         }else{
           err.textContent = "密碼錯誤或已過期";
           pw.value = ""; pw.focus();
@@ -301,8 +313,6 @@ try{
   .modeseg button{border:none; background:transparent; color:var(--muted); font-size:14px; padding:2px; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent; border-bottom:2px solid transparent;}
   .modeseg button.on{color:var(--text); font-weight:700; border-bottom-color:var(--accent2);}
   .modeseg .sep{color:var(--line); font-size:12px;}
-  .rainbtn{font-size:16px; background:transparent; border:1px solid var(--line); border-radius:8px; padding:2px 8px; cursor:pointer; opacity:.45;}
-  .rainbtn.on{opacity:1; border-color:var(--accent2); background:rgba(0,107,110,.12);}
   .searchrow{padding:8px 2px 6px;}
   #watchpills{display:flex; flex-wrap:wrap; gap:6px;}
   #watchpills[hidden]{display:none;}
@@ -663,7 +673,7 @@ try{(function(){
 
 <div id="watchalert" hidden>
   <div class="wa-box">
-    <div class="wa-title">🔔 <span id="waBay"></span> 有航班到位</div>
+    <div class="wa-title">🔔  有航班到位</div>
     <div id="waList" class="wa-list"></div>
     <button id="waOk" class="wa-ok">知道了</button>
   </div>
