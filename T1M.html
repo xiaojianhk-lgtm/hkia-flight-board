@@ -22,6 +22,9 @@
   if(!ok){
     window.__hkiaLocked = true;
     document.documentElement.classList.add("locked");
+    var _showGate = function(){ var g = document.getElementById("gate"); if(g) g.hidden = false; };
+    if(document.readyState === "loading"){ document.addEventListener("DOMContentLoaded", _showGate); }
+    else{ _showGate(); }
   }
   window.__t1mUnlock = function(){
     var v = (document.getElementById("gatePw")||{}).value || "";
