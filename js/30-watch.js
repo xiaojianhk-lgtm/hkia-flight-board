@@ -257,7 +257,7 @@
 
   var PUSH_WORKER = "https://hkia-push.xiaojian-hk.workers.dev";
   var PUSH_TOKEN = "f81b0bfe767f8302ef17f701077e3b65";
-  function pushWatchAdd(type, value, date){
+  function pushWatchAdd(type, value, date, seenBay){
     try{
       (async function(){
         var endpoint = "";
@@ -272,7 +272,7 @@
         }
         fetch(PUSH_WORKER + "/push/watch/add", {
           method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
-          body: JSON.stringify({ type: type, value: value, deviceEndpoint: endpoint, date: date || "" })
+          body: JSON.stringify({ type: type, value: value, deviceEndpoint: endpoint, date: date || "", seenBay: seenBay || "" })
         }).catch(function(){});
       })();
     }catch(e){}
@@ -348,7 +348,7 @@
     var bay = it ? flightBay(it.f) : "";
     flightWatches[fid] = { seenBay: bay, date: target, silent: !!silent };
     saveFlightWatch(); if(!silent) showWatchPill();
-    if(!silent) pushWatchAdd("flight", fid, target);
+    if(!silent) pushWatchAdd("flight", fid, target, bay);
   }
   function disarmFlightWatch(fid){
     if(fid){ delete flightWatches[fid]; pushWatchRemove("flight", fid); }
