@@ -126,11 +126,15 @@
       err.textContent = "";
       sha256(pw.value.trim()).then(function(h){
         var ok = false;
-        if(serverAuth){
-          ok = isValidHash(h, serverAuth, true);
-        }else{
-          // fallback：舊共用密碼 hash（過渡期）
-          ok = (h === "19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896");
+        try{
+          if(serverAuth){
+            ok = isValidHash(h, serverAuth, true);
+          }else{
+            // fallback：舊共用密碼 hash（過渡期）
+            ok = (h === "19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896");
+          }
+        }catch(e){
+          ok = false;
         }
         if(ok){
           try{ localStorage.setItem(KEY, h); }catch(e){}
@@ -145,6 +149,9 @@
           err.textContent = "密碼錯誤或已過期";
           pw.value = ""; pw.focus();
         }
+      }).catch(function(){
+        err.textContent = "密碼錯誤或已過期";
+        pw.value = ""; pw.focus();
       });
     }
     document.getElementById("gateGo").addEventListener("click", go);
