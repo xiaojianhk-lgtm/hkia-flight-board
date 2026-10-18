@@ -202,9 +202,11 @@
         var keyRes = await fetch(WORKER + "/push/vapid-public");
         var vapidPub = await keyRes.text();
         var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlToUint8(vapidPub.trim()) });
+        var _sj = sub.toJSON();
+        try{ _sj.deviceId = localStorage.getItem("hkia-device-id") || ""; }catch(e){}
         await fetch(WORKER + "/push/subscribe", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(sub.toJSON())
+          body: JSON.stringify(_sj)
         });
         setMsg("✅ 已啟用"); btn.textContent = "🔔 推送已啟用";
       }catch(e){ setMsg("失敗：" + (e.message || e)); }
