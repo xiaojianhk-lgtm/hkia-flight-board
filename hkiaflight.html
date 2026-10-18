@@ -50,7 +50,7 @@
     return false;
   }
   function verify(){
-    fetch("auth.json", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(a){
+    fetch("https://xiaojian-visit-log.xiaojian-hk.workers.dev/api/auth-public", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(a){
       var cur = null;
       try{ cur = localStorage.getItem(KEY); }catch(e){}
       // 舊 v2/v1 遷移：試下將舊 hash 轉做新格式（如果舊 hash 仲喺 list 度）
@@ -119,7 +119,7 @@
       return Promise.resolve("UNSUPPORTED");
     }
     var serverAuth = null;
-    fetch("auth.json", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(a){
+    fetch("https://xiaojian-visit-log.xiaojian-hk.workers.dev/api/auth-public", {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(a){
       serverAuth = a;
     }).catch(function(){});
     function go(){
