@@ -231,35 +231,87 @@ function fmtTime(f, isArr){
   return {t: (st||"").slice(0,5), m:"S"};
 }
 
+function toMin(t){
+  if(!t || t==="—") return 99999;
+  var m = /^(\d{1,2}):(\d{2})/.exec(t);
+  if(!m) return 99999;
+  return parseInt(m[1],10)*60 + parseInt(m[2],10);
+}
+function effTime(f, isArr){
+  var est = f.est;
+  if(est && est!=="—" && est!=="") return est;
+  var e2 = isArr ? f.eta : f.etd;
+  if(e2 && e2!=="—" && e2!=="") return e2;
+  return isArr ? (f.sta||"") : (f.std||"");
+}
+
 function render(){
   if(!DB || !DB.days) return;
   var dk = DB.dates[dateIdx];
   if(!dk || !DB.days[dk]) return;
+  // 同主頁一樣：合併到港離港，按時間排序（離港客機 -50 分鐘）
+  var items = [];
+  (DB.days[dk].arrival||[]).forEach(function(f){
+    if(T1M_AIRLINES.indexOf(airlineOf(f)) < 0) return;
+    var code = opCode(f);
+    if(query && code.indexOf(query)<0 && (f.destination||"").toUpperCase().indexOf(query)<0) return;
+    items.push({f:f, isArr:true, sk: toMin(effTime(f,true))});
+  });
+  (DB.days[dk].departure||[]).forEach(function(f){
+    if(T1M_AIRLINES.indexOf(airlineOf(f)) < 0) return;
+    var code = opCode(f);
+    if(query && code.indexOf(query)<0 && (f.origin||"").toUpperCase().indexOf(query)<0) return;
+    items.push({f:f, isArr:false, sk: toMin(effTime(f,false)) - 50}); // 客機 -50
+  });
+  items.sort(function(a,b){ return a.sk - b.sk; });
+
+  // 時間線：計而家分鐘數，插條 now 線
+  var now = new Date();
+  var nowMin = now.getHours()*60 + now.getMinutes();
+  // 如果睇緊「今天」，先至顯示 now 線
+  var showNow = false;
+  try{
+    var t = new Date();
+    var tstr = t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0");
+    showNow = (DB.dates[dateIdx] === tstr);
+  }catch(e){}
+
   var html = '<table><thead><tr>'+
     '<th>到港</th><th>離港</th><th class="c">航點</th><th>ETA</th><th>ETD</th><th class="r">Bay</th>'+
     '</tr></thead><tbody>';
-  var count = 0;
-  [["arrival", true],["departure", false]].forEach(function(pair){
-    var tab = pair[0], isArr = pair[1];
-    (DB.days[dk][tab]||[]).forEach(function(f){
-      if(T1M_AIRLINES.indexOf(airlineOf(f)) < 0) return; // 淨係五間
-      var code = opCode(f);
-      if(query && code.indexOf(query)<0 && (f.destination||f.origin||"").toUpperCase().indexOf(query)<0) return;
-      var tm = fmtTime(f, isArr);
-      var apt = f.destination || f.origin || "";
-      var bay = f.stand || "—";
-      var fid = (isArr?"↓ ":"↑ ") + code;
-      html += "<tr><td>"+(isArr?fid:"")+"</td><td>"+(!isArr?fid:"")+"</td>"+
-        '<td class="c">'+apt+"</td>"+
-        "<td>"+(isArr?'<span class="time">'+tm.t+tm.m+"</span>":"")+"</td>"+
-        "<td>"+(!isArr?'<span class="time">'+tm.t+tm.m+"</span>":"")+"</td>"+
-        '<td class="r"><span class="bay">'+bay+"</span></td></tr>";
-      count++;
-    });
+  var nowInserted = false;
+  function nowRow(){
+    var hh = String(now.getHours()).padStart(2,"0"), mm = String(now.getMinutes()).padStart(2,"0");
+    return '<tr id="nowline" style="background:rgba(255,179,0,.08);"><td colspan="6" style="text-align:center; padding:6px; color:var(--accent); font-weight:700; font-size:13px; border-top:1px solid var(--accent); border-bottom:1px solid var(--accent);">— '+hh+':'+mm+' —</td></tr>';
+  }
+  items.forEach(function(it){
+    // 插 now 線：第一個 sk > nowMin 嘅前面
+    if(showNow && !nowInserted && it.sk > nowMin){
+      html += nowRow(); nowInserted = true;
+    }
+    var f = it.f, isArr = it.isArr;
+    var tm = fmtTime(f, isArr);
+    var apt = f.destination || f.origin || "";
+    var bay = f.stand || "—";
+    var code = opCode(f);
+    var fid = (isArr?"↓ ":"↑ ") + code;
+    html += "<tr><td>"+(isArr?fid:"")+"</td><td>"+(!isArr?fid:"")+"</td>"+
+      '<td class="c">'+apt+"</td>"+
+      "<td>"+(isArr?'<span style="color:var(--blue);font-weight:600;">'+tm.t+tm.m+"</span>":"")+"</td>"+
+      "<td>"+(!isArr?'<span style="color:var(--blue);font-weight:600;">'+tm.t+tm.m+"</span>":"")+"</td>"+
+      '<td class="r"><span class="bay">'+bay+"</span></td></tr>";
   });
   html += "</tbody></table>";
-  if(count===0) html = '<div class="empty">今日冇 T1M 航班</div>';
+  if(items.length===0) html = '<div class="empty">今日冇 T1M 航班</div>';
+  else if(showNow && !nowInserted) html += ""; // now 線已插
   document.getElementById("list").innerHTML = html;
+  // 自動捲去 now 線
+  if(showNow){
+    setTimeout(function(){
+      var nl = document.getElementById("nowline");
+      if(nl) nl.scrollIntoView({block:"center"});
+    }, 100);
+  }
 }
 
 /* 天氣 */
