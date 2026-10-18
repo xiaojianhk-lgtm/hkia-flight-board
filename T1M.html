@@ -41,7 +41,20 @@ header .caps .hkg{color:var(--accent2); font-weight:800;}
 .stickybar{position:-webkit-sticky; position:sticky; top:0; z-index:10;
   background:rgba(11,28,44,.92); backdrop-filter:blur(14px); border-bottom:1px solid var(--line);}
 .stickyinner{max-width:1100px; margin:0 auto; padding:8px;}
-.sb-row{font-size:12px; color:var(--muted); margin-bottom:6px;}
+.sb-row{font-size:12px; color:var(--muted); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;}
+.sb-btns{display:flex; gap:6px;}
+.tsbtn{width:34px; height:34px; border-radius:50%; border:1px solid var(--line);
+  background:var(--bg2); color:var(--muted); font-size:15px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; padding:0;}
+.tsbtn.on{background:var(--cxgreen); color:#fff; border-color:var(--cxgreen);}
+.tsbtn svg{width:18px; height:18px;}
+/* 大字模式 */
+html.large table{font-size:16px !important;}
+html.large thead th{font-size:14px;}
+/* 日間模式 */
+html[data-theme="light"]{ --bg:#ffffff; --bg2:#f5f5f5; --text:#111; --muted:#666;
+  --line:#ddd; --header-bg:rgba(255,255,255,.96); --cxgreen:#006b6e; --blue:#0288d1; --accent2:#006b6e; }
+html[data-theme="light"] .stickybar{ background:rgba(255,255,255,.92); }
 .warnbanner{background:#5c1a1a; color:#ffb3b3; padding:6px 10px; border-radius:6px;
   font-size:13px; text-align:center; margin-bottom:6px; display:none;}
 .warnbanner.show{display:block;}
@@ -96,7 +109,19 @@ td .bay{border-left:1px solid var(--line); border-right:1px solid var(--line); p
 
 <div class="stickybar" id="sticky" style="display:none;">
   <div class="stickyinner">
-    <div class="sb-row" id="sbrow">載入中…</div>
+    <div class="sb-row">
+      <span id="sbrow">載入中…</span>
+      <span class="sb-btns">
+        <button class="tsbtn" id="largeBtn" title="大字模式">大</button>
+        <button class="tsbtn" id="themeBtn" title="日／夜模式">
+          <svg id="icoSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/></svg>
+          <svg id="icoMoon" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M20.6 14.5A8.8 8.8 0 0 1 9.5 3.4a.7.7 0 0 0-.9-.9 10.2 10.2 0 1 0 12.9 12.9.7.7 0 0 0-.9-.9z"/></svg>
+        </button>
+        <button class="tsbtn" id="refreshBtn" title="更新">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        </button>
+      </span>
+    </div>
     <div class="warnbanner" id="warn"></div>
     <div class="datetabs" id="datetabs"></div>
     <div class="filterrow">
@@ -161,6 +186,29 @@ function init(){
   document.getElementById("btnPax").onclick = function(){ showCargo=false; syncFilter(); render(); };
   document.getElementById("btnCargo").onclick = function(){ /* 貨機撳咗冇反應（五間都係客機） */ };
   document.getElementById("q").oninput = function(e){ query = e.target.value.trim().toUpperCase(); render(); };
+  // 大字／夜晚／更新
+  document.getElementById("largeBtn").onclick = function(){
+    document.documentElement.classList.toggle("large");
+    this.classList.toggle("on");
+    try{ localStorage.setItem("t1m-large", document.documentElement.classList.contains("large")?"1":""); }catch(e){}
+  };
+  document.getElementById("themeBtn").onclick = function(){
+    var light = document.documentElement.getAttribute("data-theme")==="light";
+    document.documentElement.setAttribute("data-theme", light?"":"light");
+    document.getElementById("icoSun").style.display = light?"":"none";
+    document.getElementById("icoMoon").style.display = light?"none":"";
+    try{ localStorage.setItem("t1m-theme", light?"":"light"); }catch(e){}
+  };
+  document.getElementById("refreshBtn").onclick = function(){ loadData(); loadWeather(); loadWarnings(); };
+  // 還原設定
+  try{
+    if(localStorage.getItem("t1m-large")==="1"){ document.documentElement.classList.add("large"); document.getElementById("largeBtn").classList.add("on"); }
+    if(localStorage.getItem("t1m-theme")==="light"){
+      document.documentElement.setAttribute("data-theme","light");
+      document.getElementById("icoSun").style.display="none";
+      document.getElementById("icoMoon").style.display="";
+    }
+  }catch(e){}
   loadData();
   setInterval(loadData, 10*60*1000);
   loadWeather(); loadWarnings();
