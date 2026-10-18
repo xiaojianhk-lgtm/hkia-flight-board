@@ -506,7 +506,7 @@
   document.addEventListener("touchstart", maybeRefreshTemp, {passive:true});
   document.addEventListener("scroll", maybeRefreshTemp, {passive:true});
 
-  /* 密碼版本驗證：開頁嗰陣對一次 auth.json */
+  /* 密碼版本驗證：開頁嗰陣對一次 Worker auth API */
   if(window.__hkiaVerifyAuth) window.__hkiaVerifyAuth();
 
   loadWatch(); loadFlightWatch();
