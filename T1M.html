@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1c2c">
+<title>T1M 航班資訊</title>
+<style>
+/* T1M 專用頁：同主頁一模一樣設計，淨顯示 5 間航空公司，無備註／關注功能 */
+/* T1M 部門航空公司名單（加減直接改呢行） */
+:root{
+  --bg:#0b1c2c; --bg2:#10263c; --card:#132c44; --line:#1f3a55;
+  --text:#e8f1f8; --muted:#8fa8bd; --strong:#ffffff;
+  --accent:#ffb300; --accent2:#54c1b3;
+  --cxgreen:#54c1b3; --blue:#4fc3f7;
+  --header-bg:rgba(11,28,44,.96);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0;}
+body{background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","PingFang TC","Microsoft JhengHei",sans-serif;
+  font-size:14px; line-height:1.45;}
+/* 密碼門 */
+#gate{position:fixed; inset:0; background:var(--bg); z-index:100;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px;}
+#gate.hide{display:none;}
+#gate h1{color:var(--cxgreen); font-size:26px; margin:0 0 6px; letter-spacing:4px;}
+#gate .sub{color:var(--muted); font-size:12px; letter-spacing:2px; margin-bottom:28px;}
+#gate input{font-size:26px; letter-spacing:14px; text-align:center; padding:12px 8px 12px 22px;
+  width:210px; border:2px solid var(--line); border-radius:10px; background:var(--bg2); color:#fff; margin-bottom:16px;}
+#gate button{font-size:16px; padding:12px 56px; background:var(--cxgreen); color:#06283d;
+  border:none; border-radius:10px; font-weight:700;}
+#gate .err{color:#ef5350; font-size:13px; margin-top:10px; min-height:20px;}
+/* header */
+header{background:var(--header-bg); border-bottom:1px solid var(--line); padding:10px 16px;}
+header h2{font-size:19px; margin:0; letter-spacing:4px; line-height:1.2;}
+header .caps{font-size:10px; letter-spacing:3px; color:var(--muted);}
+header .caps .hkg{color:var(--accent2); font-weight:800;}
+/* sticky */
+.stickybar{position:-webkit-sticky; position:sticky; top:0; z-index:10;
+  background:rgba(11,28,44,.92); backdrop-filter:blur(14px); border-bottom:1px solid var(--line);}
+.stickyinner{max-width:1100px; margin:0 auto; padding:8px;}
+.sb-row{font-size:12px; color:var(--muted); margin-bottom:6px;}
+.warnbanner{background:#5c1a1a; color:#ffb3b3; padding:6px 10px; border-radius:6px;
+  font-size:13px; text-align:center; margin-bottom:6px; display:none;}
+.warnbanner.show{display:block;}
+.datetabs{display:flex; gap:8px; margin-bottom:8px;}
+.datetabs button{flex:1; padding:10px 4px; border:1px solid var(--line); background:var(--bg2);
+  color:var(--muted); border-radius:8px; font-size:14px;}
+.datetabs button.on{border-color:var(--cxgreen); color:#fff;}
+.datetabs button small{display:block; font-size:11px; opacity:.7;}
+.filterrow{display:flex; align-items:center; justify-content:space-between; padding:2px 4px;}
+.filterrow .side{font-size:11px; color:var(--muted); width:70px;}
+.filterrow .side.r{text-align:right;}
+.filterrow .mid button{padding:8px 14px; background:none; border:none; color:var(--muted); font-size:14px;}
+.filterrow .mid button.on{color:#fff; border-bottom:2px solid var(--cxgreen);}
+/* search */
+.searchbox{padding:8px;}
+.searchbox input{width:100%; padding:10px 12px; font-size:16px;
+  border:1px solid var(--line); border-radius:8px; background:var(--bg2); color:#fff;}
+/* table */
+table{width:100%; border-collapse:collapse; font-size:14px;}
+thead th{padding:8px 4px; color:var(--muted); font-weight:600; font-size:12px;
+  border-bottom:1px solid var(--line); text-align:left;}
+thead th.c, tbody td.c{text-align:center;}
+thead th.r, tbody td.r{text-align:right;}
+tbody td{padding:10px 4px; border-bottom:1px solid rgba(31,58,85,.5); font-weight:600;}
+td.time{color:var(--blue);}
+td .bay{border-left:1px solid var(--line); border-right:1px solid var(--line); padding-left:8px; padding-right:8px;}
+.empty{text-align:center; color:var(--muted); padding:40px 20px; font-size:14px;}
+.loading{text-align:center; color:var(--muted); padding:40px; }
+.foot{padding:16px; text-align:center; font-size:11px; color:var(--muted);}
+</style>
+</head>
+<body>
+
+<!-- 密碼門：固定 11563 -->
+<div id="gate">
+  <h1>航班資訊</h1>
+  <div class="sub">FLIGHT INFORMATION · HKG</div>
+  <div style="color:var(--accent2); font-size:15px; margin-bottom:20px; letter-spacing:2px;">T1M 專用</div>
+  <input type="tel" id="pw" maxlength="5" placeholder="•••••" autocomplete="off">
+  <button id="pwbtn">進入</button>
+  <div class="err" id="pwerr"></div>
+</div>
+
+<header id="mainhead" style="display:none;">
+  <h2>航班資訊</h2>
+  <div class="caps">FLIGHT INFORMATION · <span class="hkg">HKG</span> · T1M</div>
+</header>
+
+<div class="stickybar" id="sticky" style="display:none;">
+  <div class="stickyinner">
+    <div class="sb-row" id="sbrow">載入中…</div>
+    <div class="warnbanner" id="warn"></div>
+    <div class="datetabs" id="datetabs"></div>
+    <div class="filterrow">
+      <span class="side">We handle</span>
+      <span class="mid">
+        <button id="btnPax" class="on">客機</button><span style="color:#5a6b82;"> / </span><button id="btnCargo">貨機</button>
+      </span>
+      <span class="side r">Other airlines</span>
+    </div>
+  </div>
+</div>
+
+<div class="searchbox" id="searchbox" style="display:none;">
+  <input id="q" placeholder="搜尋航班編號／航點">
+</div>
+
+<main id="list" style="display:none;">
+  <div class="loading">載入航班數據…</div>
+</main>
+
+<div class="foot" id="foot" style="display:none;">
+  T1M 部門專用 · 數據每 10 分鐘更新 · 僅供參考
+</div>
+
+<script>
+/* ===== T1M 專用頁 ===== */
+/* T1M 部門航空公司名單：加減直接改呢行 */
+var T1M_AIRLINES = ["UO","FD","AK","Z2","QZ"];
+var FIXED_PW = "11563";
+var AUTH_KEY = "t1m-auth";
+
+/* ---- 密碼門 ---- */
+(function(){
+  var ok = false;
+  try{ ok = localStorage.getItem(AUTH_KEY) === "1"; }catch(e){}
+  if(ok){ showMain(); }
+  document.getElementById("pwbtn").onclick = tryPw;
+  document.getElementById("pw").onkeydown = function(e){ if(e.key==="Enter") tryPw(); };
+  function tryPw(){
+    var v = document.getElementById("pw").value.trim();
+    if(v === FIXED_PW){
+      try{ localStorage.setItem(AUTH_KEY, "1"); }catch(e){}
+      showMain();
+    }else{
+      document.getElementById("pwerr").textContent = "密碼錯誤";
+    }
+  }
+  function showMain(){
+    document.getElementById("gate").classList.add("hide");
+    ["mainhead","sticky","searchbox","list","foot"].forEach(function(id){
+      document.getElementById(id).style.display = "";
+    });
+    init();
+  }
+})();
+
+/* ---- 主邏輯 ---- */
+var DB = null, dateIdx = 1, showCargo = false, query = "";
+
+function init(){
+  buildDateTabs();
+  document.getElementById("btnPax").onclick = function(){ showCargo=false; syncFilter(); render(); };
+  document.getElementById("btnCargo").onclick = function(){ /* 貨機撳咗冇反應（五間都係客機） */ };
+  document.getElementById("q").oninput = function(e){ query = e.target.value.trim().toUpperCase(); render(); };
+  loadData();
+  setInterval(loadData, 10*60*1000);
+  loadWeather(); loadWarnings();
+  setInterval(loadWeather, 15*60*1000); setInterval(loadWarnings, 15*60*1000);
+}
+
+function buildDateTabs(){
+  var el = document.getElementById("datetabs");
+  el.innerHTML = "";
+  ["昨天","今天","明天"].forEach(function(label, i){
+    var b = document.createElement("button");
+    b.innerHTML = label + "<small></small>";
+    b.onclick = function(){ dateIdx = i; syncTabs(); render(); };
+    el.appendChild(b);
+  });
+  syncTabs();
+}
+function syncTabs(){
+  var btns = document.getElementById("datetabs").children;
+  var dates = DB && DB.dates ? DB.dates : [];
+  for(var i=0;i<btns.length;i++){
+    btns[i].className = (i===dateIdx) ? "on" : "";
+    var sm = btns[i].querySelector("small");
+    if(sm && dates[i]){
+      var d = dates[i]; // YYYY-MM-DD
+      sm.textContent = d.slice(5).replace("-","/");
+    }
+  }
+}
+function syncFilter(){
+  document.getElementById("btnPax").className = showCargo ? "" : "on";
+  document.getElementById("btnCargo").className = showCargo ? "on" : "";
+}
+
+function opCode(f){ return ((f.flight_id||"").split("/")[0]||"").replace(/\s/g,"").toUpperCase(); }
+function airlineOf(f){
+  var m = /^([A-Z]{2})\d+/.exec(opCode(f));
+  return m ? m[1] : "";
+}
+
+async function loadData(){
+  try{
+    var r = await fetch("./data.json", {cache:"no-store"});
+    DB = await r.json();
+    // 搵「今天」嘅 index
+    if(DB.dates){
+      var today = new Date(); 
+      var tstr = today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+      var idx = DB.dates.indexOf(tstr);
+      if(idx >= 0 && !window._dateLocked){ dateIdx = idx; window._dateLocked = true; }
+    }
+    syncTabs(); render();
+    var sb = document.getElementById("sbrow");
+    var nArr=0, nDep=0;
+    try{
+      var dk = DB.dates[dateIdx];
+      (DB.days[dk].arrival||[]).forEach(function(f){ if(T1M_AIRLINES.indexOf(airlineOf(f))>=0) nArr++; });
+      (DB.days[dk].departure||[]).forEach(function(f){ if(T1M_AIRLINES.indexOf(airlineOf(f))>=0) nDep++; });
+    }catch(e){}
+    sb.textContent = "資料擷取時間：" + (DB.generated_at||"—") + "　到港 " + nArr + " / 離港 " + nDep + "（T1M）";
+  }catch(e){
+    document.getElementById("list").innerHTML = '<div class="empty">載入失敗，請稍後再試</div>';
+  }
+}
+
+function fmtTime(f, isArr){
+  var est = f.est;
+  if(est && est!=="—" && est!=="") return {t: est.slice(0,5), m:"E"};
+  var eta = isArr ? f.eta : f.etd;
+  if(eta && eta!=="—" && eta!=="") return {t: String(eta).slice(0,5), m:"E"};
+  var st = isArr ? f.sta : f.std;
+  return {t: (st||"").slice(0,5), m:"S"};
+}
+
+function render(){
+  if(!DB || !DB.days) return;
+  var dk = DB.dates[dateIdx];
+  if(!dk || !DB.days[dk]) return;
+  var html = '<table><thead><tr>'+
+    '<th>到港</th><th>離港</th><th class="c">航點</th><th>ETA</th><th>ETD</th><th class="r">Bay</th>'+
+    '</tr></thead><tbody>';
+  var count = 0;
+  [["arrival", true],["departure", false]].forEach(function(pair){
+    var tab = pair[0], isArr = pair[1];
+    (DB.days[dk][tab]||[]).forEach(function(f){
+      if(T1M_AIRLINES.indexOf(airlineOf(f)) < 0) return; // 淨係五間
+      var code = opCode(f);
+      if(query && code.indexOf(query)<0 && (f.destination||f.origin||"").toUpperCase().indexOf(query)<0) return;
+      var tm = fmtTime(f, isArr);
+      var apt = f.destination || f.origin || "";
+      var bay = f.stand || "—";
+      var fid = (isArr?"↓ ":"↑ ") + code;
+      html += "<tr><td>"+(isArr?fid:"")+"</td><td>"+(!isArr?fid:"")+"</td>"+
+        '<td class="c">'+apt+"</td>"+
+        "<td>"+(isArr?'<span class="time">'+tm.t+tm.m+"</span>":"")+"</td>"+
+        "<td>"+(!isArr?'<span class="time">'+tm.t+tm.m+"</span>":"")+"</td>"+
+        '<td class="r"><span class="bay">'+bay+"</span></td></tr>";
+      count++;
+    });
+  });
+  html += "</tbody></table>";
+  if(count===0) html = '<div class="empty">今日冇 T1M 航班</div>';
+  document.getElementById("list").innerHTML = html;
+}
+
+/* 天氣 */
+async function loadWeather(){
+  try{
+    var r = await fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc");
+    var d = await r.json();
+    var t = null;
+    (d.temperature||{data:[]}).data.forEach(function(x){
+      if(/赤鱲角/.test(x.place)) t = x.value;
+    });
+    if(t!==null){
+      var sb = document.getElementById("sbrow");
+      if(!/赤鱲角/.test(sb.textContent)) sb.textContent += "　📍 赤鱲角 "+t+"°C";
+    }
+  }catch(e){}
+}
+/* 警告 */
+async function loadWarnings(){
+  try{
+    var r = await fetch("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc");
+    var d = await r.json();
+    var show = false, txt = "";
+    var keys = ["WTS","WRAIN","WFNTS","WTCSGNL","WL","WFROST","WHOT","WCOLD"];
+    keys.forEach(function(k){
+      if(d[k] && d[k].name){ show = true; txt = d[k].name; }
+    });
+    var el = document.getElementById("warn");
+    if(show){ el.textContent = "⚠️ " + txt + "現正生效"; el.classList.add("show"); }
+    else{ el.classList.remove("show"); }
+  }catch(e){}
+}
+</script>
+</body>
+</html>
