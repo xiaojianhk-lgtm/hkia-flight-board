@@ -1,4 +1,6 @@
 /* HKIA flight board - 10-core.js */
+/* 數據源：直接讀 GitHub raw，唔經 Pages build（2026-10-20 改，解決 Pages build queue 塞車） */
+var DATA_URL = "https://raw.githubusercontent.com/xiaojianhk-lgtm/hkia-flight-board/main/data.json";
   var DB = null, dateIdx = 1, query = "";
   var hideCargo = true, hidePax = false, onlyHas = true, hideCX = false;
   /* T1M 專頁 config：t1m.html 經 window.__T1M_AIRLINES 傳航空公司名單、window.__T1M_WATCH_KEY 分開存備註；
