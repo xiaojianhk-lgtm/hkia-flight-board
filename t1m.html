@@ -535,8 +535,6 @@ try{(function(){
     </ul>
     <h4>提醒</h4>
     <ul>
-      <li>搜尋欄輸入 <b>W63+</b>：之後有新航班入該泊位，就彈 banner 通知。</li>
-      <li>搜尋欄輸入 <b>CX123+</b>：嗰班機一有泊位，就彈 banner 通知。</li>
       <li>機場未來 3 小時降雨機率 ≥50% 就彈 banner 通知（Open-Meteo 預報，預設開啟）。</li>
     </ul>
     <h4>數據</h4>
@@ -553,10 +551,6 @@ try{(function(){
         如果對內容有疑問，或者想本站移除相關資料，歡迎聯繫 xiao.jian@me.com，我會儘快處理。
       </div>
     </details>
-    <div style="text-align:center; margin:8px 0;">
-      <button id="pushSubBtn" style="font-size:12px; padding:6px 12px; border:1px solid var(--line); border-radius:16px; background:transparent; color:var(--muted);">🔔 啟用推送通知</button>
-      <div id="pushSubMsg" style="font-size:11px; color:var(--muted); margin-top:4px;"></div>
-    </div>
     <button id="aboutClose">關閉</button>
   </div>
 </div>
@@ -638,9 +632,10 @@ try{(function(){
 </div>
 
 <script>
-/* T1M 專頁 config：航空公司名單（加減直接改呢行）＋備註／關注獨立儲存（唔污染主頁） */
+/* T1M 專頁 config：航空公司名單（加減直接改呢行）＋備註／關注獨立儲存（唔污染主頁）＋關閉提醒／推送功能 */
 window.__T1M_AIRLINES = ["UO","FD","AK","Z2","QZ"];
 window.__T1M_WATCH_KEY = "hkia-t1m-watch-v1";
+window.__T1M_NO_WATCH = true;
 </script>
 <script src="js/10-core.js"></script>
 <script src="js/20-render.js"></script>
