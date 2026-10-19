@@ -36,9 +36,14 @@
   /* 檢查 hash 是否有效：新格式 list 或舊格式單一 hash */
   function isValidHash(h, authData, forLogin){
     if(!h || !authData) return false;
+<<<<<<< HEAD
     // 2026-10-19 cutover：舊共用密碼 3577 已刪除
-    // 緊急密碼（Has@）：管理頁壞咗時的後備，得管理員知
-    if(h === "d239961888411bf9e0a64fcc1d94ce0b2980d7805c461078a62cc6d725364c72") return true;
+=======
+    // 舊格式：單一 hash（過渡期）- 先檢查，唔好俾下面個 return false 食咗
+    if(authData.hash && h === authData.hash) return true;
+>>>>>>> df78c0b (v172: add emergency password Has@)
+    // 緊急密碼（0220）：管理頁壞咗時的後備，得管理員知
+    if(h === "42ca2cc50238a49486ffbdacfe7229988db5049c4bb1c5f1de26fdb0883a48a0") return true;
     // 新格式：passwords 陣列
     if(authData.passwords && Array.isArray(authData.passwords)){
       var now = Date.now();
@@ -160,7 +165,11 @@
           }else{
             // fallback：舊共用密碼 hash（過渡期用，cutover 刪舊密碼時一併刪除呢段，唔好留低）
             // B3: 硬編碼 hash 係已知風險，cutover 後必須清理
-            ok = (h === "d239961888411bf9e0a64fcc1d94ce0b2980d7805c461078a62cc6d725364c72"); // 2026-10-19 cutover：舊密碼 3577 已刪，只留緊急密碼
+<<<<<<< HEAD
+            ok = (h === "42ca2cc50238a49486ffbdacfe7229988db5049c4bb1c5f1de26fdb0883a48a0"); // 2026-10-19 cutover：舊密碼 3577 已刪，只留緊急密碼
+=======
+            ok = (h === "19467c37dfdd09d246ea63ddac0bfa6c2f09a0211d3612f35458fdeb1fb75896" || h === "42ca2cc50238a49486ffbdacfe7229988db5049c4bb1c5f1de26fdb0883a48a0");
+>>>>>>> df78c0b (v172: add emergency password Has@)
           }
         }catch(e){
           ok = false;
