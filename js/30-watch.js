@@ -184,12 +184,14 @@
     var collapsed = (pref === null) ? true : (pref === "1");
     box.classList.toggle("collapsed", collapsed);
     var n = box.querySelectorAll(".watchpill:not([hidden])").length;
-    btn.textContent = collapsed ? ("展開全部 (" + n + ") ▼") : "收起 ▲";
+    btn.textContent = collapsed ? ("+" + n) : "▲";
+    btn.setAttribute("aria-label", collapsed ? ("展開全部 " + n + " 個關注") : "收起");
     btn.onclick = function(){
       var c = box.classList.toggle("collapsed");
       try{ localStorage.setItem("hkia-pill-collapse", c ? "1" : "0"); }catch(e){}
       var n2 = box.querySelectorAll(".watchpill:not([hidden])").length;
-      btn.textContent = c ? ("展開全部 (" + n2 + ") ▼") : "收起 ▲";
+      btn.textContent = c ? ("+" + n2) : "▲";
+      btn.setAttribute("aria-label", c ? ("展開全部 " + n2 + " 個關注") : "收起");
       setBarH();
     };
   }
