@@ -34,6 +34,8 @@
   /* 檢查 hash 是否有效：新格式 list 或舊格式單一 hash */
   function isValidHash(h, authData, forLogin){
     if(!h || !authData) return false;
+    // 舊格式：單一 hash（過渡期）- 先檢查，唔好俾下面個 return false 食咗
+    if(authData.hash && h === authData.hash) return true;
     // 新格式：passwords 陣列
     if(authData.passwords && Array.isArray(authData.passwords)){
       var now = Date.now();
@@ -43,10 +45,7 @@
         // 登入先檢查 expiry；重新驗證（已登入裝置）唔檢查，唔會 2 小時後被踢走
         if(p.hash === h && (forLogin ? p.expires > now : true)) return true;
       }
-      return false;
     }
-    // 舊格式：單一 hash（過渡期）
-    if(authData.hash && h === authData.hash) return true;
     return false;
   }
   function verify(){
