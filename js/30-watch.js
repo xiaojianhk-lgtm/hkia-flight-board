@@ -167,31 +167,43 @@
     updatePillToggle();
     setBarH();
   }
-  /* 關注 pill 收合/展開：超過一行先出掣 */
+  /* 關注 pill 收合/展開：超過一行先出掣，掣同 pills 同一行 */
   function updatePillToggle(){
-    var box = $("watchpills"), tg = $("pilltoggle"), btn = $("pilltogglebtn");
-    if(!box || !tg || !btn){ return; }
-    if(box.hidden){ tg.hidden = true; return; }
-    /* 暫時展開量度實際高度 */
-    var wasCollapsed = box.classList.contains("collapsed");
-    box.classList.remove("collapsed");
-    var oneRowH = 40; /* 約一行 pill 高度 */
-    var needToggle = box.scrollHeight > oneRowH + 8;
-    if(!needToggle){ tg.hidden = true; box.classList.remove("collapsed"); return; }
-    tg.hidden = false;
+    var box = $("watchpills");
+    if(!box) return;
+    var btn = $("pilltogglebtn");
+    if(!btn){
+      btn = document.createElement("button");
+      btn.id = "pilltogglebtn";
+      btn.setAttribute("aria-label", "展開或收起關注");
+      box.appendChild(btn);
+    }
+    if(box.hidden){ btn.style.display = "none"; return; }
+    /* 全部顯示，量度邊啲 pill 跌咗落第二行 */
+    var pills = Array.prototype.slice.call(box.querySelectorAll(".watchpill"));
+    pills.forEach(function(p){ p.classList.remove("rowhide"); });
+    btn.style.display = "";
+    var firstTop = null, beyond = [];
+    pills.forEach(function(p){
+      if(p.hidden) return;
+      if(firstTop === null) firstTop = p.offsetTop;
+      else if(p.offsetTop > firstTop + 4) beyond.push(p);
+    });
+    if(!beyond.length){ btn.style.display = "none"; return; }
     var pref = null;
     try{ pref = localStorage.getItem("hkia-pill-collapse"); }catch(e){}
     var collapsed = (pref === null) ? true : (pref === "1");
-    box.classList.toggle("collapsed", collapsed);
-    var n = box.querySelectorAll(".watchpill:not([hidden])").length;
-    btn.textContent = collapsed ? ("+" + n) : "▲";
-    btn.setAttribute("aria-label", collapsed ? ("展開全部 " + n + " 個關注") : "收起");
+    function apply(c){
+      beyond.forEach(function(p){ p.classList.toggle("rowhide", c); });
+      var n = pills.filter(function(p){ return !p.hidden; }).length;
+      btn.textContent = c ? ("+" + n) : "▲";
+      btn.setAttribute("aria-label", c ? ("展開全部 " + n + " 個關注") : "收起");
+    }
+    apply(collapsed);
     btn.onclick = function(){
-      var c = box.classList.toggle("collapsed");
-      try{ localStorage.setItem("hkia-pill-collapse", c ? "1" : "0"); }catch(e){}
-      var n2 = box.querySelectorAll(".watchpill:not([hidden])").length;
-      btn.textContent = c ? ("+" + n2) : "▲";
-      btn.setAttribute("aria-label", c ? ("展開全部 " + n2 + " 個關注") : "收起");
+      collapsed = !collapsed;
+      try{ localStorage.setItem("hkia-pill-collapse", collapsed ? "1" : "0"); }catch(e){}
+      apply(collapsed);
       setBarH();
     };
   }
