@@ -1,6 +1,10 @@
 /* HKIA flight board - 10-core.js */
   var DB = null, dateIdx = 1, query = "";
   var hideCargo = true, hidePax = false, onlyHas = true, hideCX = false;
+  /* T1M 專頁 config：t1m.html 經 window.__T1M_AIRLINES 傳航空公司名單、window.__T1M_WATCH_KEY 分開存備註；
+     主頁唔設呢兩個 flag，行為完全唔變 */
+  var T1M_AIRLINES = window.__T1M_AIRLINES || null;
+  var WATCH_KEY = window.__T1M_WATCH_KEY || "hkia-watch-v1";
   /* 客/貨模式（localStorage 記住；nld.html 冇掣，強制貨運） */
   /* 次次預設客機，唔記住上次 */
   var expanded = false, detailKey = null, lastItems = [];
@@ -9,12 +13,12 @@
   /* ---------- 備註／手動泊位（localStorage） ---------- */
   var WATCH = (function(){
     try{
-      var w = JSON.parse(localStorage.getItem("hkia-watch-v1")) || {};
+      var w = JSON.parse(localStorage.getItem(WATCH_KEY)) || {};
       Object.keys(w).forEach(function(k){ if(!w[k] || (!w[k].note && !w[k].stand && !w[k].insp)) delete w[k]; });
       return w;
     }catch(e){ return {}; }
   })();
-  function saveWatch(){ try{ localStorage.setItem("hkia-watch-v1", JSON.stringify(WATCH)); }catch(e){} }
+  function saveWatch(){ try{ localStorage.setItem(WATCH_KEY, JSON.stringify(WATCH)); }catch(e){} }
   function watchKey(typ, f){
     var d = (DB && DB.dates && DB.dates[dateIdx]) ? DB.dates[dateIdx] : ("d"+dateIdx);
     return d + "|" + typ + "|" + opId(f);
@@ -55,6 +59,7 @@
   var LCC_HIDE = ["UO","Z2","QZ","AK","FD"];
   function isHasFlight(f){
     var code = opId(f).replace(/\s/g,"").substring(0,2).toUpperCase();
+    if(T1M_AIRLINES) return T1M_AIRLINES.indexOf(code) !== -1; /* T1M：唔行 LCC_HIDE，直接用名單 */
     if(!f.cargo && LCC_HIDE.indexOf(code) !== -1) return false;
     return (f.cargo ? HAS_CARGO_CODES : HAS_PAX_CODES).indexOf(code) !== -1;
   }
@@ -182,6 +187,11 @@
       });
     });
     var flt = function(f){
+      if(T1M_AIRLINES){ /* T1M 專頁：永遠只出名單內客機，唔受篩選掣影響 */
+        var tcode = opId(f).replace(/\s/g,"").substring(0,2).toUpperCase();
+        if(T1M_AIRLINES.indexOf(tcode) === -1) return false;
+        if(f.cargo) return false;
+      }
       if(hideCargo && f.cargo) return false;
       if(hidePax && !f.cargo) return false;
       if(hideCX && isCX(f)) return false;
