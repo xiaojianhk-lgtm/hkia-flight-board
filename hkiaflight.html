@@ -330,18 +330,16 @@ try{
   .modeseg .sep{color:var(--line); font-size:12px;}
   
   .searchrow{padding:8px 2px 6px;}
-  #watchpills{display:flex; flex-wrap:wrap; gap:6px;}
+  #watchpills{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
   #watchpills[hidden]{display:none;}
-  #watchpills.collapsed{max-height:34px; overflow:hidden;}
-  #pilltoggle{display:none; justify-content:flex-end; margin-top:6px;}
-  #pilltoggle[hidden]{display:none;}
-  #pilltoggle:not([hidden]){display:flex;}
-  #pilltoggle button{
-    width:28px; height:28px; border-radius:50%; padding:0;
+  #pilltogglebtn{
+    width:28px; height:28px; border-radius:50%; padding:0; flex-shrink:0;
     border:1.5px solid var(--accent); background:var(--card);
     color:var(--accent); font-size:11px; font-weight:700; cursor:pointer;
     display:inline-flex; align-items:center; justify-content:center;
+    margin-left:auto;
   }
+  .watchpill.rowhide{display:none;}
   .watchpill{
     display:inline-flex; align-items:center; gap:6px;
     margin-top:6px; padding:4px 6px 4px 10px; border-radius:14px;
@@ -670,7 +668,6 @@ try{(function(){
       <button id="qclear" class="qclear" aria-label="清除">✕</button>
     </div>
     <div id="watchpills" hidden></div>
-    <div id="pilltoggle" hidden><button id="pilltogglebtn" aria-label="展開或收起關注"></button></div>
   </div>
 </div></div>
 
