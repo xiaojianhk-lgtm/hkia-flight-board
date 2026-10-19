@@ -380,6 +380,48 @@
   #gate button{font-size:16px; padding:12px 28px; border:0; border-radius:12px; width:100%;
     background:var(--accent2); color:#fff; font-weight:700; cursor:pointer; margin-top:4px;}
   #gate .gerr{color:var(--red); font-size:13px; min-height:18px; text-align:center;}
+  /* T1M 首次登入彩蛋（一次性全屏 overlay） */
+  #tegg{position:fixed; inset:0; z-index:10000; overflow-y:auto; box-sizing:border-box;
+    background:linear-gradient(180deg,#0b1c2c 0%,#0a1826 55%,#060f1a 100%);
+    color:#eaf2f8; font-family:-apple-system,"PingFang HK","Microsoft JhengHei",sans-serif;
+    text-align:center; padding:11vh 24px 40px;}
+  #tegg[hidden]{display:none;}
+  .tegg-inner{position:relative; z-index:2; max-width:420px; margin:0 auto;}
+  .tegg-stars{position:absolute; inset:0; z-index:1; pointer-events:none;}
+  .tegg-stars i{position:absolute; width:3px; height:3px; border-radius:50%; background:#cfe6ff; opacity:.7; animation:tegg-tw 2.6s infinite;}
+  .tegg-stars i:nth-child(1){left:12%;top:14%}.tegg-stars i:nth-child(2){left:28%;top:8%;animation-delay:.4s}
+  .tegg-stars i:nth-child(3){left:45%;top:18%;animation-delay:1.1s}.tegg-stars i:nth-child(4){left:63%;top:9%;animation-delay:.7s}
+  .tegg-stars i:nth-child(5){left:78%;top:20%;animation-delay:1.6s}.tegg-stars i:nth-child(6){left:88%;top:38%;animation-delay:.2s}
+  .tegg-stars i:nth-child(7){left:8%;top:44%;animation-delay:1.9s}.tegg-stars i:nth-child(8){left:22%;top:30%;animation-delay:2.2s}
+  .tegg-stars i:nth-child(9){left:55%;top:32%;animation-delay:.9s}.tegg-stars i:nth-child(10){left:72%;top:52%;animation-delay:1.3s}
+  .tegg-stars i:nth-child(11){left:36%;top:6%;animation-delay:2s}.tegg-stars i:nth-child(12){left:93%;top:12%;animation-delay:1.5s}
+  @keyframes tegg-tw{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:.9;transform:scale(1.15)}}
+  .tegg-runway{position:absolute; left:0; right:0; bottom:0; height:10px; z-index:1; display:flex; justify-content:center; gap:18px; pointer-events:none;}
+  .tegg-runway span{width:26px; height:4px; border-radius:2px; background:#ffb300; opacity:.55; animation:tegg-rw 1.8s infinite;}
+  .tegg-runway span:nth-child(2){animation-delay:.25s}.tegg-runway span:nth-child(3){animation-delay:.5s}
+  .tegg-runway span:nth-child(4){animation-delay:.75s}.tegg-runway span:nth-child(5){animation-delay:1s}
+  .tegg-runway span:nth-child(6){animation-delay:1.25s}.tegg-runway span:nth-child(7){animation-delay:1.5s}
+  @keyframes tegg-rw{0%,100%{opacity:.25}50%{opacity:.9}}
+  .tegg-facewrap{position:relative; display:inline-block;}
+  .tegg-spark{position:absolute; fill:#ffd76a; filter:drop-shadow(0 0 6px rgba(255,215,106,.9)); animation:tegg-sparkle 2.2s ease-in-out infinite; z-index:3;}
+  .tegg-spark.tegg-s1{width:26px; left:2%; top:-4%;}
+  .tegg-spark.tegg-s2{width:18px; right:4%; top:6%; animation-delay:.7s; fill:#fff;}
+  .tegg-spark.tegg-s3{width:14px; left:12%; top:-10%; animation-delay:1.2s;}
+  .tegg-spark.tegg-s4{width:20px; right:14%; top:-8%; animation-delay:1.6s; fill:#fff;}
+  @keyframes tegg-sparkle{0%,100%{transform:scale(.55) rotate(0deg);opacity:.35}50%{transform:scale(1.15) rotate(20deg);opacity:1}}
+  .tegg-face{width:190px; height:auto; transform:rotate(-4deg); filter:drop-shadow(0 10px 24px rgba(0,0,0,.55));
+    animation:tegg-pop .7s cubic-bezier(.2,1.4,.4,1) both; cursor:pointer;}
+  @keyframes tegg-pop{0%{transform:scale(.3) rotate(-14deg);opacity:0}100%{transform:scale(1) rotate(-4deg);opacity:1}}
+  .tegg-face:active{animation:tegg-squash .45s ease;}
+  @keyframes tegg-squash{0%{transform:scale(1) rotate(-4deg)}35%{transform:scale(1.08,.9) rotate(-2deg)}100%{transform:scale(1) rotate(-4deg)}}
+  .tegg-kicker{margin:22px 0 6px; font-size:12px; letter-spacing:4px; color:#7fd4c1; animation:tegg-up .6s .25s both;}
+  .tegg-title{margin:0 0 10px; font-size:30px; letter-spacing:6px; text-indent:6px; font-weight:800; animation:tegg-up .6s .35s both;}
+  .tegg-desc{margin:0 0 26px; font-size:15px; line-height:1.9; color:#b9c9d8; animation:tegg-up .6s .45s both;}
+  @keyframes tegg-up{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:none}}
+  .tegg-go{font-size:16px; font-weight:700; letter-spacing:2px; color:#06281f; background:#2dd4bf; border:0; border-radius:999px;
+    padding:13px 44px; cursor:pointer; box-shadow:0 6px 20px rgba(45,212,191,.35); animation:tegg-up .6s .55s both;}
+  .tegg-go:active{transform:scale(.96);}
+  .tegg-once{margin:18px 0 0; font-size:11px; color:#5f7488; animation:tegg-up .6s .65s both;}
 </style>
 <script data-goatcounter="https://xiaojian.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
@@ -428,6 +470,48 @@ try{(function(){
     <div class="gerr" id="gateErr"></div>
   </div>
 </div>
+
+<!-- T1M 首次登入彩蛋：淨係成功入密碼嗰次出現一次 -->
+<div id="tegg" hidden>
+  <div class="tegg-stars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="tegg-runway"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="tegg-inner">
+    <div class="tegg-facewrap">
+      <img class="tegg-face" src="t1m-egg.png" alt="T1M">
+      <svg class="tegg-spark tegg-s1" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z"/></svg>
+      <svg class="tegg-spark tegg-s2" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z"/></svg>
+      <svg class="tegg-spark tegg-s3" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z"/></svg>
+      <svg class="tegg-spark tegg-s4" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z"/></svg>
+    </div>
+    <div class="tegg-kicker">T1M 專頁 · 首次登入</div>
+    <div class="tegg-title">歡迎登機！</div>
+    <p class="tegg-desc">UO · FD · AK · Z2 · QZ<br>呢五間嘅航班資訊，交畀你喇！</p>
+    <button class="tegg-go" id="teggGo">進入航班資訊</button>
+    <p class="tegg-once">呢個歡迎畫面淨係會出現一次</p>
+  </div>
+</div>
+<script>
+/* T1M 首次登入彩蛋：成功入密碼嗰次彈一次，之後唔再出現 */
+(function(){
+  var EGG_KEY = "t1m-egg-shown";
+  function showEgg(){
+    var e = document.getElementById("tegg");
+    if(!e || !e.hidden) return;
+    try{ localStorage.setItem(EGG_KEY, "1"); }catch(err){}
+    e.hidden = false;
+    document.getElementById("teggGo").addEventListener("click", function(){
+      e.style.transition = "opacity .4s";
+      e.style.opacity = "0";
+      setTimeout(function(){ e.hidden = true; }, 400);
+    });
+  }
+  window.addEventListener("hkia-unlocked", function(){
+    var shown = false;
+    try{ shown = localStorage.getItem(EGG_KEY) === "1"; }catch(e){}
+    if(!shown) showEgg();
+  });
+})();
+</script>
 
 <div id="aboutOverlay" role="dialog" aria-modal="true" aria-label="關於">
   <div class="about-card">
