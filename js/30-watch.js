@@ -10,6 +10,15 @@
       location.href = "nld.html";
       return;
     }
+    /* T1M 專頁關閉提醒／推送功能：+/@ 唔 arm，直接提示 */
+    if(window.__T1M_NO_WATCH && /^([A-Za-z]?\d+|[A-Za-z]{2,}\d+)[@+]$/i.test(v)){
+      showToast("T1M 專頁不設提醒功能");
+      q.value = ""; query = "";
+      $("qclear").parentElement.classList.remove("hasq");
+      expanded = false; render();
+      q.blur();
+      return;
+    }
     /* BAY@：靜默加入 bay 關注（唔顯示 pill，淨係去關注頁睇） */
     var mBayAt = /^([A-Za-z]?\d+)@$/.exec(v);
     if(mBayAt){
