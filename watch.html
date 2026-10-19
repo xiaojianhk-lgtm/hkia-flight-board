@@ -102,7 +102,7 @@
     }catch(e){}
   }
   function trackDevice(pwHash){
-    /* v167: 一次性密碼設備追蹤。登入成功後記低部機，管理頁 3 部以上標紅疑似分享 */
+    /* v169: 一次性密碼設備追蹤。登入成功後記低部機，管理頁 3 部以上標紅疑似分享 */
     try{
       if(!serverAuth || !serverAuth.passwords) return;
       var pid = null;
@@ -174,7 +174,7 @@
           document.documentElement.classList.remove("locked");
           window.dispatchEvent(new Event("hkia-unlocked"));
           logUsage(h); /* 記低邊個密碼俾邊部機用咗 */
-          trackDevice(h); /* v167: 一次性密碼設備追蹤 */
+          trackDevice(h); /* v169: 一次性密碼設備追蹤 */
         }else if(authFetchFailed && !serverAuth){
           /* B2: 網絡攞唔到密碼 list，唔係密碼錯 */
           err.textContent = "網絡連接失敗，請檢查網絡後再試";
