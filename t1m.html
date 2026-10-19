@@ -51,6 +51,17 @@
     initGate();
   }
 })();
+
+/* 日／夜模式：盡早套用，避免閃爍（同主頁一致） */
+try{
+  var _t = localStorage.getItem("hkia-theme");
+  if(_t !== "light" && _t !== "dark"){
+    _t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+  }
+  document.documentElement.setAttribute("data-theme", _t);
+  var _mc = document.querySelector('meta[name="theme-color"]');
+  if(_mc) _mc.setAttribute("content", _t === "light" ? "#ffffff" : "#0b1c2c");
+}catch(e){ document.documentElement.setAttribute("data-theme", "dark"); }
 </script>
 <style>
   /* 鎖定嗰陣閂埋主內容，唔好閃一下（gate 本身唔閂） */
