@@ -1,13 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-<<<<<<< HEAD
-<<<<<<< HEAD
-var CACHE = "hkia-v175";
-=======
-var CACHE = "hkia-v172";
->>>>>>> df78c0b (v172: add emergency password Has@)
-=======
-var CACHE = "hkia-v172";
->>>>>>> df78c0b (v172: add emergency password Has@)
+var CACHE = "hkia-v176";
 var ASSETS = [
   "./hkiaflight.html",
   "./watch.html",
