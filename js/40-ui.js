@@ -422,7 +422,7 @@
   function doPullRefresh(done){
     if(!DB){ done("failed"); return; }
     if(window.__hkiaCheckTemp) window.__hkiaCheckTemp(); /* 順手更新機場溫度 */
-    fetch("data.json?_="+Date.now(), {cache:"no-store"})
+    fetch(DATA_URL+"?_="+Date.now(), {cache:"no-store"})
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(d){
         if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
@@ -565,7 +565,7 @@
     }
   /* loading 狀態：落緊 data.json 嗰陣顯示 */
   $("rows").innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--muted);padding:32px;'><div style='font-size:20px;margin-bottom:8px;'>✈️</div>載入航班數據…</td></tr>";
-  fetch("data.json?_="+Date.now(), {cache:"no-store"})
+  fetch(DATA_URL+"?_="+Date.now(), {cache:"no-store"})
     .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
     .then(function(d){
       DB = d;
@@ -608,7 +608,7 @@
     if(detailKey || noteEditingKey) return;
     if(document.activeElement === q) return;
     if(overlay.classList.contains("open")) return;
-    fetch("data.json?_="+Date.now(), {cache:"no-store"})
+    fetch(DATA_URL+"?_="+Date.now(), {cache:"no-store"})
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(d && d.generated_at && d.generated_at !== DB.generated_at && d.dates && d.days){
