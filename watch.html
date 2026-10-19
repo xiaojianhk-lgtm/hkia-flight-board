@@ -336,6 +336,14 @@ try{
   .searchrow{padding:8px 2px 6px;}
   #watchpills{display:flex; flex-wrap:wrap; gap:6px;}
   #watchpills[hidden]{display:none;}
+  #watchpills.collapsed{max-height:34px; overflow:hidden;}
+  #pilltoggle{display:none; justify-content:flex-end; margin-top:6px;}
+  #pilltoggle[hidden]{display:none;}
+  #pilltoggle:not([hidden]){display:flex;}
+  #pilltoggle button{
+    background:var(--card); border:1px solid var(--line); border-radius:999px;
+    padding:6px 14px; font-size:12px; color:var(--text); cursor:pointer;
+  }
   .watchpill{
     display:inline-flex; align-items:center; gap:6px;
     margin-top:6px; padding:4px 6px 4px 10px; border-radius:14px;
@@ -663,6 +671,7 @@ try{(function(){
       <button id="qclear" class="qclear" aria-label="清除">✕</button>
     </div>
     <div id="watchpills" hidden></div>
+    <div id="pilltoggle" hidden><button id="pilltogglebtn" aria-label="展開或收起關注"></button></div>
   </div>
 </div></div>
 
