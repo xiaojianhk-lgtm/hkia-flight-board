@@ -413,20 +413,33 @@ try{
   .tegg-runway span:nth-child(4){animation-delay:.75s}.tegg-runway span:nth-child(5){animation-delay:1s}
   .tegg-runway span:nth-child(6){animation-delay:1.25s}.tegg-runway span:nth-child(7){animation-delay:1.5s}
   @keyframes tegg-rw{0%,100%{opacity:.25}50%{opacity:.9}}
+  .tegg-duo{display:flex; justify-content:center; align-items:flex-start; position:relative; z-index:2; margin:6px 0 18px;}
   .tegg-facewrap{position:relative; display:inline-block;}
+  .tegg-facewrap.tegg-mate{margin-left:-20px; margin-top:-5px; z-index:1; animation:tegg-matepop .7s .35s cubic-bezier(.2,1.4,.4,1) both;}
+  @keyframes tegg-matepop{0%{transform:translateY(60px) scale(.4);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
+  .tegg-estar{position:absolute; font-size:22px; z-index:5; pointer-events:none; animation:tegg-estwink 2.4s ease-in-out infinite;}
+  .tegg-estar.tegg-e2{right:6%; top:0%; animation-delay:.8s; font-size:18px;}
+  .tegg-estar.tegg-e3{left:46%; bottom:-6%; animation-delay:1.5s; font-size:16px;}
+  @keyframes tegg-estwink{0%,100%{transform:scale(.8) rotate(-8deg);opacity:.7}50%{transform:scale(1.15) rotate(8deg);opacity:1}}
+  .tegg-nana{position:absolute; left:50%; top:38%; font-size:26px; z-index:5; pointer-events:none;}
   .tegg-spark{position:absolute; fill:#ffd76a; filter:drop-shadow(0 0 6px rgba(255,215,106,.9)); animation:tegg-sparkle 2.2s ease-in-out infinite; z-index:3;}
   .tegg-spark.tegg-s1{width:26px; left:2%; top:-4%;}
   .tegg-spark.tegg-s2{width:18px; right:4%; top:6%; animation-delay:.7s; fill:#fff;}
   .tegg-spark.tegg-s3{width:14px; left:12%; top:-10%; animation-delay:1.2s;}
   .tegg-spark.tegg-s4{width:20px; right:14%; top:-8%; animation-delay:1.6s; fill:#fff;}
   @keyframes tegg-sparkle{0%,100%{transform:scale(.55) rotate(0deg);opacity:.35}50%{transform:scale(1.15) rotate(20deg);opacity:1}}
-  .tegg-face{width:190px; height:auto; transform:rotate(-4deg); filter:drop-shadow(0 10px 24px rgba(0,0,0,.55));
+  .tegg-face{width:150px; height:auto; transform:rotate(-3deg); filter:drop-shadow(0 10px 24px rgba(0,0,0,.55));
     animation:tegg-pop .7s cubic-bezier(.2,1.4,.4,1) both; cursor:pointer;}
-  @keyframes tegg-pop{0%{transform:scale(.3) rotate(-14deg);opacity:0}100%{transform:scale(1) rotate(-4deg);opacity:1}}
+  @keyframes tegg-pop{0%{transform:scale(.3) rotate(-14deg);opacity:0}100%{transform:scale(1) rotate(-3deg);opacity:1}}
   .tegg-face:active{animation:tegg-squash .45s ease;}
-  @keyframes tegg-squash{0%{transform:scale(1) rotate(-4deg)}35%{transform:scale(1.08,.9) rotate(-2deg)}100%{transform:scale(1) rotate(-4deg)}}
+  @keyframes tegg-squash{0%{transform:scale(1) rotate(-3deg)}35%{transform:scale(1.08,.9) rotate(-2deg)}100%{transform:scale(1) rotate(-3deg)}}
+  .tegg-mate .tegg-face{width:127px; transform:rotate(9deg); animation-name:tegg-pop2;}
+  @keyframes tegg-pop2{0%{transform:scale(.3) rotate(-14deg);opacity:0}100%{transform:scale(1) rotate(9deg);opacity:1}}
+  .tegg-mate .tegg-face:active{animation:tegg-squash2 .45s ease;}
+  @keyframes tegg-squash2{0%{transform:scale(1) rotate(9deg)}35%{transform:scale(1.08,.9) rotate(7deg)}100%{transform:scale(1) rotate(9deg)}}
   .tegg-kicker{margin:22px 0 6px; font-size:12px; letter-spacing:4px; color:#7fd4c1; animation:tegg-up .6s .25s both;}
   .tegg-title{margin:0 0 10px; font-size:30px; letter-spacing:6px; text-indent:6px; font-weight:800; animation:tegg-up .6s .35s both;}
+  .tegg-langline{margin:2px 0 16px; font-size:14px; letter-spacing:1px; color:#8fa8bd; animation:tegg-up .6s .4s both;}
   .tegg-desc{margin:0 0 26px; font-size:15px; line-height:1.9; color:#b9c9d8; animation:tegg-up .6s .45s both;}
   @keyframes tegg-up{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:none}}
   .tegg-go{font-size:16px; font-weight:700; letter-spacing:2px; color:#06281f; background:#2dd4bf; border:0; border-radius:999px;
@@ -487,6 +500,8 @@ try{(function(){
   <div class="tegg-stars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <div class="tegg-runway"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
   <div class="tegg-inner">
+    <div class="tegg-duo">
+    <span class="tegg-estar tegg-e2">⭐️</span><span class="tegg-estar tegg-e3">⭐️</span>
     <div class="tegg-facewrap">
       <img class="tegg-face" src="t1m-egg.png" alt="T1M">
       <svg class="tegg-spark tegg-s1" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z"/></svg>
@@ -494,8 +509,13 @@ try{(function(){
       <svg class="tegg-spark tegg-s3" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z"/></svg>
       <svg class="tegg-spark tegg-s4" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z"/></svg>
     </div>
+    <div class="tegg-facewrap tegg-mate">
+      <img class="tegg-face" src="t1m-egg-mate.png" alt="mate">
+    </div>
+    </div>
     <div class="tegg-kicker">T1M 專頁 · 首次登入</div>
     <div class="tegg-title">歡迎登機！</div>
+    <div class="tegg-langline">ยินดีต้อนรับขึ้นเครื่อง · Chào mừng lên máy bay</div>
     <p class="tegg-desc">UO · FD · AK · Z2 · QZ<br>呢五間嘅航班資訊，交畀你喇！</p>
     <button class="tegg-go" id="teggGo">進入航班資訊</button>
     <p class="tegg-once">呢個歡迎畫面淨係會出現一次</p>
@@ -510,6 +530,30 @@ try{(function(){
     if(!e || !e.hidden) return;
     try{ localStorage.setItem(EGG_KEY, "1"); }catch(err){}
     e.hidden = false;
+    /* 撳頭像爆香蕉（兩個頭都得） */
+    var faces = e.querySelectorAll(".tegg-face");
+    for(var fi = 0; fi < faces.length; fi++){
+      faces[fi].addEventListener("click", function(){
+        var wrap = this.parentElement;
+        for(var i = 0; i < 16; i++){
+          (function(){
+            var b = document.createElement("span");
+            b.className = "tegg-nana"; b.textContent = "🍌";
+            wrap.appendChild(b);
+            var ang = Math.random()*Math.PI*2, dist = 80+Math.random()*120;
+            var dx = Math.cos(ang)*dist, dy = Math.sin(ang)*dist-50, rot = (Math.random()*540-270)|0;
+            try{
+              var a = b.animate([
+                {transform:"translate(-50%,-50%) scale(.3) rotate(0deg)", opacity:1},
+                {transform:"translate(calc(-50% + "+dx+"px),calc(-50% + "+dy+"px)) scale(1.25) rotate("+rot+"deg)", opacity:1, offset:.65},
+                {transform:"translate(calc(-50% + "+dx*1.1+"px),calc(-50% + "+(dy+110)+"px)) scale(1) rotate("+(rot+90)+"deg)", opacity:0}
+              ], {duration:1000+Math.random()*600, easing:"cubic-bezier(.2,.7,.3,1)"});
+              a.onfinish = function(){ b.remove(); };
+            }catch(err){ b.remove(); }
+          })();
+        }
+      });
+    }
     document.getElementById("teggGo").addEventListener("click", function(){
       e.style.transition = "opacity .4s";
       e.style.opacity = "0";
