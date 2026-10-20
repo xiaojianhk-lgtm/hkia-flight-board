@@ -437,7 +437,9 @@ try{
   @keyframes tegg-pop2{0%{transform:scale(.3) rotate(-14deg);opacity:0}100%{transform:scale(1) rotate(9deg);opacity:1}}
   .tegg-mate .tegg-face:active{animation:tegg-squash2 .45s ease;}
   @keyframes tegg-squash2{0%{transform:scale(1) rotate(9deg)}35%{transform:scale(1.08,.9) rotate(7deg)}100%{transform:scale(1) rotate(9deg)}}
-  .tegg-kicker{margin:22px 0 6px; font-size:12px; letter-spacing:4px; color:#7fd4c1; animation:tegg-up .6s .25s both;}
+  .tegg-kicker{margin:22px 0 6px; font-size:14px; letter-spacing:3px; color:#a8e6da; font-weight:600; animation:tegg-up .6s .25s both;}
+  .tegg-kicker b.tegg-duo{font-size:19px; color:#ffd76a; text-shadow:0 0 14px rgba(255,215,106,.65); letter-spacing:2px; display:inline-block; animation:tegg-duobob 1.6s ease-in-out infinite;}
+  @keyframes tegg-duobob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-3px) rotate(2deg)}}
   .tegg-title{margin:0 0 10px; font-size:30px; letter-spacing:6px; text-indent:6px; font-weight:800; animation:tegg-up .6s .35s both;}
   .tegg-langline{margin:2px 0 16px; font-size:14px; letter-spacing:1px; color:#8fa8bd; animation:tegg-up .6s .4s both;}
   .tegg-desc{margin:0 0 26px; font-size:15px; line-height:1.9; color:#b9c9d8; animation:tegg-up .6s .45s both;}
@@ -513,7 +515,7 @@ try{(function(){
       <img class="tegg-face" src="t1m-egg-mate.png" alt="mate">
     </div>
     </div>
-    <div class="tegg-kicker">T1M 專頁 · 首次登入</div>
+    <div class="tegg-kicker">✈️ T1M <b class="tegg-duo">雙巨頭</b> · 期待你的加入 ✈️</div>
     <div class="tegg-title">歡迎登機！</div>
     <div class="tegg-langline">ยินดีต้อนรับขึ้นเครื่อง · Chào mừng lên máy bay</div>
     <p class="tegg-desc">UO · FD · AK · Z2 · QZ<br>呢五間嘅航班資訊，交畀你喇！</p>
