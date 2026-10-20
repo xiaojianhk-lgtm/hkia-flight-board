@@ -119,12 +119,23 @@
   }
   $("expandBtn").addEventListener("click", toggleExpand);
   $("refreshBtn").addEventListener("click", function(){
-    /* 軟更新：拉 data.json + 溫度，唔 reload 成頁（PWA 下更可靠） */
+    /* 軟更新：拉 data.json + 溫度，唔 reload 成頁（PWA 下更可靠）；
+       2026-10-21 起顯示結果（已更新 ✓／已是最新／更新失敗），唔再撳完唔知發生咩事 */
     var btn = this;
     btn.style.opacity = "0.5";
-    doPullRefresh(function(){
+    doPullRefresh(function(status){
       btn.style.opacity = "";
-      if(typeof jumpToTimeline === "function") jumpToTimeline();
+      if(ptrLabel){
+        ptrLabel.textContent = status === "updated" ? "已更新 ✓" : (status === "failed" ? "更新失敗" : "已是最新");
+        ptrEl.classList.remove("refreshing");
+        ptrEl.style.transition = "";
+        ptrEl.style.transform = "translate(-50%,0px)";
+        ptrEl.style.opacity = 1;
+        setTimeout(function(){
+          ptrHide();
+          if(typeof jumpToTimeline === "function") jumpToTimeline();
+        }, 800);
+      }else if(typeof jumpToTimeline === "function") jumpToTimeline();
     });
   });
 
@@ -425,8 +436,7 @@
   function doPullRefresh(done){
     if(!DB){ done("failed"); return; }
     if(window.__hkiaCheckTemp) window.__hkiaCheckTemp(); /* 順手更新機場溫度 */
-    fetch(DATA_URL+"?_="+Date.now(), {cache:"no-store"})
-      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    fetchDataJson()
       .then(function(d){
         if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
           DB = d;
@@ -568,8 +578,7 @@
     }
   /* loading 狀態：落緊 data.json 嗰陣顯示 */
   $("rows").innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--muted);padding:32px;'><div style='font-size:20px;margin-bottom:8px;'>✈️</div>載入航班數據…</td></tr>";
-  fetch(DATA_URL+"?_="+Date.now(), {cache:"no-store"})
-    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+  fetchDataJson()
     .then(function(d){
       DB = d;
       if(!DB.dates || !DB.days) throw new Error("bad data");
@@ -611,8 +620,7 @@
     if(detailKey || noteEditingKey) return;
     if(document.activeElement === q) return;
     if(overlay.classList.contains("open")) return;
-    fetch(DATA_URL+"?_="+Date.now(), {cache:"no-store"})
-      .then(function(r){ return r.json(); })
+    fetchDataJson()
       .then(function(d){
         if(d && d.generated_at && d.generated_at !== DB.generated_at && d.dates && d.days){
           var sy = window.scrollY, keepEx = expanded;
@@ -632,7 +640,7 @@
   setInterval(function(){
     if(Date.now() - lastActive < 60000 && !watchCount() && !flightWatchCount()) return;
     checkFlightUpdate();
-  }, 15*60*1000);
+  }, 3*60*1000);
   document.addEventListener("visibilitychange", function(){
     if(document.visibilityState === "visible" && DB){
       checkFlightUpdate();
