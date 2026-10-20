@@ -106,8 +106,7 @@
   }
   function armWatch(bay, silent){
     /* arm 即刻拉一次新數據 */
-    fetch(DATA_URL+"?_="+Date.now(), {cache:"no-store"})
-      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    fetchDataJson()
       .then(function(d){
         if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
           DB = d;
