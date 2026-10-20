@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Fetch HKIA flights for yesterday/today/tomorrow/day-after (Asia/Hong_Kong).
+"""Fetch HKIA flights for yesterday/today/tomorrow (Asia/Hong_Kong).
 
 Covers arrival + departure, passenger + cargo. Writes data.json.
 Days are calendar days (00:00-23:59) as returned by the API.
+
+Yesterday is only fetched before 06:00 HKT (to catch post-midnight
+landings); after that it is final, so the previous data.json section is
+carried over unchanged instead of re-fetching identical data. If the
+previous file has no yesterday section, it is fetched anyway (fallback).
 
 Idempotent: rewrites data.json only when the flight data changed; on any
 API failure exits non-zero and leaves the existing file untouched.
@@ -157,7 +162,8 @@ def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
 
 def main() -> int:
     now = datetime.now(HKT)
-    dates = [(now + timedelta(days=d)).strftime("%Y-%m-%d") for d in (-1, 0, 1, 2)]
+    # UI 只顯示 3 日（昨天/今天/明天）；後日唔再攞（冇任何消費者）。
+    dates = [(now + timedelta(days=d)).strftime("%Y-%m-%d") for d in (-1, 0, 1)]
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(script_dir)
@@ -202,9 +208,21 @@ def main() -> int:
             print(f"WARN: stand_prefix.json unreadable ({exc}), starting empty", file=sys.stderr)
     map_changed = False
 
+    # 尋日沿用決定：06:00 後尋日已成定局，若上一版 data.json 有尋日成段，
+    # 就成段沿用唔再打 API（慳 4 次請求，亦少啲 timeout 機會）。
+    # 上一版冇尋日（首次運行／爛檔）就照攞，安全性優先，唔會丟失成日。
+    old_days = (old_payload or {}).get("days") or {}
+    carry_yday = None
+    if now.hour >= 6 and dates[0] in old_days:
+        carry_yday = old_days[dates[0]]
+        fetch_dates = dates[1:]
+        print(f"  {dates[0]}: carried over from previous data.json (after 06:00)")
+    else:
+        fetch_dates = dates
+
     days = {}
     try:
-        for date in dates:
+        for date in fetch_dates:
             day = {}
             for arrival in (True, False):
                 key = "arrival" if arrival else "departure"
@@ -368,24 +386,25 @@ def main() -> int:
         os.replace(tmp_map, prefix_path)
         print(f"OK: stand_prefix.json updated ({len(prefix_map)} mappings)")
 
+    # 沿用嘅尋日成段加入（喺 stand pass 之後加，先唔影響今日/聽日嘅 stand 判斷；
+    # 順手按日期順序重排，輸出結構同以前一致）
+    if carry_yday is not None:
+        days = {d: (carry_yday if d == dates[0] else days[d]) for d in dates}
+
     payload = {
         "generated_at": now.strftime("%Y-%m-%d %H:%M") + " HKT",
         "dates": dates,
         "days": days,
     }
-    # 輕量版：淨係頭 3 日（昨天/今天/明天，UI 顯示用），細 ~30%
-    slim_payload = {
-        "generated_at": payload["generated_at"],
-        "dates": dates[:3],
-        "days": {d: days[d] for d in dates[:3]},
-    }
+    # data.json 本身就係 3 日版（昨天/今天/明天，UI 顯示用）
+    slim_payload = payload
 
     # Idempotent: only rewrite when the data actually changed, so the CI
     # `git diff` check correctly reports "no change" and skips the commit.
     # (stand_old is part of days, so a newly detected / cleared stand change
     # counts as a change.)
     if old_payload is not None:
-        if old_payload.get("dates") == dates[:3] and old_payload.get("days") == slim_payload["days"]:
+        if old_payload.get("dates") == dates and old_payload.get("days") == slim_payload["days"]:
             total = sum(len(v) for d in days.values() for v in d.values())
             print(f"OK: no change ({total} flights), kept {out_path}")
             return 0
@@ -395,7 +414,7 @@ def main() -> int:
         json.dump(slim_payload, fh, ensure_ascii=False, separators=(",", ":"))
     os.replace(tmp_path, out_path)
 
-    # 完整版（4 日齊）另外存 data-full.json
+    # data-full.json：同 data.json 同一份 3 日數據（保持檔案存在，兼容舊流程）
     full_path = os.path.join(os.path.dirname(out_path), "data-full.json")
     tmp_full = full_path + ".tmp"
     with open(tmp_full, "w", encoding="utf-8") as fh:
@@ -403,9 +422,9 @@ def main() -> int:
     os.replace(tmp_full, full_path)
 
     total = sum(len(v) for d in days.values() for v in d.values())
-    slim_total = sum(len(v) for d in slim_payload["days"].values() for v in d.values())
-    print(f"OK: wrote {slim_total} flights for {dates[0]}..{dates[2]} -> {out_path}")
-    print(f"OK: wrote {total} flights for {dates[0]}..{dates[3]} -> {full_path}")
+    slim_total = total
+    print(f"OK: wrote {slim_total} flights for {dates[0]}..{dates[-1]} -> {out_path}")
+    print(f"OK: wrote {total} flights for {dates[0]}..{dates[-1]} -> {full_path}")
     return 0
 
 
