@@ -309,9 +309,11 @@ try{
   .tglchip.wide{flex:1.15;}
   .tglchip input{display:none;}
   .tglchip:has(input:checked){color:var(--accent2); border-color:var(--accent2); font-weight:600;}
-  .modeseg{display:flex; flex:2; gap:8px;}
-  .modeseg button{flex:1; display:flex; align-items:center; justify-content:center; border:1.5px solid var(--line); border-radius:10px; background:transparent; color:var(--muted); font-size:14px; padding:9px 2px; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent;}
-  .modeseg button.on{color:var(--accent2); font-weight:700; border-color:var(--accent2);}
+  .modeseg{display:flex; flex:2;}
+  .modeseg button{flex:1; display:flex; align-items:center; justify-content:center; border:1.5px solid var(--line); background:transparent; color:var(--muted); font-size:14px; padding:9px 2px; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent;}
+  .modeseg button:first-child{border-radius:10px 0 0 10px;}
+  .modeseg button:last-child{border-radius:0 10px 10px 0; margin-left:-1.5px;}
+  .modeseg button.on{color:var(--accent2); font-weight:700; border-color:var(--accent2); position:relative; z-index:1;}
   .searchrow{padding:8px 2px 6px;}
   #watchpills{display:flex; flex-wrap:wrap; gap:6px;}
   #watchpills[hidden]{display:none;}
