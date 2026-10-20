@@ -91,9 +91,17 @@
       for(var i=0;i<btns.length;i++){
         btns[i].classList.toggle("on", btns[i].getAttribute("data-mode") === m);
       }
+      /* 錨定時間線：記住 nowline 喺畫面嘅位置，render 後放返同一位置，
+         避免絕對捲動令標題欄一出嚟一唔見（同 toggleExpand 同一套） */
+      var nl = document.querySelector("tr.nowline");
+      var keepTop = nl ? nl.getBoundingClientRect().top : null;
       expanded = false; render();
-      /* 同開頁一致：轉完模式捲返時間線位置（唔係今日就返頂） */
-      if(typeof scrollToEightAbove === "function") scrollToEightAbove();
+      var nl2 = document.querySelector("tr.nowline");
+      if(keepTop !== null && nl2){
+        window.scrollTo(0, window.scrollY + nl2.getBoundingClientRect().top - keepTop);
+      }else if(typeof scrollToEightAbove === "function"){
+        scrollToEightAbove();
+      }
     }
     seg.addEventListener("click", function(e){
       var b = e.target.closest ? e.target.closest("button[data-mode]") : null;
