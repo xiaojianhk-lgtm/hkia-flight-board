@@ -19,7 +19,6 @@
   var KEY = "hkia-auth-v3";  /* 存當時用嚟入嘅 hash */
   var OLDKEY2 = "hkia-auth-v2";
   var OLDKEY1 = "hkia-auth-v1";
-  var PW_LOG_URL = "https://xiaojian-visit-log.xiaojian-hk.workers.dev/api/pw/log"; /* 管理 Worker 的 /api/log，部署時填，空=唔記 */
   var stored = null, hadOld = false;
   try{
     stored = localStorage.getItem(KEY);
@@ -81,31 +80,13 @@
       return id;
     }catch(e){ return "unknown"; }
   }
-  function logUsage(pwHash){
-    if(!PW_LOG_URL) return;
-    try{
-      var ua = navigator.userAgent || "";
-      var browser = /Chrome/i.test(ua) ? "Chrome" : /Safari/i.test(ua) ? "Safari" : /Firefox/i.test(ua) ? "Firefox" : "其他";
-      var os = /iPhone|iPad/i.test(ua) ? "iOS" : /Android/i.test(ua) ? "Android" : /Windows/i.test(ua) ? "Windows" : /Mac/i.test(ua) ? "macOS" : "其他";
-      fetch(PW_LOG_URL, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          password_hash: pwHash,
-          device_id: getDeviceId(),
-          browser: browser,
-          os: os
-        })
-      }).catch(function(){});
-    }catch(e){}
-  }
-  function trackDevice(pwHash){
+  function trackDevice(pwHash, auth){
     /* v169: 一次性密碼設備追蹤。登入成功後記低部機，管理頁 3 部以上標紅疑似分享 */
     try{
-      if(!serverAuth || !serverAuth.passwords) return;
+      if(!auth || !auth.passwords) return;
       var pid = null;
-      for(var i = 0; i < serverAuth.passwords.length; i++){
-        if(serverAuth.passwords[i].hash === pwHash){ pid = serverAuth.passwords[i].id; break; }
+      for(var i = 0; i < auth.passwords.length; i++){
+        if(auth.passwords[i].hash === pwHash){ pid = auth.passwords[i].id; break; }
       }
       if(!pid) return; /* 舊共用密碼冇 ID，唔追蹤 */
       var ua = navigator.userAgent || "";
@@ -171,8 +152,7 @@
           window.__hkiaAuthPending = false;
           document.documentElement.classList.remove("locked");
           window.dispatchEvent(new Event("hkia-unlocked"));
-          logUsage(h); /* 記低邊個密碼俾邊部機用咗 */
-          trackDevice(h); /* v169: 一次性密碼設備追蹤 */
+          trackDevice(h, serverAuth); /* v169: 一次性密碼設備追蹤（v178 修：傳入 serverAuth） */
         }else if(authFetchFailed && !serverAuth){
           /* B2: 網絡攞唔到密碼 list，唔係密碼錯 */
           err.textContent = "網絡連接失敗，請檢查網絡後再試";
