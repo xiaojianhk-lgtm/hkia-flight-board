@@ -1,5 +1,9 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v190";
+<<<<<<< HEAD
+var CACHE = "hkia-v191";
+=======
+var CACHE = "hkia-v189";
+>>>>>>> b61a3cd (v189 filter row: transparent bg, Cathay-green border only (date-pill style))
 var ASSETS = [
   "./hkiaflight.html",
   "./t1m.html",
