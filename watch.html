@@ -277,12 +277,14 @@ try{
   #fabSearch{
     position:fixed; right:16px; bottom:24px; z-index:40;
     width:52px; height:52px; border-radius:50%;
-    border:1px solid var(--line); background:var(--card); color:var(--cxgreen);
+    border:1px solid rgba(0,0,0,.08); background:rgba(255,255,255,.55); color:var(--cxgreen);
     cursor:pointer;
-    box-shadow:0 4px 12px rgba(0,0,0,.35);
+    box-shadow:0 4px 12px rgba(0,0,0,.18);
+    -webkit-backdrop-filter:blur(8px) saturate(1.4); backdrop-filter:blur(8px) saturate(1.4);
     display:flex; align-items:center; justify-content:center;
   }
   #fabSearch:active{ transform:scale(.92); }
+  [data-theme="dark"] #fabSearch{ border-color:rgba(255,255,255,.16); background:rgba(16,36,56,.45); box-shadow:0 4px 12px rgba(0,0,0,.3); }
   #stickyTs{padding:6px 0 10px; font-size:11px; display:flex; align-items:center; gap:8px;}
   .ts{font-size:12px; color:var(--muted); margin-top:2px;}
   .ts b{color:var(--accent); font-weight:600;}
