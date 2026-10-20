@@ -37,7 +37,7 @@
     if(!h || !authData) return false;
     // 2026-10-19 cutover：舊共用密碼 3577 已刪除
     // 緊急密碼（0220）：管理頁壞咗時的後備，得管理員知
-    if(h === "42ca2cc50238a49486ffbdacfe7229988db5049c4bb1c5f1de26fdb0883a48a0") return true;
+    if(h === "0c1a70e4512ee6f78c92820756a4026ce1f93872369624f31cf206614b2e231f") return true;
     // 新格式：passwords 陣列
     if(authData.passwords && Array.isArray(authData.passwords)){
       var now = Date.now();
@@ -141,7 +141,7 @@
           }else{
             // fallback：舊共用密碼 hash（過渡期用，cutover 刪舊密碼時一併刪除呢段，唔好留低）
             // B3: 硬編碼 hash 係已知風險，cutover 後必須清理
-            ok = (h === "42ca2cc50238a49486ffbdacfe7229988db5049c4bb1c5f1de26fdb0883a48a0"); // 2026-10-19 cutover：舊密碼 3577 已刪，只留緊急密碼
+            ok = (h === "0c1a70e4512ee6f78c92820756a4026ce1f93872369624f31cf206614b2e231f"); // 2026-10-19 cutover：舊密碼 3577 已刪，只留緊急密碼
           }
         }catch(e){
           ok = false;
