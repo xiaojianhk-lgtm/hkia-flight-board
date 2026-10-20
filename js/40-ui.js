@@ -91,17 +91,10 @@
       for(var i=0;i<btns.length;i++){
         btns[i].classList.toggle("on", btns[i].getAttribute("data-mode") === m);
       }
-      /* 錨定時間線：記住 nowline 喺畫面嘅位置，render 後放返同一位置，
-         避免絕對捲動令標題欄一出嚟一唔見（同 toggleExpand 同一套） */
-      var nl = document.querySelector("tr.nowline");
-      var keepTop = nl ? nl.getBoundingClientRect().top : null;
+      /* 轉完模式去返標準時間線位置（同開頁一致：時間線上 8 班），
+         唔用錨定——貨機清單短嗰陣錨定會計到捲去版頂 */
       expanded = false; render();
-      var nl2 = document.querySelector("tr.nowline");
-      if(keepTop !== null && nl2){
-        window.scrollTo(0, window.scrollY + nl2.getBoundingClientRect().top - keepTop);
-      }else if(typeof scrollToEightAbove === "function"){
-        scrollToEightAbove();
-      }
+      if(typeof scrollToEightAbove === "function") scrollToEightAbove();
     }
     seg.addEventListener("click", function(e){
       var b = e.target.closest ? e.target.closest("button[data-mode]") : null;
