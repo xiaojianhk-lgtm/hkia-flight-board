@@ -313,13 +313,29 @@ def main() -> int:
     #   silently dropped stand_old whenever the API omitted the gate.)
     # - If the API drops the stand 3 times in a row (45 min), treat it as
     #   genuinely cancelled: show "—" and clear the marker.
-    # - If the old stand is now occupied by a DIFFERENT flight (aircraft
-    #   swap: the bay was reassigned), show "—" immediately.
+    # - If the old stand is now occupied by a DIFFERENT flight at nearly the
+    #   same time (same date, within 90 min — aircraft swap: the bay was
+    #   reassigned), show "—" immediately. Stands are reused all day, so an
+    #   appearance hours away or on another date is NOT a takeover.
     def _norm(k, s):
         return prefix_gate(s, prefix_map) if k == "departure" else s
 
-    # 今次所有航班佔用緊嘅泊位（用 display form）
-    current_stands = set()
+    # 今次所有航班佔用緊嘅泊位（用 display form），連日期＋有效時間一齊記：
+    # 之後判「舊 bay 俾人搶咗」嗰陣，要同日＋時間相近（≤90 分鐘）先算數。
+    # 泊位全日重用係常態，淨係「出現喺數據入面」唔代表俾人搶咗——
+    # 2026-10-21 DL089(N60)/CX843(S49) 就係俾呢個時間盲點誤刪咗 bay。
+    def _eff_mins(fl):
+        for fld in ("ata", "est", "eta"):
+            v = fl.get(fld)
+            if v and v != "—":
+                try:
+                    hh, mm = v.split(":")[:2]
+                    return int(hh) * 60 + int(mm)
+                except Exception:
+                    pass
+        return None
+
+    stand_users = {}
     for date in dates:
         day = days.get(date)
         if not day:
@@ -328,7 +344,7 @@ def main() -> int:
             for fl in day.get(key, []):
                 s = fl.get("stand")
                 if s and s != "—":
-                    current_stands.add(_norm(key, s))
+                    stand_users.setdefault(_norm(key, s), []).append((date, _eff_mins(fl)))
 
     for date in dates:
         day = days.get(date)
@@ -353,8 +369,15 @@ def main() -> int:
                 if not cur or cur == "—":
                     # API 今次冇俾泊位
                     miss = old_stand_miss.get(k, 0) + 1
-                    # 舊 bay 俾咗另一班機（換飛機）：即刻當取消
-                    bay_taken = bool(prev_d and prev_d != "—" and prev_d in current_stands)
+                    # 舊 bay 俾咗另一班機（換飛機）：要同日＋時間相近先算真搶咗，即刻當取消
+                    bay_taken = False
+                    if prev_d and prev_d != "—":
+                        my_t = _eff_mins(fl)
+                        if my_t is not None:
+                            for (ud, ut) in stand_users.get(prev_d, []):
+                                if ud == date and ut is not None and abs(ut - my_t) <= 90:
+                                    bay_taken = True
+                                    break
                     if bay_taken or miss >= 3:
                         # 真係冇咗：顯示 —，清 marker
                         fl["stand"] = "—"
