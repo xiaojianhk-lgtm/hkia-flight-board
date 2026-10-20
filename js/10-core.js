@@ -1,6 +1,17 @@
 /* HKIA flight board - 10-core.js */
-/* 數據源：直接讀 GitHub raw，唔經 Pages build（2026-10-20 改，解決 Pages build queue 塞車） */
+/* 數據源：2026-10-21 起主源改經自己嘅 Worker 轉發（Worker 即場攞 GitHub 最新版＋no-store，
+   避開 GitHub CDN／用戶端中間 cache 派舊貨 — 試過用戶部機困喺舊數據 15 分鐘）；
+   直讀 GitHub raw 留做後備。2026-10-20 前係經 Pages、之後直讀 raw。 */
 var DATA_URL = "https://raw.githubusercontent.com/xiaojianhk-lgtm/hkia-flight-board/main/data.json";
+var DATA_URL_W = "https://hkia-push.xiaojian-hk.workers.dev/data.json";
+function fetchDataJson(){
+  return fetch(DATA_URL_W+"?_="+Date.now(), {cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .catch(function(){
+      return fetch(DATA_URL+"?_="+Date.now(), {cache:"no-store"})
+        .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); });
+    });
+}
   var DB = null, dateIdx = 1, query = "";
   var hideCargo = true, hidePax = false, onlyHas = true, hideCX = false;
   /* T1M 專頁 config：t1m.html 經 window.__T1M_AIRLINES 傳航空公司名單、window.__T1M_WATCH_KEY 分開存備註；
