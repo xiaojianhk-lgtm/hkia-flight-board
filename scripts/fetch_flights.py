@@ -311,8 +311,12 @@ def main() -> int:
     # - If the API temporarily drops the stand, the last known stand and
     #   marker are kept instead of showing "—". (The old `continue` here
     #   silently dropped stand_old whenever the API omitted the gate.)
-    # - If the API drops the stand 3 times in a row (45 min), treat it as
-    #   genuinely cancelled: show "—" and clear the marker.
+    # - If the API drops the stand 6 times in a row (~1 hr), treat it as
+    #   genuinely cancelled: show "—" and clear the marker. (Was 3 until
+    #   2026-10-21: that night the feed flickered stand-less for exactly 3
+    #   runs while the airport app kept showing the stand — DL089/CX843 —
+    #   so 3 was too tight; genuine takeovers are still caught instantly by
+    #   the time-aware rule below.)
     # - If the old stand is now occupied by a DIFFERENT flight at nearly the
     #   same time (same date, within 90 min — aircraft swap: the bay was
     #   reassigned), show "—" immediately. Stands are reused all day, so an
@@ -378,7 +382,7 @@ def main() -> int:
                                 if ud == date and ut is not None and abs(ut - my_t) <= 90:
                                     bay_taken = True
                                     break
-                    if bay_taken or miss >= 3:
+                    if bay_taken or miss >= 6:
                         # 真係冇咗：顯示 —，清 marker
                         fl["stand"] = "—"
                         fl.pop("stand_old", None)
