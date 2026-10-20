@@ -92,6 +92,8 @@
         btns[i].classList.toggle("on", btns[i].getAttribute("data-mode") === m);
       }
       expanded = false; render();
+      /* 同開頁一致：轉完模式捲返時間線位置（唔係今日就返頂） */
+      if(typeof scrollToEightAbove === "function") scrollToEightAbove();
     }
     seg.addEventListener("click", function(e){
       var b = e.target.closest ? e.target.closest("button[data-mode]") : null;
