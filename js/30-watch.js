@@ -11,7 +11,7 @@
       return;
     }
     /* T1M 專頁關閉提醒／推送功能：+/@ 唔 arm，直接提示 */
-    if(window.__T1M_NO_WATCH && /^([A-Za-z]?\d+|[A-Za-z]{2,}\d+)[@+]$/i.test(v)){
+    if(window.__T1M_NO_WATCH && /^([A-Za-z]?\d+|[A-Za-z0-9]{2,}\d+)[@+]$/i.test(v)){
       showToast("T1M 專頁不設提醒功能");
       q.value = ""; query = "";
       $("qclear").parentElement.classList.remove("hasq");
@@ -31,7 +31,7 @@
       return;
     }
     /* FLIGHT@：靜默加入航班關注 */
-    var mFlightAt = /^([A-Za-z]{2,}\d+)@$/i.exec(v);
+    var mFlightAt = /^([A-Za-z0-9]{2,}\d+)@$/i.exec(v);
     if(mFlightAt){
       armFlightWatch(mFlightAt[1].toUpperCase(), true);
       showToast("已添加 " + mFlightAt[1].toUpperCase(), true);
@@ -51,7 +51,7 @@
       q.blur();
       return;
     }
-    var mFlight = /^([A-Za-z]{2,}\d+)\+$/i.exec(v);
+    var mFlight = /^([A-Za-z0-9]{2,}\d+)\+$/i.exec(v);
     if(mFlight){
       /* FLIGHT+：arm 指定航班泊位提醒，嗰班機一有 Bay 就彈 banner */
       armFlightWatch(mFlight[1].toUpperCase());
