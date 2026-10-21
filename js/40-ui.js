@@ -577,7 +577,7 @@
       return;
     }
   /* loading 狀態：落緊 data.json 嗰陣顯示 */
-  $("rows").innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--muted);padding:32px;'><div style='font-size:20px;margin-bottom:8px;'>✈️</div>載入航班數據…</td></tr>";
+  $("rows").innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--muted);padding:32px;border-right:1px solid var(--row-line);'><div><img src='plane-icon.png' style='height:48px;width:auto;margin-bottom:10px;' alt=''></div>正在載入航班數據中…</td></tr>";
   fetchDataJson()
     .then(function(d){
       DB = d;
