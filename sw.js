@@ -1,5 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v199";
+var CACHE = "hkia-v200";
 var ASSETS = [
   "./hkiaflight.html",
   "./t1m.html",
@@ -91,8 +91,11 @@ self.addEventListener("notificationclick", function(e){
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(list){
       for (var i = 0; i < list.length; i++) {
         var c = list[i];
-        // 已開咗主頁就 focus 佢，唔開新窗
+        // 已開咗主頁就唔開新窗，但要先跳去通知條 link（帶 ?highlight=）再 focus，
+        // 否則舊頁面冇 highlight 參數，撳推送唔會跳去嗰班機（2026-10-21 修）。
+        // navigate 唔得（例如未受控嘅舊窗）就跌返去淨 focus。
         if (c.url.indexOf("hkiaflight.html") !== -1 || c.url.indexOf("watch.html") !== -1 || c.url.indexOf("nld.html") !== -1) {
+          if ("navigate" in c) return c.navigate(url).then(function(){ return c.focus(); }).catch(function(){ return c.focus(); });
           if ("focus" in c) return c.focus();
         }
       }
