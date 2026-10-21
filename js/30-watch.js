@@ -305,7 +305,7 @@
   var flightWatches = {};  /* flightId -> {seenBay:""} */
 
   var PUSH_WORKER = "https://hkia-push.xiaojian-hk.workers.dev";
-  var PUSH_TOKEN = "f81b0bfe767f8302ef17f701077e3b65";
+  var PUSH_TOKEN = "18d17be5005c63145881b72855c6851e575f68f5f7456d915ce0b22a067cf0aa";
   function pushWatchAdd(type, value, date, seenBay){
     try{
       (async function(){
