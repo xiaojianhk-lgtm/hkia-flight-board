@@ -183,8 +183,23 @@ function fetchDataJson(){
     return h;
   }
 
+  /* 自動清理舊備註（淨留 3 日窗口）：刪返早過窗口最早日嘅日期 key，窗口內＋非日期 key 唔郁；
+     冇數據嗰陣唔做（防誤刪）；淨係真係刪咗先 save */
+  function pruneWatch(){
+    if(!DB || !DB.dates || !DB.dates.length) return;
+    var earliest = DB.dates[0];
+    for(var i=1;i<DB.dates.length;i++){ if(DB.dates[i] < earliest) earliest = DB.dates[i]; }
+    var removed = false;
+    Object.keys(WATCH).forEach(function(k){
+      var m = /^(\d{4}-\d{2}-\d{2})\|/.exec(k);
+      if(m && m[1] < earliest){ delete WATCH[k]; removed = true; }
+    });
+    if(removed) saveWatch();
+  }
+
   function getLists(){
     if(!DB || !DB.dates || !DB.days) return {arr:[], dep:[]};
+    pruneWatch();
     /* 按實際日期分頁：掃全部日期，取有效日期等於目標日期嘅航班 */
     var target = DB.dates[dateIdx];
     var arr = [], dep = [];
