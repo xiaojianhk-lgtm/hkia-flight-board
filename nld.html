@@ -578,6 +578,13 @@ try{(function(){
     var cgb = window.CARGO_BAYS || {};
     var fbay = window.CARGO_FIRST_BAYS || {};
     var changed = false;
+    /* MED-27：Menzies bay 注入＋變紅淨限今晚窗口（最近一個 22:00 嗰日＋翌日，HKT）；
+       窗口外嘅 bucket（例如尋日 tab）淨做 HAS 貨機過濾，唔好俾今晚 bay 污染／假紅 */
+    var nowHKT = new Date(Date.now() + 8*3600*1000);
+    var wStart = new Date(Date.UTC(nowHKT.getUTCFullYear(), nowHKT.getUTCMonth(), nowHKT.getUTCDate()));
+    if(nowHKT.getUTCHours() < 22) wStart = new Date(wStart.getTime() - 86400000);
+    function wFmt(d){ return d.getUTCFullYear() + "-" + String(d.getUTCMonth()+1).padStart(2,"0") + "-" + String(d.getUTCDate()).padStart(2,"0"); }
+    var winDates = {}; winDates[wFmt(wStart)] = 1; winDates[wFmt(new Date(wStart.getTime() + 86400000))] = 1;
     Object.keys(DB.days).forEach(function(dk){
       ["arrival","departure"].forEach(function(tab){
         var orig = DB.days[dk][tab]||[];
@@ -585,7 +592,7 @@ try{(function(){
           if(!f.cargo) return false;
           if(HAS_CARGO.indexOf(codeOf(f.flight_id))<0) return false;
           var code = codeOf(f.flight_id);
-          if(MCS4[code]){
+          if(MCS4[code] && winDates[dk]){
             var key = (f.flight_id||"").replace(/\s/g,"");
             if(cgb[key]){
               // 同今晚第一個 bay 唔同即係轉過：記第一個 bay，等主頁個 stchg 變紅
