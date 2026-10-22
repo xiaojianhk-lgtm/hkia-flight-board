@@ -348,12 +348,6 @@
   function pushWatchRemove(type, value, dir){
     try{
       (async function(){
-        var endpoint = "";
-        try{
-          var reg = await navigator.serviceWorker.ready;
-          var sub = await reg.pushManager.getSubscription();
-          if(sub) endpoint = sub.endpoint || "";
-        }catch(e){}
         var id = type + ":" + (value || "").toUpperCase().replace(/\s/g, "") + (dir ? ":" + dir : "");
         fetch(PUSH_WORKER + "/push/watch/remove", {
           method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
