@@ -85,6 +85,7 @@
       return;
     }
     function setMode(m){
+      if(typeof T1M_AIRLINES !== "undefined" && T1M_AIRLINES) return; /* MED-23：T1M 切貨機無效，停留喺預設名單 */
       var isCargo = (m === "cargo");
       hideCargo = !isCargo; hidePax = isCargo;
       var btns = seg.querySelectorAll("button");
