@@ -13,7 +13,7 @@ function fetchDataJson(){
     });
 }
   var DB = null, dateIdx = 1, query = "";
-  var hideCargo = true, hidePax = false, onlyHas = true, hideCX = false;
+  var hideCargo = true, hidePax = false, onlyHas = true, hideCX = false, dirMode = "both";
   /* T1M 專頁 config：t1m.html 經 window.__T1M_AIRLINES 傳航空公司名單、window.__T1M_WATCH_KEY 分開存備註；
      主頁唔設呢兩個 flag，行為完全唔變 */
   var T1M_AIRLINES = window.__T1M_AIRLINES || null;
@@ -210,7 +210,7 @@ function fetchDataJson(){
       if(onlyHas && !isHasFlight(f)) return false;
       return true;
     };
-    arr = arr.filter(flt); dep = dep.filter(flt);
+    arr = arr.filter(function(f){ return dirMode !== "dep" && flt(f); }); dep = dep.filter(function(f){ return dirMode !== "arr" && flt(f); });
     var nq = norm(query);
     if(nq){
       var mf = function(typ){
