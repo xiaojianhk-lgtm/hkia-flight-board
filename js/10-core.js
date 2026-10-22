@@ -203,6 +203,7 @@ function fetchDataJson(){
         var tcode = opId(f).replace(/\s/g,"").substring(0,2).toUpperCase();
         if(T1M_AIRLINES.indexOf(tcode) === -1) return false;
         if(f.cargo) return false;
+        return true; /* MED-23：名單內客機一定出，切貨機都唔會成頁空白 */
       }
       if(hideCargo && f.cargo) return false;
       if(hidePax && !f.cargo) return false;
