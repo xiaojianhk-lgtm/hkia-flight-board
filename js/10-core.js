@@ -294,12 +294,17 @@ function fetchDataJson(){
     var wk = watchKey(typ, f), w = WATCH[wk];
     var note = w ? (w.note || "") : "";
     if(noteEditingKey === wk){
+      var fwFid = opId(f).toUpperCase(), fwOn = !!flightWatches[fwFid];
+      var followBtn = "";
+      if(!window.__T1M_NO_WATCH){
+        followBtn = "<button class='nbtn' data-act='flight-follow' style='padding:6px 12px;font-size:13px;" + (fwOn ? "border-color:var(--accent2);color:var(--accent2);" : "") + "'>" + (fwOn ? "已關注" : "關注") + "</button>";
+      }
       if(f.cargo){
-        h += "<div class='notewrap'><span>泊位：</span><input id='standInput' class='noteinput' maxlength='10' value='"+esc(manualStand(typ,f)).replace(/"/g,"&quot;")+"' placeholder='手動輸入'>"+
-             "<button class='nbtn' data-act='note-save'>保存</button><button class='nbtn' data-act='note-cancel'>刪除</button></div>";
+        h += "<div class='notewrap'><span>泊位：</span><input id='standInput' class='noteinput' maxlength='10' style='width:35%;' value='"+esc(manualStand(typ,f)).replace(/"/g,"&quot;")+"' placeholder='手動輸入'>"+
+             "<button class='nbtn' data-act='note-save' style='padding:6px 12px;font-size:13px;border-color:var(--accent2);color:var(--accent2);'>保存</button><button class='nbtn' data-act='note-cancel' style='padding:6px 12px;font-size:13px;'>刪除</button>"+followBtn+"</div>";
       }else{
-        h += "<div class='notewrap'><span>備註：</span><input id='noteInput' class='noteinput' maxlength='140' value='"+esc(note).replace(/"/g,"&quot;")+"'>"+
-             "<button class='nbtn' data-act='note-save'>保存</button><button class='nbtn' data-act='note-cancel'>刪除</button></div>";
+        h += "<div class='notewrap'><span>備註：</span><input id='noteInput' class='noteinput' maxlength='140' style='width:35%;' value='"+esc(note).replace(/"/g,"&quot;")+"'>"+
+             "<button class='nbtn' data-act='note-save' style='padding:6px 12px;font-size:13px;border-color:var(--accent2);color:var(--accent2);'>保存</button><button class='nbtn' data-act='note-cancel' style='padding:6px 12px;font-size:13px;'>刪除</button>"+followBtn+"</div>";
       }
     }else if(note){
       h += "<div><span>備註：</span>"+esc(note)+"</div>";
