@@ -259,7 +259,7 @@
         if(area){ hlArea = (hlArea === area) ? null : area; render(); }
       }else{
         var k = itemKey(pressItem);
-        if(!WATCH[k]) WATCH[k] = {t:Date.now()};
+        if(!WATCH[k]) WATCH[k] = {};
         detailKey = k; noteEditingKey = k; noteFocus = true;
         render();
       }
@@ -455,7 +455,7 @@
       .catch(function(){ done("failed"); });
   }
 
-  /* 連點兩下跳返時間線，連點三下開搜尋（三下嗰陣會先跳一次，無害） */
+  /* 連點兩下跳返時間線 */
   var tapTimes = [];
   var lastTapT = 0, lastTapX = 0, lastTapY = 0;
   document.addEventListener("touchend", function(e){
@@ -514,7 +514,7 @@
     window.scrollTo(0, window.scrollY + (nl.getBoundingClientRect().top - wantTop));
   }
 
-  /* 捲到「時間線上 8 班」嘅位置（大字模式：4 班） */
+  /* 捲到「時間線上 8 班」嘅位置 */
   function scrollToEightAbove(){
     var nl = document.querySelector("tr.nowline");
     var thr = document.querySelector("thead th");
