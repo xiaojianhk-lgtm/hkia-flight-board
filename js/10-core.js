@@ -246,7 +246,7 @@ function fetchDataJson(){
         /* 2. Bay 關注：而家個 bay 喺 watch list 入面 */
         try{
           if(typeof watchBays !== "undefined"){
-            var bay = ((it.f.stand || "") + "").toUpperCase();
+            var bay = ((manualStand(it.typ, it.f) || it.f.stand || "") + "").toUpperCase();
             if(bay && watchBays[bay]) return true;
           }
         }catch(e){}
