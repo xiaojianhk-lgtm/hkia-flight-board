@@ -87,7 +87,7 @@
     var ni = $("noteInput"), si = $("standInput"), k = noteEditingKey;
     noteEditingKey = null;
     if(k){
-      WATCH[k] = WATCH[k] || {t:Date.now()};
+      WATCH[k] = WATCH[k] || {};
       if(ni){ var v = ni.value.trim(); if(v) WATCH[k].note = v; else delete WATCH[k].note; }
       if(si){ var s = si.value.trim().toUpperCase(); if(s) WATCH[k].stand = s; else delete WATCH[k].stand; }
       if(!WATCH[k].note && !WATCH[k].stand && !WATCH[k].insp) delete WATCH[k];
