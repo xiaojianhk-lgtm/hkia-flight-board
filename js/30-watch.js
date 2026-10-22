@@ -110,7 +110,7 @@
     /* arm 即刻拉一次新數據 */
     fetchDataJson()
       .then(function(d){
-        if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
+        if(d && d.generated_at && d.dates && d.days && (!DB || d.generated_at !== DB.generated_at)){
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
           if(typeof buildDates==="function") buildDates(); render();
