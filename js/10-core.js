@@ -18,7 +18,6 @@ function fetchDataJson(){
      主頁唔設呢兩個 flag，行為完全唔變 */
   var T1M_AIRLINES = window.__T1M_AIRLINES || null;
   var WATCH_KEY = window.__T1M_WATCH_KEY || "hkia-watch-v1";
-  /* 客/貨模式（localStorage 記住；nld.html 冇掣，強制貨運） */
   /* 次次預設客機，唔記住上次 */
   var expanded = false, detailKey = null, lastItems = [];
   var DATE_NAMES = ["昨天","今天","明天"];
@@ -45,7 +44,7 @@ function fetchDataJson(){
   function inspLevel(typ, f){ var w = WATCH[watchKey(typ, f)]; return (w && w.insp) || 0; }
   function setInspLevel(typ, f, lvl){
     var k = watchKey(typ, f), w = WATCH[k];
-    if(lvl > 0){ if(!w) w = WATCH[k] = {t:Date.now()}; w.insp = lvl; }
+    if(lvl > 0){ if(!w) w = WATCH[k] = {}; w.insp = lvl; }
     else if(w){ delete w.insp; if(!w.note && !w.stand) delete WATCH[k]; }
     saveWatch();
   }
