@@ -1,5 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v206";
+var CACHE = "hkia-v207";
 var ASSETS = [
   "./hkiaflight.html",
   "./t1m.html",
@@ -70,7 +70,10 @@ self.addEventListener("push", function(e){
   e.waitUntil((async function(){
     var title = "航班資訊", body = "有更新", url = "./hkiaflight.html";
     try{
-      var r = await fetch("https://hkia-push.xiaojian-hk.workers.dev/push/pending/get");
+      var ep = "";
+      try{ var _s = await self.registration.pushManager.getSubscription(); if(_s && _s.endpoint) ep = _s.endpoint; }catch(err){}
+      var _u = "https://hkia-push.xiaojian-hk.workers.dev/push/pending/get" + (ep ? "?endpoint=" + encodeURIComponent(ep) : "");
+      var r = await fetch(_u);
       var d = await r.json();
       if(d.title) title = d.title;
       if(d.body) body = d.body;
