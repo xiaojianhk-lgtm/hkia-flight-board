@@ -73,6 +73,7 @@
     try{ localStorage.setItem(WB_KEY, JSON.stringify({bays:watchBays})); }catch(e){}
   }
   function loadWatch(){
+    if(window.__T1M_NO_WATCH) return;
     try{
       var wb = JSON.parse(localStorage.getItem(WB_KEY) || "null");
       if(wb){
@@ -105,6 +106,7 @@
     return out;
   }
   function armWatch(bay, silent){
+    if(window.__T1M_NO_WATCH) return;
     /* arm 即刻拉一次新數據 */
     fetchDataJson()
       .then(function(d){
@@ -138,6 +140,7 @@
     saveBayWatch(); showWatchPill();
   }
   function showWatchPill(){
+    if(window.__T1M_NO_WATCH) return;
     var box = $("watchpills");
     box.innerHTML = "";
     Object.keys(watchBays).sort().forEach(function(bay){
@@ -207,6 +210,7 @@
     };
   }
   function checkBayWatch(){
+    if(window.__T1M_NO_WATCH) return;
     if(!watchCount() || !DB) return;
     var allFresh = [];
     Object.keys(watchBays).forEach(function(bay){
@@ -349,6 +353,7 @@
     try{ localStorage.setItem(FW_KEY, JSON.stringify({flights:flightWatches})); }catch(e){}
   }
   function loadFlightWatch(){
+    if(window.__T1M_NO_WATCH) return;
     try{
       var fw = JSON.parse(localStorage.getItem(FW_KEY) || "null");
       if(fw && fw.flights) flightWatches = fw.flights;
@@ -392,6 +397,7 @@
     return (manualStand("arrival", f) || manualStand("departure", f) || f.stand || "").toUpperCase();
   }
   function armFlightWatch(fid, silent){
+    if(window.__T1M_NO_WATCH) return;
     var target = DB && DB.dates ? DB.dates[dateIdx] : "";
     var it = findFlight(fid, target);
     var bay = it ? flightBay(it.f) : "";
@@ -408,6 +414,7 @@
     saveFlightWatch(); showWatchPill();
   }
   function checkFlightWatch(){
+    if(window.__T1M_NO_WATCH) return;
     if(!flightWatchCount() || !DB) return;
     var fresh = [];
     Object.keys(flightWatches).forEach(function(fid){
