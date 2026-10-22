@@ -56,10 +56,10 @@ function fetchDataJson(){
     var c = s.charAt(0);
     if(c === "S" || c === "N" || c === "W") return c;
     if(c === "R" || /^\d+$/.test(s)) return "R";
-    // X 貨機區（通宵貨機用）
+    // X1-X8 貨機區（通宵貨機用）
     if(c === "X"){
       var n = parseInt(s.substring(1), 10);
-      if(n >= 1) return "X";
+      if(n >= 1 && n <= 8) return "X";
     }
     return "";
   }
@@ -160,7 +160,7 @@ function fetchDataJson(){
     if(c === "R" || /^\d+$/.test(s)) return "stR";
     if(c === "X"){
       var n = parseInt(s.substring(1), 10);
-      if(n >= 1) return "stX";
+      if(n >= 1 && n <= 8) return "stX";
     }
     return "";
   }
