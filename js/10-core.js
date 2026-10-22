@@ -38,7 +38,6 @@ function fetchDataJson(){
   }
   function hasNote(typ, f){
     var k = watchKey(typ, f), w = WATCH[k];
-    if(f.cargo){ if(w && w.note){ delete w.note; if(!w.stand && !w.insp) delete WATCH[k]; saveWatch(); } return false; }
     return !!(w && w.note);
   }
   function manualStand(typ, f){ var w = WATCH[watchKey(typ, f)]; return (w && w.stand) || ""; }
@@ -57,10 +56,10 @@ function fetchDataJson(){
     var c = s.charAt(0);
     if(c === "S" || c === "N" || c === "W") return c;
     if(c === "R" || /^\d+$/.test(s)) return "R";
-    // X1-X8 貨機區（通宵貨機用）
+    // X 貨機區（通宵貨機用）
     if(c === "X"){
       var n = parseInt(s.substring(1), 10);
-      if(n >= 1 && n <= 8) return "X";
+      if(n >= 1) return "X";
     }
     return "";
   }
@@ -126,7 +125,7 @@ function fetchDataJson(){
     var el = $("staleWarn"); if(!el) return;
     var m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/.exec(genAt || "");
     if(!m){ el.hidden = true; return; }
-    var gen = new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5]);
+    var gen = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4]-8, +m[5])); /* generated_at 係 HKT */
     var ageMin = (Date.now() - gen.getTime()) / 60000;
     if(ageMin > 60){
       var h = Math.floor(ageMin / 60);
@@ -161,7 +160,7 @@ function fetchDataJson(){
     if(c === "R" || /^\d+$/.test(s)) return "stR";
     if(c === "X"){
       var n = parseInt(s.substring(1), 10);
-      if(n >= 1 && n <= 8) return "stX";
+      if(n >= 1) return "stX";
     }
     return "";
   }
@@ -242,7 +241,7 @@ function fetchDataJson(){
         var fid = "";
         try{ fid = opId(it.f).toUpperCase(); }catch(e){}
         /* 1. 航班關注（@ 或 +） */
-        try{ if(typeof flightWatches !== "undefined" && flightWatches[fid]) return true; }catch(e){}
+        try{ if(typeof flightWatches !== "undefined" && (flightWatches[fid] || flightWatches[fid + "|" + it.typ])) return true; }catch(e){}
         /* 2. Bay 關注：而家個 bay 喺 watch list 入面 */
         try{
           if(typeof watchBays !== "undefined"){
@@ -261,7 +260,6 @@ function fetchDataJson(){
   function skDate(f, fdate, isDep){
     var t = eff(f);
     var m = toMin(t);
-    if(m > 90000) return m;
     var ad = effDate(f);
     if(ad && fdate && ad !== fdate){
       var diff = Math.round((new Date(ad+"T00:00:00") - new Date(fdate+"T00:00:00")) / 86400000);
@@ -275,6 +273,8 @@ function fetchDataJson(){
     var t = eff(f);
     if(t === f.ata && f.ata_date) return f.ata_date;
     if(t === f.est && f.est_date) return f.est_date;
+    if(t === f.eta && f.eta_date) return f.eta_date;
+    if(t === f.atd && f.atd_date) return f.atd_date;
     return null;
   }
   /* 原定同實際唔同日，顯示原定嘅 DD（單行並排） */
@@ -294,7 +294,7 @@ function fetchDataJson(){
     var wk = watchKey(typ, f), w = WATCH[wk];
     var note = w ? (w.note || "") : "";
     if(noteEditingKey === wk){
-      var fwFid = opId(f).toUpperCase(), fwOn = !!flightWatches[fwFid];
+      var fwFid = opId(f).toUpperCase(), fwOn = !!(flightWatches[fwFid] || flightWatches[fwFid + "|" + typ]);
       var followBtn = "";
       if(!window.__T1M_NO_WATCH){
         followBtn = "<button class='nbtn' data-act='flight-follow' style='padding:6px 12px;font-size:13px;" + (fwOn ? "border-color:var(--accent2);color:var(--accent2);" : "") + "'>" + (fwOn ? "已關注" : "關注") + "</button>";
