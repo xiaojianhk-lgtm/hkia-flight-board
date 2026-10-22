@@ -161,7 +161,7 @@
       if(act === "note-save"){ commitNote(); }
       else if(act === "note-cancel" && it2){ deleteNote(it2.typ, it2.f); }
       else if(act === "copy-flight" && it2){ copyFlight(it2.typ, it2.f); }
-      else if(act === "flight-follow" && it2){ var fid = opId(it2.f).toUpperCase(); if(flightWatches[fid]) disarmFlightWatch(fid); else armFlightWatch(fid); render(); }
+      else if(act === "flight-follow" && it2){ var fid = opId(it2.f).toUpperCase(); var fwKey = (flightWatches[fid] && fid) || (flightWatches[fid + "|" + it2.typ] && fid + "|" + it2.typ); if(fwKey) disarmFlightWatch(fwKey); else armFlightWatch(fid); render(); }
       return;
     }
 
@@ -304,8 +304,9 @@
     if(window.__WATCH_ONLY && dx < 0){
       try{
         var fidU = opId(it.f).toUpperCase();
-        if(typeof flightWatches !== "undefined" && flightWatches[fidU] && typeof disarmFlightWatch === "function"){
-          disarmFlightWatch(fidU);
+        var fwKeyU = (typeof flightWatches !== "undefined" && flightWatches[fidU] && fidU) || (typeof flightWatches !== "undefined" && flightWatches[fidU + "|" + it.typ] && fidU + "|" + it.typ);
+        if(fwKeyU && typeof disarmFlightWatch === "function"){
+          disarmFlightWatch(fwKeyU);
           showToast("已取消關注 " + fidU, true);
           suppressClick = true;
           setTimeout(function(){ suppressClick = false; }, 800);
