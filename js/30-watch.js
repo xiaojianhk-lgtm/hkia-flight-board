@@ -83,12 +83,15 @@
     }catch(e){}
   }
   function watchCount(){ return Object.keys(watchBays).length; }
-  function flightsAt(bay){
+  /* bay watch seen key：日期釘死 arm 嗰陣嘅日期，唔跟住而家睇緊邊日郁（舊 watch 冇 .date 就跌返現行 tab 日期） */
+  function baySeenKey(it, dateStr){ return (dateStr || "") + "|" + it.typ + "|" + opId(it.f); }
+  function bayWatchDate(bay){ return (watchBays[bay] && watchBays[bay].date) || (DB && DB.dates ? DB.dates[dateIdx] : ""); }
+  function flightsAt(bay, dateOverride){
     /* 注意：唔用 getLists()，因為嗰個會受搜尋 query／filter 影響；
        watch 要睇原始數據，唔理顯示緊咩 */
     var out = [];
     if(!DB || !DB.dates || !DB.days) return out;
-    var target = DB.dates[dateIdx];
+    var target = dateOverride || DB.dates[dateIdx];
     var b = (bay || "").toUpperCase();
     Object.keys(DB.days).forEach(function(d){
       var day = DB.days[d];
@@ -118,7 +121,8 @@
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
         watchBays[bay].silent = !!silent;
-        flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
+        watchBays[bay].date = (DB && DB.dates) ? DB.dates[dateIdx] : "";
+        flightsAt(bay, watchBays[bay].date).forEach(function(it){ watchBays[bay].seen[baySeenKey(it, watchBays[bay].date)] = 1; });
         saveBayWatch(); if(!silent) showWatchPill();
         if(!silent) pushWatchAdd("bay", bay);
       })
@@ -126,7 +130,8 @@
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
         watchBays[bay].silent = !!silent;
-        flightsAt(bay).forEach(function(it){ watchBays[bay].seen[itemKey(it)] = 1; });
+        watchBays[bay].date = (DB && DB.dates) ? DB.dates[dateIdx] : "";
+        flightsAt(bay, watchBays[bay].date).forEach(function(it){ watchBays[bay].seen[baySeenKey(it, watchBays[bay].date)] = 1; });
         saveBayWatch(); if(!silent) showWatchPill();
         if(!silent) pushWatchAdd("bay", bay);
       });
@@ -160,7 +165,8 @@
         var parts = w.date.split("-");
         if(parts.length === 3) dateLabel = " " + parts[1] + "/" + parts[2];
       }
-      d.innerHTML = "已關注 <span class='gotoflight' data-gotoflight='"+esc(fid)+"' style='cursor:pointer;text-decoration:underline;'>"+esc(fid)+dateLabel+"</span> <button aria-label='取消提醒' data-unwatchflight='"+esc(fid)+"'>✕</button>";
+      var dispFid = fid.split("|")[0];
+      d.innerHTML = "已關注 <span class='gotoflight' data-gotoflight='"+esc(dispFid)+"' style='cursor:pointer;text-decoration:underline;'>"+esc(dispFid)+dateLabel+"</span> <button aria-label='取消提醒' data-unwatchflight='"+esc(fid)+"'>✕</button>";
       box.appendChild(d);
     });
     var hasVisible = Object.keys(watchBays).some(function(b){ return !watchBays[b].silent; }) ||
@@ -215,13 +221,14 @@
     var allFresh = [];
     Object.keys(watchBays).forEach(function(bay){
       var seen = watchBays[bay].seen || (watchBays[bay].seen = {});
-      var cur = flightsAt(bay), curKeys = {}, fresh = [];
+      var bd = bayWatchDate(bay);
+      var cur = flightsAt(bay, bd), curKeys = {}, fresh = [];
       cur.forEach(function(it){
-        var k = itemKey(it); curKeys[k] = 1;
+        var k = baySeenKey(it, bd); curKeys[k] = 1;
         if(!seen[k]) fresh.push({bay:bay, typ:it.typ, f:it.f});
       });
       Object.keys(seen).forEach(function(k){ if(!curKeys[k]) delete seen[k]; });
-      cur.forEach(function(it){ seen[itemKey(it)] = 1; });
+      cur.forEach(function(it){ seen[baySeenKey(it, bd)] = 1; });
       if(fresh.length) allFresh = allFresh.concat(fresh);
     });
     saveBayWatch();
@@ -287,6 +294,14 @@
         if(opId(lastItems[i].f).toUpperCase() === fid.toUpperCase()){ idx = i; break; }
       }catch(e){}
     }
+    if(idx < 0 && !expanded){
+      expanded = true; render();
+      for(var j=0; j<lastItems.length; j++){
+        try{
+          if(opId(lastItems[j].f).toUpperCase() === fid.toUpperCase()){ idx = j; break; }
+        }catch(e){}
+      }
+    }
     if(idx < 0){
       showToast("搵唔到 " + fid + "（可能唔喺今日／被篩走咗）");
       return;
@@ -310,7 +325,7 @@
 
   var PUSH_WORKER = "https://hkia-push.xiaojian-hk.workers.dev";
   var PUSH_TOKEN = "18d17be5005c63145881b72855c6851e575f68f5f7456d915ce0b22a067cf0aa";
-  function pushWatchAdd(type, value, date, seenBay){
+  function pushWatchAdd(type, value, date, seenBay, dir, quiet){
     try{
       (async function(){
         var endpoint = "";
@@ -320,17 +335,17 @@
           if(sub) endpoint = sub.endpoint || "";
         }catch(e){}
         if(!endpoint){
-          try{ showToast("請先去關於頁啟用推送通知"); }catch(e){}
+          if(!quiet){ try{ showToast("請先去關於頁啟用推送通知"); }catch(e){} }
           return;
         }
         fetch(PUSH_WORKER + "/push/watch/add", {
           method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
-          body: JSON.stringify((function(){ var _d=""; try{ _d=localStorage.getItem("hkia-device-id")||""; }catch(e){} return { type: type, value: value, deviceId: _d, date: date || "", seenBay: seenBay || "" }; })())
+          body: JSON.stringify((function(){ var _d=""; try{ _d=localStorage.getItem("hkia-device-id")||""; }catch(e){} return { type: type, value: value, deviceId: _d, date: date || "", seenBay: seenBay || "", dir: dir || "" }; })())
         }).catch(function(){});
       })();
     }catch(e){}
   }
-  function pushWatchRemove(type, value){
+  function pushWatchRemove(type, value, dir){
     try{
       (async function(){
         var endpoint = "";
@@ -339,7 +354,7 @@
           var sub = await reg.pushManager.getSubscription();
           if(sub) endpoint = sub.endpoint || "";
         }catch(e){}
-        var id = type + ":" + (value || "").toUpperCase().replace(/\s/g, "");
+        var id = type + ":" + (value || "").toUpperCase().replace(/\s/g, "") + (dir ? ":" + dir : "");
         fetch(PUSH_WORKER + "/push/watch/remove", {
           method: "POST", headers: { "Content-Type": "application/json", "X-API-Token": PUSH_TOKEN },
           body: JSON.stringify((function(){ var _d=""; try{ _d=localStorage.getItem("hkia-device-id")||""; }catch(e){} return { id: id, deviceId: _d }; })())
@@ -358,22 +373,21 @@
       var fw = JSON.parse(localStorage.getItem(FW_KEY) || "null");
       if(fw && fw.flights) flightWatches = fw.flights;
       // 自動清理：航班日期已過（早過今日）嘅 watch 自動刪除
-      var today = new Date();
-      var todayStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0") + "-" + String(today.getDate()).padStart(2,"0");
+      var todayStr = new Date(Date.now() + 8*3600*1000).toISOString().slice(0, 10); /* HKT 今日（同 Worker todayHKT 一致） */
       var changed = false;
       Object.keys(flightWatches).forEach(function(fid){
         var w = flightWatches[fid];
         if(w && w.date && w.date < todayStr){
           delete flightWatches[fid];
           changed = true;
-          try{ pushWatchRemove("flight", fid); }catch(e){}
+          try{ var p = (fid || "").split("|"); pushWatchRemove("flight", p[0], p[1] || ""); }catch(e){}
         }
       });
       if(changed) saveFlightWatch();
     }catch(e){}
   }
   function flightWatchCount(){ return Object.keys(flightWatches).length; }
-  function findFlight(fid, date){
+  function findFlight(fid, date, typ){
     /* 喺指定日期搵航班；唔用 getLists()，唔受 filter 影響 */
     if(!DB || !DB.dates || !DB.days) return null;
     var target = date || DB.dates[dateIdx];
@@ -384,6 +398,7 @@
       var day = DB.days[d];
       [["arrival", day.arrival || []], ["departure", day.departure || []]].forEach(function(pair){
         if(found) return;
+        if(typ && pair[0] !== typ) return;
         pair[1].forEach(function(f){
           if(found) return;
           if((effDate(f) || d) !== target) return;
@@ -398,17 +413,19 @@
   }
   function armFlightWatch(fid, silent){
     if(window.__T1M_NO_WATCH) return;
+    fid = (fid || "").toUpperCase().replace(/\s/g, "");
     var target = DB && DB.dates ? DB.dates[dateIdx] : "";
     var it = findFlight(fid, target);
     var bay = it ? flightBay(it.f) : "";
-    flightWatches[fid] = { seenBay: bay, date: target, silent: !!silent };
+    var key = it ? fid + "|" + it.typ : fid;
+    flightWatches[key] = { seenBay: bay, date: target, silent: !!silent };
     saveFlightWatch(); if(!silent) showWatchPill();
-    if(!silent) pushWatchAdd("flight", fid, target, bay);
+    if(!silent) pushWatchAdd("flight", fid, target, bay, it ? it.typ : "");
   }
   function disarmFlightWatch(fid){
-    if(fid){ delete flightWatches[fid]; pushWatchRemove("flight", fid); }
+    if(fid){ var p = (fid || "").split("|"); delete flightWatches[fid]; pushWatchRemove("flight", p[0], p[1] || ""); }
     else{ 
-      Object.keys(flightWatches).forEach(function(f){ pushWatchRemove("flight", f); });
+      Object.keys(flightWatches).forEach(function(f){ var p = (f || "").split("|"); pushWatchRemove("flight", p[0], p[1] || ""); });
       flightWatches = {}; 
     }
     saveFlightWatch(); showWatchPill();
@@ -419,7 +436,25 @@
     var fresh = [];
     Object.keys(flightWatches).forEach(function(fid){
       var w = flightWatches[fid];
-      var it = findFlight(fid, w.date);
+      /* 遷移：舊 key（淨 fid）搵到方向就改名做 fid|typ；若新 key 已存在就淨刪舊 key（去重） */
+      if(fid.indexOf("|") < 0 && DB){
+        var mig = findFlight(fid, w.date);
+        if(mig){
+          var nk = fid + "|" + mig.typ;
+          if(flightWatches[nk]){
+            delete flightWatches[fid];
+            try{ pushWatchRemove("flight", fid); }catch(e){}
+            return; /* 去重：新 key 嗰次 iteration 會處理，呢次跳過免重複彈 */
+          }else{
+            flightWatches[nk] = w; delete flightWatches[fid];
+            try{ pushWatchRemove("flight", fid); }catch(e){}
+            try{ pushWatchAdd("flight", fid, w.date, w.seenBay, mig.typ, true); }catch(e){}
+            fid = nk;
+          }
+        }
+      }
+      var parts = fid.split("|");
+      var it = parts.length > 1 ? findFlight(parts[0], w.date, parts[1]) : findFlight(fid, w.date);
       if(!it) return;
       var bay = flightBay(it.f);
       if(bay && bay !== "—" && bay !== w.seenBay){
@@ -441,7 +476,7 @@
         var parts = w.date.split("-");
         if(parts.length === 3) dateLabel = " (" + parts[1] + "/" + parts[2] + ")";
       }
-      return "<div style='margin-bottom:6px'><b>"+esc(it.fid)+"</b>"+esc(dateLabel)+" "+(it.typ === "arrival" ? "到港" : "離港")+"</div>"+
+      return "<div style='margin-bottom:6px'><b>"+esc(it.fid.split("|")[0])+"</b>"+esc(dateLabel)+" "+(it.typ === "arrival" ? "到港" : "離港")+"</div>"+
         "<div>時間：<b>"+esc(eff(it.f))+"</b></div>"+
         "<div>泊位：<b>"+esc(it.bay)+"</b></div>";
     }).join("");
@@ -462,11 +497,13 @@
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(d){
         var times = (d.hourly||{}).time || [], probs = (d.hourly||{}).precipitation_probability || [];
-        var now = new Date();
+        var nowMs = Date.now();
         var maxP = 0, maxT = "";
         for(var i=0;i<times.length;i++){
-          var t = new Date(times[i]);
-          var diffH = (t - now)/3600000;
+          /* Open-Meteo times 係 HKT 無 offset 字串，唔好用本地時區解讀 */
+          var tm = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(times[i] || "");
+          var t = tm ? new Date(Date.UTC(+tm[1], +tm[2]-1, +tm[3], +tm[4]-8, +tm[5])) : new Date(times[i]);
+          var diffH = (t.getTime() - nowMs)/3600000;
           if(diffH >= 0 && diffH <= 3){
             if(probs[i] > maxP){ maxP = probs[i]; maxT = times[i]; }
           }
