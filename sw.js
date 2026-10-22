@@ -1,5 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v208";
+var CACHE = "hkia-v209";
 var ASSETS = [
   "./hkiaflight.html",
   "./t1m.html",
@@ -54,8 +54,8 @@ self.addEventListener("fetch", function(e){
       /* 有 redirect 嘅 cache（舊版留下）唔好 serve，直接去 network */
       if(hit && hit.redirected) hit = null;
       return hit || fetch(e.request).then(function(resp){
-        /* 淨係 cache 200 OK，redirect 唔 cache */
-        if(resp.ok && !resp.redirected){
+        /* 淨係 cache 200 OK，redirect 唔 cache；帶 cache-buster（?t= / ?_=）嘅請求唔入 cache */
+        if(resp.ok && !resp.redirected && e.request.url.indexOf("?t=") < 0 && e.request.url.indexOf("?_=") < 0 && e.request.url.indexOf("&t=") < 0 && e.request.url.indexOf("&_=") < 0){
           var copy = resp.clone();
           caches.open(CACHE).then(function(c){ c.put(e.request, copy); });
         }
