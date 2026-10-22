@@ -161,6 +161,7 @@
       if(act === "note-save"){ commitNote(); }
       else if(act === "note-cancel" && it2){ deleteNote(it2.typ, it2.f); }
       else if(act === "copy-flight" && it2){ copyFlight(it2.typ, it2.f); }
+      else if(act === "flight-follow" && it2){ var fid = opId(it2.f).toUpperCase(); if(flightWatches[fid]) disarmFlightWatch(fid); else armFlightWatch(fid); render(); }
       return;
     }
 
