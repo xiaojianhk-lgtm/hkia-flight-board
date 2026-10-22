@@ -603,6 +603,9 @@ try{(function(){
     });
     return changed;
   }
+  /* SEV-5：expose 俾共用更新點用——靜默／下拉更新攞到新 DB 之後，render 之前先叫
+     呢個 filter＋注入 bay，唔好閃出成版未過濾清單。主頁冇呢個 function，唔受影響。 */
+  window.applyNldFilter = applyNldFilter;
   setInterval(function(){
     if(applyNldFilter() && typeof render==="function") render();
     if(document.title.indexOf("通宵")<0) document.title = "通宵貨機 · 23:00-06:00";
