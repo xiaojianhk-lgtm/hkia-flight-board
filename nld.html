@@ -547,8 +547,10 @@ try{(function(){
   var MCS4 = {CX:1, LD:1, AK:1, QY:1};
   // 獨立載入 cargo-bays.json（同主頁 data.json 分開）
   window.CARGO_BAYS = {};
+  window.CARGO_BAYS_GEN = "";
   fetch("cargo-bays.json?t="+Date.now(), {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(j){
     window.CARGO_BAYS = j.bays || {};
+    window.CARGO_BAYS_GEN = j.generated_at || "";
     try{
       var bt = document.getElementById("bayTs");
       if(bt && j.generated_at) var _m = /([0-9]{2}:[0-9]{2})/.exec(j.generated_at||""); bt.textContent = _m ? _m[1] : "—";
@@ -558,6 +560,7 @@ try{(function(){
   setInterval(function(){
     fetch("cargo-bays.json?t="+Date.now(), {cache:"no-store"}).then(function(r){ return r.json(); }).then(function(j){
       window.CARGO_BAYS = j.bays || {};
+      window.CARGO_BAYS_GEN = j.generated_at || "";
       try{
         var bt2 = document.getElementById("bayTs");
         if(bt2 && j.generated_at) var _m2 = /([0-9]{2}:[0-9]{2})/.exec(j.generated_at||""); bt2.textContent = _m2 ? _m2[1] : "—";
@@ -569,7 +572,7 @@ try{(function(){
     return m ? m[1] : "";
   }
   // 等 DB 載入後：過濾 HAS 貨機＋注入 Menzies bay（唔限時間，顯示全日）
-  var prevCgb = {};  // 記住上次嘅 bay，轉 bay 變紅（淨比今晚22:00後）
+  var prevCgb = {};  // 記住上次嘅 bay，轉 bay 變紅（淨比今晚22:00後生成嘅 map）
   try{
     var _pc = JSON.parse(localStorage.getItem("nld-prevcgb-v1")||"null");
     if(_pc && _pc.bays){
@@ -579,7 +582,12 @@ try{(function(){
       var cutoffDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       if(now.getHours() < 3) cutoffDay.setDate(cutoffDay.getDate() - 1);
       var cutoff = new Date(cutoffDay.getFullYear(), cutoffDay.getMonth(), cutoffDay.getDate(), 22, 0, 0);
-      if(_pc.savedAt && _pc.savedAt >= cutoff.getTime()){
+      // 要兩個條件都過先有效：存檔時間同埋個 map 本身嘅生成時間都要係今晚22:00後
+      // （淨睇存檔時間唔夠：22:00–22:15 第一推送前，live 檔仲係昨晚嘅數，存低咗就會成晚拎昨晚數嚟比）
+      var _genT = 0;
+      var _gm = /^([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})/.exec(_pc.gen||"");
+      if(_gm) _genT = new Date(+_gm[1], +_gm[2]-1, +_gm[3], +_gm[4], +_gm[5], 0).getTime();
+      if(_pc.savedAt && _pc.savedAt >= cutoff.getTime() && _genT >= cutoff.getTime()){
         prevCgb = _pc.bays;
       }
       // 唔係今晚嘅就當冇，唔變紅
@@ -613,7 +621,7 @@ try{(function(){
         if(filtered.length !== orig.length){ DB.days[dk][tab] = filtered; changed = true; }
       });
     });
-    try{ localStorage.setItem("nld-prevcgb-v1", JSON.stringify({savedAt: Date.now(), bays: cgb})); }catch(e){}
+    try{ localStorage.setItem("nld-prevcgb-v1", JSON.stringify({savedAt: Date.now(), gen: window.CARGO_BAYS_GEN || "", bays: cgb})); }catch(e){}
     return changed;
   }
   setInterval(function(){
