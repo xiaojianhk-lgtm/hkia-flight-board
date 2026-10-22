@@ -443,6 +443,7 @@
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
           if(typeof buildDates==="function") buildDates();
+          if(typeof window.applyNldFilter==="function") window.applyNldFilter(); /* SEV-5：nld 先過濾＋注入 bay 再 render；主頁冇呢個 function，完全唔影響 */
           checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
           done("updated");
         }else{
@@ -628,7 +629,9 @@
           DB = d;
           $("headTs").textContent = d.generated_at;
           checkStale(d.generated_at);
-          if(typeof buildDates==="function") buildDates(); render();
+          if(typeof buildDates==="function") buildDates();
+          if(typeof window.applyNldFilter==="function") window.applyNldFilter(); /* SEV-5：nld 先過濾＋注入 bay 再 render；主頁冇呢個 function，完全唔影響 */
+          render();
           if(keepEx){ expanded = true; render(); }
           checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
           /* 展開／搜尋緊就還原舊位，否則停返時間線上 8 班 */
