@@ -487,26 +487,34 @@
   function saveRainWatch(){ try{ localStorage.setItem(RAIN_KEY, JSON.stringify(rainWatch)); }catch(e){} }
   function checkRainWatch(){
     if(!rainWatch.on) return;
-    fetch("https://api.open-meteo.com/v1/forecast?latitude=22.308&longitude=113.915&hourly=precipitation_probability&timezone=Asia%2FHong_Kong&forecast_days=2")
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=22.308&longitude=113.915&minutely_15=precipitation&timezone=Asia%2FHong_Kong&forecast_days=2")
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(d){
-        var times = (d.hourly||{}).time || [], probs = (d.hourly||{}).precipitation_probability || [];
+        var times = (d.minutely_15||{}).time || [], vals = (d.minutely_15||{}).precipitation || [];
         var nowMs = Date.now();
-        var maxP = 0, maxT = "";
+        var curVal = null, firstT = "", firstMin = 0, firstVal = 0;
         for(var i=0;i<times.length;i++){
           /* Open-Meteo times 係 HKT 無 offset 字串，唔好用本地時區解讀 */
           var tm = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(times[i] || "");
           var t = tm ? new Date(Date.UTC(+tm[1], +tm[2]-1, +tm[3], +tm[4]-8, +tm[5])) : new Date(times[i]);
-          var diffH = (t.getTime() - nowMs)/3600000;
-          if(diffH >= 0 && diffH <= 3){
-            if(probs[i] > maxP){ maxP = probs[i]; maxT = times[i]; }
+          var diffMin = (t.getTime() - nowMs)/60000;
+          var v = parseFloat(vals[i]); if(isNaN(v)) v = 0;
+          if(diffMin > -15 && diffMin <= 0){
+            /* 今格（15 分鐘格包含而家） */
+            if(curVal === null || v > curVal) curVal = v;
+          }else if(diffMin > 0 && diffMin <= 60){
+            if(firstT === "" && v >= 0.2){ firstT = times[i]; firstMin = Math.round(diffMin); firstVal = v; }
           }
         }
-        if(maxP >= 50){
-          /* 同一場雨唔重複彈：記住觸發嗰個鐘 */
-          if(rainWatch.alertedAt !== maxT){
-            rainWatch.alertedAt = maxT; saveRainWatch();
-            rainAlert(maxP, maxT); flushAlerts();
+        if(curVal !== null && curVal >= 0.2){
+          /* 落緊雨：唔彈（睇到就多餘），事件未完唔 reset */
+          return;
+        }
+        if(firstT !== ""){
+          /* 未來 60 分鐘內有雨：同一場雨淨彈一次 */
+          if(!rainWatch.alertedAt){
+            rainWatch.alertedAt = firstT; saveRainWatch();
+            rainAlert(firstMin, firstVal, firstT); flushAlerts();
           }
         }else{
           if(rainWatch.alertedAt){ rainWatch.alertedAt = ""; saveRainWatch(); }
@@ -514,11 +522,11 @@
       })
       .catch(function(){});
   }
-  function rainAlert(prob, isoTime){
+  function rainAlert(mins, val, isoTime){
     var d = new Date(isoTime);
-    var hh = ("0"+d.getHours()).slice(-2), mm = ("0"+d.getMinutes()).slice(-2);
-    var html = "<div>最高機率 <b>"+prob+"%</b>（約 "+hh+":"+mm+"）</div><div style='color:var(--muted);font-size:12px;margin-top:4px'>資料來源：Open-Meteo 預報</div>";
-    queueAlert("🌧 機場未來 3 小時可能有雨", html);
+    var hh = ("0"+d.getHours()).slice(-2), mi = ("0"+d.getMinutes()).slice(-2);
+    var html = "<div>預報雨量 <b>"+val+" mm</b>（約 "+hh+":"+mi+"）</div><div style='color:var(--muted);font-size:12px;margin-top:4px'>資料來源：Open-Meteo 預報</div>";
+    queueAlert("🌧 機場約 "+mins+" 分鐘後有雨", html);
   }
 
 
