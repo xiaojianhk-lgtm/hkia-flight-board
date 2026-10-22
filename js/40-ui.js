@@ -680,6 +680,7 @@
     var thLastTap = 0;
     thead.addEventListener("touchend", function(e){
       var now = Date.now();
+      if(window.__thLongFired){ window.__thLongFired = false; thLastTap = 0; return; }
       if(now - thLastTap < 500){
         thLastTap = 0;
         e.preventDefault();
@@ -689,4 +690,38 @@
         thLastTap = now;
       }
     }, {passive:false});
+    /* 長按標題隱藏方向（淨主頁 hkiaflight.html）：長按到港=淨到港，長按離港=淨離港，再長按返正常；
+       門檻 600ms（雙擊窗口 500ms，撳住超過 500ms 一定唔會誤判雙擊）；長按成功設旗標斷之後嗰下 touchend 嘅雙擊鏈 */
+    if(/hkiaflight\.html$/.test(location.pathname)){
+      var ths = thead.querySelectorAll("th");
+      function toggleDirMode(side){
+        dirMode = (dirMode === side) ? "both" : side;
+        var all = thead.querySelectorAll("th");
+        if(all[0]) all[0].classList.toggle("on", dirMode === "arr");
+        if(all[1]) all[1].classList.toggle("on", dirMode === "dep");
+        expanded = false; render();
+        if(typeof scrollToEightAbove === "function") scrollToEightAbove();
+        if(typeof showToast === "function") showToast(dirMode === "arr" ? "只顯示到港航班" : dirMode === "dep" ? "只顯示離港航班" : "已恢復全部顯示");
+      }
+      function bindDirPress(th, side){
+        var timer = null;
+        function start(){
+          if(timer) clearTimeout(timer);
+          timer = setTimeout(function(){
+            timer = null; thLastTap = 0; window.__thLongFired = true;
+            toggleDirMode(side);
+          }, 600);
+        }
+        function cancel(){ if(timer){ clearTimeout(timer); timer = null; } }
+        th.addEventListener("touchstart", start, {passive:true});
+        th.addEventListener("touchend", cancel);
+        th.addEventListener("touchmove", cancel);
+        th.addEventListener("mousedown", start);
+        th.addEventListener("mouseup", cancel);
+        th.addEventListener("mouseleave", cancel);
+      }
+      if(ths[0]) bindDirPress(ths[0], "arr");
+      if(ths[1]) bindDirPress(ths[1], "dep");
+      thead.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+    }
   })();
