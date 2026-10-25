@@ -338,6 +338,7 @@
   }, {passive:true});
   document.addEventListener("touchmove", function(e){
     if(hId === null) return;
+    if(e.touches.length > 1){ hId = null; return; }  /* 第二指加入：放棄橫向鎖定，唔好 preventDefault 阻住 pinch */
     var t = null;
     for(var i = 0; i < e.touches.length; i++) if(e.touches[i].identifier === hId) t = e.touches[i];
     if(!t) return;
@@ -396,6 +397,7 @@
   }, {passive:true});
   document.addEventListener("touchmove", function(e){
     if(!pActive || pRefreshing) return;
+    if(e.touches.length > 1){ pActive = false; pPull = 0; ptrHide(); return; }  /* 第二指加入：放棄下拉，唔好 preventDefault 阻住 pinch */
     var t = null;
     for(var i=0;i<e.touches.length;i++) if(e.touches[i].identifier === pId) t = e.touches[i];
     if(!t){ pActive = false; return; }
@@ -458,8 +460,14 @@
   /* 連點兩下跳返時間線 */
   var tapTimes = [];
   var lastTapT = 0, lastTapX = 0, lastTapY = 0;
+  /* 放大狀態下嘅雙擊交返俾瀏覽器原生還原（H1）：縮放 >1 時唔 preventDefault、唔跳轉 */
+  function isZoomed(){
+    try{ return !!(window.visualViewport && window.visualViewport.scale > 1); }catch(e){ return false; }
+  }
   document.addEventListener("touchend", function(e){
     if(ptrAteTap){ ptrAteTap = false; return; }
+    if(e.touches && e.touches.length > 0) return;  /* 仲有手指未離開（例如 pinch 鬆一隻）：唔當係撳 */
+    if(isZoomed()){ tapTimes.length = 0; lastTapT = 0; return; }
     var now = Date.now();
     if(now - swipedAt < 500) return;
     tapTimes.push(now);
@@ -479,6 +487,7 @@
   }, {passive:false});
   /* dblclick 做後備：上面 touchend 漏咗（冇 preventDefault）嗰陣先會觸發 */
   document.addEventListener("dblclick", function(e){
+    if(isZoomed()) return;
     if(noteEditingKey) return;
     if($("aboutOverlay").classList.contains("open")) return;
     if(document.activeElement === q) return;
@@ -672,6 +681,7 @@
       }
     }
     thead.addEventListener("dblclick", function(e){
+      if(isZoomed()) return;
       e.preventDefault();
       e.stopPropagation();
       goWatch();
@@ -681,6 +691,8 @@
     thead.addEventListener("touchend", function(e){
       var now = Date.now();
       if(window.__thLongFired){ window.__thLongFired = false; thLastTap = 0; return; }
+      if(e.touches && e.touches.length > 0) return;
+      if(isZoomed()){ thLastTap = 0; return; }
       if(now - thLastTap < 500){
         thLastTap = 0;
         e.preventDefault();
