@@ -31,6 +31,32 @@ function fetchDataJson(){
     }catch(e){ return {}; }
   })();
   function saveWatch(){ try{ localStorage.setItem(WATCH_KEY, JSON.stringify(WATCH)); }catch(e){} }
+  /* ---------- 隱藏已取消航班（localStorage，淨係呢部機；撳詳情「已取消」即隱藏） ---------- */
+  var HIDDEN_KEY = WATCH_KEY + "-hidden";
+  var HIDDEN = (function(){
+    try{ return JSON.parse(localStorage.getItem(HIDDEN_KEY)) || {}; }catch(e){ return {}; }
+  })();
+  function saveHidden(){ try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify(HIDDEN)); }catch(e){} }
+  function pruneHidden(){
+    if(!DB || !DB.dates || !DB.dates.length) return;
+    var earliest = DB.dates[0];
+    for(var i=1;i<DB.dates.length;i++){ if(DB.dates[i] < earliest) earliest = DB.dates[i]; }
+    var removed = false;
+    Object.keys(HIDDEN).forEach(function(k){
+      var m = /^(\d{4}-\d{2}-\d{2})\|/.exec(k);
+      if(m && m[1] < earliest){ delete HIDDEN[k]; removed = true; }
+    });
+    if(removed) saveHidden();
+  }
+  function hideFlight(typ, f){
+    HIDDEN[watchKey(typ, f)] = 1; saveHidden();
+    try{
+      var fid = opId(f).toUpperCase();
+      var fwKey = (typeof flightWatches !== "undefined" && flightWatches[fid] && fid) || (typeof flightWatches !== "undefined" && flightWatches[fid + "|" + typ] && fid + "|" + typ);
+      if(fwKey && typeof disarmFlightWatch === "function") disarmFlightWatch(fwKey);
+    }catch(e){}
+    try{ showToast("已隱藏 " + opId(f)); }catch(e){}
+  }
   function watchKey(typ, f){
     var d = (DB && DB.dates && DB.dates[dateIdx]) ? DB.dates[dateIdx] : ("d"+dateIdx);
     return d + "|" + typ + "|" + opId(f);
@@ -199,7 +225,7 @@ function fetchDataJson(){
 
   function getLists(){
     if(!DB || !DB.dates || !DB.days) return {arr:[], dep:[]};
-    pruneWatch();
+    pruneWatch(); pruneHidden();
     /* 按實際日期分頁：掃全部日期，取有效日期等於目標日期嘅航班 */
     var target = DB.dates[dateIdx];
     var arr = [], dep = [];
@@ -212,6 +238,8 @@ function fetchDataJson(){
         if((effDate(f) || d) === target){ f._sdate = d; dep.push(f); }
       });
     });
+    /* 隱藏咗嘅已取消航班：呢度剔走（主頁＋關注頁一齊生效） */
+    arr = arr.filter(function(f){ return !HIDDEN[watchKey('arrival', f)]; }); dep = dep.filter(function(f){ return !HIDDEN[watchKey('departure', f)]; });
     var flt = function(f){
       if(T1M_AIRLINES){ /* T1M 專頁：永遠只出名單內客機，唔受篩選掣影響 */
         var tcode = opId(f).replace(/\s/g,"").substring(0,2).toUpperCase();
@@ -305,7 +333,7 @@ function fetchDataJson(){
 
   function detailInner(typ, f){
     var h = "";
-    if(f.cancelled) h += "<div><span style='color:var(--red);font-weight:700;'>已取消</span></div>";
+    if(f.cancelled) h += "<div><button class='nbtn' data-act='hide-flight' style='padding:6px 12px;font-size:13px;border-color:var(--red);color:var(--red);'>已取消</button></div>";
     var wk = watchKey(typ, f), w = WATCH[wk];
     var note = w ? (w.note || "") : "";
     if(noteEditingKey === wk){
