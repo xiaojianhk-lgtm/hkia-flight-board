@@ -163,6 +163,7 @@
       else if(act === "note-cancel" && it2){ deleteNote(it2.typ, it2.f); }
       else if(act === "copy-flight" && it2){ copyFlight(it2.typ, it2.f); }
       else if(act === "flight-follow" && it2){ var fid = opId(it2.f).toUpperCase(); var fwKey = (flightWatches[fid] && fid) || (flightWatches[fid + "|" + it2.typ] && fid + "|" + it2.typ); if(fwKey) disarmFlightWatch(fwKey); else armFlightWatch(fid); render(); }
+      else if(act === "hide-flight" && it2){ hideFlight(it2.typ, it2.f); render(); }
       return;
     }
 
