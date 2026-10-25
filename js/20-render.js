@@ -60,6 +60,24 @@
     if(showNow && divPos >= list.length){
       html += "<tr class='nowline'><td colspan='6'><div class='nl'><span>"+esc(nowLabel)+"</span></div></td></tr>";
     }
+    /* M1：搜尋零結果時，睇下其他日期 tab 有冇（提示＋一撳跳轉；搜尋本身維持只限當前 tab） */
+    if(!list.length && query && !window.__WATCH_ONLY && DB && DB.dates){
+      var curDi = dateIdx, hintDates = [];
+      for(var hd=0; hd<DB.dates.length; hd++){
+        if(hd === curDi) continue;
+        dateIdx = hd;
+        var hg = getLists();
+        if(hg.arr.length || hg.dep.length) hintDates.push(hd);
+      }
+      dateIdx = curDi;
+      if(hintDates.length){
+        var htxt = "「" + esc(query) + "」唔喺" + (DATE_NAMES[curDi] || "今日");
+        var hbtns = hintDates.map(function(hd){
+          return "<button class='xrowbtn' data-hintdate='" + hd + "'>去" + (DATE_NAMES[hd] || DB.dates[hd]) + "睇</button>";
+        }).join(" ");
+        html += "<tr class='xrow'><td colspan='6'><span style='color:var(--muted)'>" + htxt + "</span> " + hbtns + "</td></tr>";
+      }
+    }
     $("rows").innerHTML = html;
 
     var ni = $("noteInput") || $("standInput");
@@ -79,8 +97,20 @@
       $("expandBar").style.display = "none";
     }
     setBarH();
-    var xb = document.querySelector("#rows .xrowbtn");
+    var xb = document.querySelector("#rows .xrowbtn:not([data-hintdate])");
     if(xb) xb.addEventListener("click", toggleExpand);
+    var hb = document.querySelectorAll("#rows [data-hintdate]");
+    for(var hi=0; hi<hb.length; hi++){
+      (function(btn){
+        btn.addEventListener("click", function(){
+          var di = parseInt(btn.getAttribute("data-hintdate"), 10);
+          if(isNaN(di) || !DB || !DB.dates || di < 0 || di >= DB.dates.length) return;
+          dateIdx = di; expanded = false; detailKey = null;
+          try{ buildDates(); }catch(e){}
+          render();
+        });
+      })(hb[hi]);
+    }
   }
 
   function commitNote(){
