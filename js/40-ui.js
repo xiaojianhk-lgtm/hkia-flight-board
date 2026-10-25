@@ -477,17 +477,20 @@
     var isDbl = (tapTimes.length === 2) && (now - lastTapT < 400) &&
                 ((x-lastTapX)*(x-lastTapX) + (y-lastTapY)*(y-lastTapY) < 1600);
     lastTapT = now; lastTapX = x; lastTapY = y;
-    if(isDbl && !noteEditingKey &&
-       !$("aboutOverlay").classList.contains("open") &&
-       document.activeElement !== q &&
-       !(e.target.closest && e.target.closest("input,button,thead"))){
-      e.preventDefault();
-      jumpToTimeline();
+    if(isDbl){
+      e.preventDefault();  /* 禁雙擊放大：所有雙擊都食咗，瀏覽器唔會再放大；已放大嗰陣上面 isZoomed 已放行還原 */
+      if(!noteEditingKey &&
+         !$("aboutOverlay").classList.contains("open") &&
+         document.activeElement !== q &&
+         !(e.target.closest && e.target.closest("input,button,thead"))){
+        jumpToTimeline();
+      }
     }
   }, {passive:false});
   /* dblclick 做後備：上面 touchend 漏咗（冇 preventDefault）嗰陣先會觸發 */
   document.addEventListener("dblclick", function(e){
     if(isZoomed()) return;
+    e.preventDefault();  /* 禁雙擊放大：見上（dblclick 後備路徑） */
     if(noteEditingKey) return;
     if($("aboutOverlay").classList.contains("open")) return;
     if(document.activeElement === q) return;
