@@ -284,36 +284,69 @@
     clearFlightHighlight();
   });
 
-  /* 跳去指定航班＋高亮航班編號 */
+  /* 跳去指定航班＋高亮航班編號（M1：跨日自動切 tab；目標日存在但被篩選遮住就明講原因） */
   function gotoFlight(fid){
     clearFlightHighlight();
     if(!window.lastItems) return;
-    var idx = -1;
-    for(var i=0; i<lastItems.length; i++){
-      try{
-        if(opId(lastItems[i].f).toUpperCase() === fid.toUpperCase()){ idx = i; break; }
-      }catch(e){}
-    }
-    if(idx < 0 && !expanded){
-      expanded = true; render();
-      for(var j=0; j<lastItems.length; j++){
+    var findIdx = function(){
+      for(var i=0; i<lastItems.length; i++){
         try{
-          if(opId(lastItems[j].f).toUpperCase() === fid.toUpperCase()){ idx = j; break; }
+          if(opId(lastItems[i].f).toUpperCase() === fid.toUpperCase()){ return i; }
         }catch(e){}
       }
+      return -1;
+    };
+    var goRow = function(idx){
+      var row = document.querySelector("tr.rw[data-k='"+idx+"']");
+      if(!row){ showToast("搵唔到 " + fid); return; }
+      row.scrollIntoView({block:"center", behavior:"smooth"});
+      var fidTxt = row.querySelector("td.fid .fidtxt");
+      if(fidTxt) fidTxt.classList.add("hl");
+    };
+    var idx = findIdx();
+    if(idx < 0 && !expanded){
+      expanded = true; render();
+      idx = findIdx();
     }
-    if(idx < 0){
-      showToast("搵唔到 " + fid + "（可能唔喺今日／被篩走咗）");
+    if(idx >= 0){ goRow(idx); return; }
+    /* 跨日：先跟 watch 本身釘死嘅日期（最準），再掃三日 */
+    var targetIdx = -1;
+    var fidKey = (fid || "").toUpperCase().replace(/\s/g, "");
+    try{
+      Object.keys(flightWatches).forEach(function(k){
+        if(targetIdx >= 0) return;
+        var p = k.split("|");
+        if(p[0] === fidKey && flightWatches[k] && flightWatches[k].date){
+          var di = DB.dates.indexOf(flightWatches[k].date);
+          if(di >= 0) targetIdx = di;
+        }
+      });
+    }catch(e){}
+    if(targetIdx < 0 && DB && DB.dates){
+      for(var d=0; d<DB.dates.length; d++){
+        if(d === dateIdx) continue;
+        try{ if(findFlight(fid, DB.dates[d])){ targetIdx = d; break; } }catch(e){}
+      }
+    }
+    if(targetIdx < 0){
+      showToast("搵唔到 " + fid + "（可能唔喺呢三日／已取消）");
       return;
     }
-    var row = document.querySelector("tr.rw[data-k='"+idx+"']");
-    if(!row){
-      showToast("搵唔到 " + fid);
-      return;
+    if(targetIdx !== dateIdx){
+      dateIdx = targetIdx; expanded = false; detailKey = null;
+      try{ buildDates(); }catch(e){}
+      render();
     }
-    row.scrollIntoView({block:"center", behavior:"smooth"});
-    var fidTxt = row.querySelector("td.fid .fidtxt");
-    if(fidTxt) fidTxt.classList.add("hl");
+    idx = findIdx();
+    if(idx < 0 && !expanded){
+      expanded = true; render();
+      idx = findIdx();
+    }
+    if(idx >= 0){ goRow(idx); return; }
+    var onDate = false;
+    try{ onDate = !!(DB && DB.dates && findFlight(fid, DB.dates[dateIdx])); }catch(e){}
+    if(onDate) showToast(fid + " 喺" + (DATE_NAMES[dateIdx] || "") + "，但被而家嘅篩選遮住咗");
+    else showToast("搵唔到 " + fid);
   }
   function clearFlightHighlight(){
     var els = document.querySelectorAll(".fidtxt.hl");
@@ -366,12 +399,12 @@
     try{
       var fw = JSON.parse(localStorage.getItem(FW_KEY) || "null");
       if(fw && fw.flights) flightWatches = fw.flights;
-      // 自動清理：航班日期已過（早過今日）嘅 watch 自動刪除
+      // 自動清理：冇日期嘅殭屍 watch 同日期已過（早過今日）嘅 watch 自動刪除
       var todayStr = new Date(Date.now() + 8*3600*1000).toISOString().slice(0, 10); /* HKT 今日（同 Worker todayHKT 一致） */
       var changed = false;
       Object.keys(flightWatches).forEach(function(fid){
         var w = flightWatches[fid];
-        if(w && w.date && w.date < todayStr){
+        if(w && (!w.date || w.date < todayStr)){
           delete flightWatches[fid];
           changed = true;
           try{ var p = (fid || "").split("|"); pushWatchRemove("flight", p[0], p[1] || ""); }catch(e){}
@@ -409,6 +442,7 @@
     if(window.__T1M_NO_WATCH) return;
     fid = (fid || "").toUpperCase().replace(/\s/g, "");
     var target = DB && DB.dates ? DB.dates[dateIdx] : "";
+    if(!target){ if(!silent) showToast("數據載入緊，稍後再試"); return; }  /* L2：DB 未載入就唔 arm，免留冇日期嘅殭屍 watch */
     var it = findFlight(fid, target);
     var bay = it ? flightBay(it.f) : "";
     var key = it ? fid + "|" + it.typ : fid;
@@ -430,6 +464,7 @@
     var fresh = [];
     Object.keys(flightWatches).forEach(function(fid){
       var w = flightWatches[fid];
+      if(w && !w.date) return;  /* L2：冇日期嘅殭屍 watch 唔觸發，等 loadFlightWatch 清理 */
       /* 遷移：舊 key（淨 fid）搵到方向就改名做 fid|typ；若新 key 已存在就淨刪舊 key（去重） */
       if(fid.indexOf("|") < 0 && DB){
         var mig = findFlight(fid, w.date);
