@@ -303,26 +303,42 @@
       var fidTxt = row.querySelector("td.fid .fidtxt");
       if(fidTxt) fidTxt.classList.add("hl");
     };
+    /* pinned 日期行先：有關注釘死嘅日期，先跳去嗰日搵（修 CX811 呢類每日班次：今日嗰班唔好搶先） */
+    var fidKey = (fid || "").toUpperCase().replace(/\s/g, "");
+    var pinnedIdx = -1;
+    try{
+      Object.keys(flightWatches).forEach(function(k){
+        if(pinnedIdx >= 0) return;
+        var p = k.split("|");
+        if(p[0] === fidKey && flightWatches[k] && flightWatches[k].date){
+          var di = DB.dates.indexOf(flightWatches[k].date);
+          if(di >= 0) pinnedIdx = di;
+        }
+      });
+    }catch(e){}
+    if(pinnedIdx >= 0 && pinnedIdx !== dateIdx){
+      dateIdx = pinnedIdx; expanded = false; detailKey = null;
+      try{ buildDates(); }catch(e){}
+      render();
+    }
     var idx = findIdx();
     if(idx < 0 && !expanded){
       expanded = true; render();
       idx = findIdx();
     }
     if(idx >= 0){ goRow(idx); return; }
-    /* 跨日：先跟 watch 本身釘死嘅日期（最準），再掃三日 */
+    /* 釘死嗰日搵唔到：嗰日有班機但被篩選遮住就明講，唔好跳去另一日嗰班 */
+    if(pinnedIdx >= 0){
+      var onPinned = false;
+      try{ onPinned = !!(DB && DB.dates && findFlight(fid, DB.dates[pinnedIdx])); }catch(e){}
+      if(onPinned){
+        showToast(fid + " 喺" + (DATE_NAMES[pinnedIdx] || "") + "，但被而家嘅篩選遮住咗");
+        return;
+      }
+    }
+    /* 跨日掃三日（跳過而家個 tab） */
     var targetIdx = -1;
-    var fidKey = (fid || "").toUpperCase().replace(/\s/g, "");
-    try{
-      Object.keys(flightWatches).forEach(function(k){
-        if(targetIdx >= 0) return;
-        var p = k.split("|");
-        if(p[0] === fidKey && flightWatches[k] && flightWatches[k].date){
-          var di = DB.dates.indexOf(flightWatches[k].date);
-          if(di >= 0) targetIdx = di;
-        }
-      });
-    }catch(e){}
-    if(targetIdx < 0 && DB && DB.dates){
+    if(DB && DB.dates){
       for(var d=0; d<DB.dates.length; d++){
         if(d === dateIdx) continue;
         try{ if(findFlight(fid, DB.dates[d])){ targetIdx = d; break; } }catch(e){}
@@ -332,11 +348,9 @@
       showToast("搵唔到 " + fid + "（可能唔喺呢三日／已取消）");
       return;
     }
-    if(targetIdx !== dateIdx){
-      dateIdx = targetIdx; expanded = false; detailKey = null;
-      try{ buildDates(); }catch(e){}
-      render();
-    }
+    dateIdx = targetIdx; expanded = false; detailKey = null;
+    try{ buildDates(); }catch(e){}
+    render();
     idx = findIdx();
     if(idx < 0 && !expanded){
       expanded = true; render();
