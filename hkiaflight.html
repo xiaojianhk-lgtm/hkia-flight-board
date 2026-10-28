@@ -258,14 +258,14 @@ try{
   /* ---------- sticky 頂部 ---------- */
   .stickybar{
     position:-webkit-sticky; position:sticky; top:0; z-index:10;
-    background:#132c44;
+    background:rgba(11,28,44,.85);
     -webkit-backdrop-filter:blur(14px) saturate(1.3);
     backdrop-filter:blur(14px) saturate(1.3);
     border-bottom:1px solid var(--line);
     box-shadow:0 6px 16px rgba(0,0,0,.35);
     padding-top:env(safe-area-inset-top);
   }
-  [data-theme="light"] .stickybar{ background:#f2f7f7; box-shadow:0 6px 16px rgba(0,0,0,.10); }
+  [data-theme="light"] .stickybar{ background:rgba(255,255,255,.85); box-shadow:0 6px 16px rgba(0,0,0,.10); }
   [data-theme="light"] .dates button.on{ background:rgba(0,107,110,.10); }
   [data-theme="light"] .tglchip:has(input:checked){ background:rgba(0,107,110,.10); }
   [data-theme="light"] .modeseg button.on{ background:rgba(0,107,110,.10); }
