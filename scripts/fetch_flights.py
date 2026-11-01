@@ -213,7 +213,9 @@ def main() -> int:
     # 上一版冇尋日（首次運行／爛檔）就照攞，安全性優先，唔會丟失成日。
     old_days = (old_payload or {}).get("days") or {}
     carry_yday = None
-    if now.hour >= 6 and dates[0] in old_days:
+    if (now.hour >= 6 and dates[0] in old_days
+            and isinstance(old_days[dates[0]], dict)
+            and old_days[dates[0]].get("arrival") and old_days[dates[0]].get("departure")):
         carry_yday = old_days[dates[0]]
         fetch_dates = dates[1:]
         print(f"  {dates[0]}: carried over from previous data.json (after 06:00)")
@@ -221,6 +223,7 @@ def main() -> int:
         fetch_dates = dates
 
     days = {}
+    missing = {}
     try:
         for date in fetch_dates:
             day = {}
@@ -237,6 +240,7 @@ def main() -> int:
                     grp = next((g for g in groups if g.get("date") == date), None)
                     if grp is None:
                         print(f"WARN: no group for {date} in {url}", file=sys.stderr)
+                        missing[(date, key)] = missing.get((date, key), 0) + 1
                         continue
                     for f in grp.get("list", []):
                         fl = parse_flight(f, arrival, cargo)
@@ -295,6 +299,12 @@ def main() -> int:
                 n_cargo = sum(1 for fl in flights if fl["cargo"])
                 print(f"  {date} {key}: {len(flights)} flights ({n_cargo} cargo)")
             days[date] = day
+        # MED-08：同一 (date, tab) 客＋貨兩組全缺 = 數據唔完整，唔寫檔（fail-closed）；
+        # 單組缺淨係 WARN 照寫（API 對真空組合唔回 group 嗰陣唔好凍結成條 pipeline）
+        _bad = sorted(k for k, c in missing.items() if c >= 2)
+        if _bad:
+            print(f"ERROR: no data for {', '.join(f'{d} {t}' for d, t in _bad)}, refusing to write", file=sys.stderr)
+            return 1
     except Exception as exc:  # timeout, HTTP error, bad JSON...
         print(f"ERROR: failed to fetch flight data: {exc}", file=sys.stderr)
         return 1
@@ -424,34 +434,27 @@ def main() -> int:
         "days": days,
     }
     # data.json 本身就係 3 日版（昨天/今天/明天，UI 顯示用）
-    slim_payload = payload
 
     # Idempotent: only rewrite when the data actually changed, so the CI
     # `git diff` check correctly reports "no change" and skips the commit.
     # (stand_old is part of days, so a newly detected / cleared stand change
     # counts as a change.)
     if old_payload is not None:
-        if old_payload.get("dates") == dates and old_payload.get("days") == slim_payload["days"]:
+        if old_payload.get("dates") == dates and old_payload.get("days") == payload["days"]:
             total = sum(len(v) for d in days.values() for v in d.values())
             print(f"OK: no change ({total} flights), kept {out_path}")
             return 0
 
     tmp_path = out_path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as fh:
-        json.dump(slim_payload, fh, ensure_ascii=False, separators=(",", ":"))
+        json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
     os.replace(tmp_path, out_path)
 
-    # data-full.json：同 data.json 同一份 3 日數據（保持檔案存在，兼容舊流程）
-    full_path = os.path.join(os.path.dirname(out_path), "data-full.json")
-    tmp_full = full_path + ".tmp"
-    with open(tmp_full, "w", encoding="utf-8") as fh:
-        json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
-    os.replace(tmp_full, full_path)
+    # 2026-11-01 起停寫 data-full.json（已證實同 data.json 內容完全一樣，
+    # repo 入面冇任何嘢讀佢；GitHub 上嘅舊版保留凍結，唔刪除）。
 
     total = sum(len(v) for d in days.values() for v in d.values())
-    slim_total = total
-    print(f"OK: wrote {slim_total} flights for {dates[0]}..{dates[-1]} -> {out_path}")
-    print(f"OK: wrote {total} flights for {dates[0]}..{dates[-1]} -> {full_path}")
+    print(f"OK: wrote {total} flights for {dates[0]}..{dates[-1]} -> {out_path}")
     return 0
 
 
