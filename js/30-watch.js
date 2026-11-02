@@ -10,6 +10,13 @@
       location.href = "nld.html";
       return;
     }
+    /* 暗號開機尾號匯入（v225，本地專用；其他頁會由 regOpenImport 提示只限主頁） */
+    if(v === "Callsign3577"){
+      q.value = ""; query = "";
+      $("qclear").parentElement.classList.remove("hasq");
+      try{ if(typeof regOpenImport === "function") regOpenImport(); }catch(e){}
+      return;
+    }
     /* T1M 專頁關閉提醒／推送功能：+/@ 唔 arm，直接提示 */
     if(window.__T1M_NO_WATCH && /^([A-Za-z]?\d+|[A-Za-z0-9]{2,}\d+)[@+]$/i.test(v)){
       showToast("T1M 專頁不設提醒功能");
