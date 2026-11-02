@@ -259,11 +259,12 @@ function fetchDataJson(){
       var mf = function(typ){
         return function(f){
           var w = WATCH[watchKey(typ, f)];
-          /* 淨 match 主航班編號，唔 match 聯合航班 */
+          /* 淨 match 主航班編號，唔 match 聯合航班；v225 加：本地機尾號（淨主頁有數據先中，冇數據一律唔中） */
           return norm(opId(f)).indexOf(nq) !== -1 ||
                  norm(f.via).indexOf(nq) !== -1 ||
                  norm(manualStand(typ, f) || f.stand).indexOf(nq) !== -1 ||
-                 norm(w && w.note).indexOf(nq) !== -1;
+                 norm(w && w.note).indexOf(nq) !== -1 ||
+                 (typeof regSearchMatch === "function" && regSearchMatch(typ, f, nq));
         };
       };
       arr = arr.filter(mf('arrival')); dep = dep.filter(mf('departure'));
