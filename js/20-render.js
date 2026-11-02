@@ -42,14 +42,17 @@
       var adir = "<span class='adir'>"+(typ==="arrival"?"↓":"↑")+"</span>";
       var fidCell = "<td class='fid'>"+(typ==="arrival"?adir:"")+"<span class='fidtxt'>"+esc(opId(f))+"</span>"+dateTag(f)+badge(f)+(hn?" <span class='nst'>★</span>":"")+(ilv>=1?" <span class='tmark inspk'>✓</span>":"")+"</td>";
       var tMark2 = ilv>=2 ? "<span class='tmark inspk ab'>✓</span>" : "";
+      /* v225：有本地機尾號先畫兩行細字，冇／出錯一律畫返航點（50-reg.js 載入失敗都唔會死頁） */
+      var apcHtml = "<td class='apc'>"+esc(apCode(typ,f))+"</td>";
+      try{ if(typeof regApcCell === "function") apcHtml = regApcCell(typ,f); }catch(e){}
       if(typ === 'arrival'){
         html += "<tr class='"+cls+"' data-k='"+i+"'>"+fidCell+"<td></td>"+
-                "<td class='apc'>"+esc(apCode(typ,f))+"</td>"+
+                apcHtml+
                 "<td class='time tcol'><span class='twrap'>"+arrTimeHtml(f)+tMark2+"</span></td><td class='tcol'></td>"+
                 "<td class='bayc'>"+standHtml(typ,f)+"</td></tr>";
       }else{
         html += "<tr class='"+cls+"' data-k='"+i+"'><td>"+adir+"</td>"+fidCell+
-                "<td class='apc'>"+esc(apCode(typ,f))+"</td>"+
+                apcHtml+
                 "<td class='tcol'></td><td class='time tcol'><span class='twrap'>"+depTimeHtml(f)+tMark2+"</span></td>"+
                 "<td class='bayc'>"+standHtml(typ,f)+"</td></tr>";
       }
