@@ -608,9 +608,11 @@
       scrollToEightAbove();
       /* 還原提醒：同上次見過嘅比較，有新航班入 bay 就彈 banner */
       if(watchCount() || flightWatchCount()){
-        checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
+        checkBayWatch(); checkFlightWatch();
         showWatchPill();
       }
+      /* 落雨警告唔關 watch 事：預設開，開頁就要查（2026-11-03 修：之前閘喺上面個 if 入面，冇 watch 嗰陣開頁完全唔查雨） */
+      checkRainWatch(); flushAlerts();
     })
     .catch(function(e){
       // 主站攞唔到 data.json：試下後備站（淨試一次，唔 loop）
