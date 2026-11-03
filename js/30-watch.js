@@ -548,7 +548,7 @@
       .then(function(d){
         var times = (d.minutely_15||{}).time || [], vals = (d.minutely_15||{}).precipitation || [];
         var nowMs = Date.now();
-        var curVal = null, firstT = "", firstMin = 0, firstVal = 0;
+        var curVal = null, curT = "", firstT = "", firstMin = 0, firstVal = 0;
         for(var i=0;i<times.length;i++){
           /* Open-Meteo times 係 HKT 無 offset 字串，唔好用本地時區解讀 */
           var tm = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(times[i] || "");
@@ -557,13 +557,17 @@
           var v = parseFloat(vals[i]); if(isNaN(v)) v = 0;
           if(diffMin > -15 && diffMin <= 0){
             /* 今格（15 分鐘格包含而家） */
-            if(curVal === null || v > curVal) curVal = v;
+            if(curVal === null || v > curVal){ curVal = v; curT = times[i]; }
           }else if(diffMin > 0 && diffMin <= 60){
-            if(firstT === "" && v >= 0.2){ firstT = times[i]; firstMin = Math.round(diffMin); firstVal = v; }
+            if(firstT === "" && v >= 0.1){ firstT = times[i]; firstMin = Math.round(diffMin); firstVal = v; }
           }
         }
-        if(curVal !== null && curVal >= 0.2){
-          /* 落緊雨：唔彈（睇到就多餘），事件未完唔 reset */
+        if(curVal !== null && curVal >= 0.1){
+          /* 落緊雨：2026-11-03 改——0.1mm 都彈，同一場雨淨彈一次（之前係完全唔彈，輕雨成日走漏）；事件未完唔 reset */
+          if(!rainWatch.alertedAt){
+            rainWatch.alertedAt = curT || "now"; saveRainWatch();
+            rainNowAlert(curVal); flushAlerts();
+          }
           return;
         }
         if(firstT !== ""){
@@ -577,6 +581,10 @@
         }
       })
       .catch(function(){});
+  }
+  function rainNowAlert(val){
+    var html = "<div>預報雨量 <b>"+val+" mm</b>（而家呢格）</div><div style='color:var(--muted);font-size:12px;margin-top:4px'>資料來源：Open-Meteo 預報</div>";
+    queueAlert("🌧 機場而家落緊雨", html);
   }
   function rainAlert(mins, val, isoTime){
     var d = new Date(isoTime);
