@@ -176,6 +176,7 @@ def main() -> int:
     old_ests = {}
     old_stand_olds = {}
     old_stand_miss = {}
+    old_stand_lasts = {}
     if os.path.exists(out_path):
         try:
             with open(out_path, encoding="utf-8") as fh:
@@ -186,6 +187,8 @@ def main() -> int:
                         old_stands[(d, tk, f.get("flight_id"))] = f.get("stand")
                         if f.get("stand_old"):
                             old_stand_olds[(d, tk, f.get("flight_id"))] = f.get("stand_old")
+                        if f.get("stand_last"):
+                            old_stand_lasts[(d, tk, f.get("flight_id"))] = f.get("stand_last")
                         if f.get("stand_miss"):
                             old_stand_miss[(d, tk, f.get("flight_id"))] = f.get("stand_miss")
                         if f.get("est") and f.get("est") != "—":
@@ -322,7 +325,12 @@ def main() -> int:
     #   marker are kept instead of showing "—". (The old `continue` here
     #   silently dropped stand_old whenever the API omitted the gate.)
     # - If the API drops the stand 6 times in a row (~1 hr), treat it as
-    #   genuinely cancelled: show "—" and clear the marker. (Was 3 until
+    #   genuinely cancelled: show "—" and clear the marker — but the last
+    #   real stand is still remembered in stand_last (Option 3, 2026-11-04),
+    #   so if a NEW stand appears afterwards it still counts as a change
+    #   (S11 → — → S41 shows red); stand_last is consumed and cleared as
+    #   soon as a real stand returns, and cleared after the flight operates.
+    #   (Was 3 until
     #   2026-10-21: that night the feed flickered stand-less for exactly 3
     #   runs while the airport app kept showing the stand — DL089/CX843 —
     #   so 3 was too tight; genuine takeovers are still caught instantly by
@@ -369,16 +377,19 @@ def main() -> int:
                 k = (date, key, fl["flight_id"])
                 prev = old_stands.get(k)
                 prev_old = old_stand_olds.get(k)
+                prev_last = old_stand_lasts.get(k)
                 cur = fl["stand"]
                 flown = bool(fl.get("ata") and fl["ata"] != "—")
-                # 上次嘅 stand/stand_old 轉做 display form 先比較
+                # 上次嘅 stand/stand_old/stand_last 轉做 display form 先比較
                 prev_d = _norm(key, prev) if prev and prev != "—" else prev
                 prev_old_d = _norm(key, prev_old) if prev_old and prev_old != "—" else prev_old
+                prev_last_d = _norm(key, prev_last) if prev_last and prev_last != "—" else prev_last
                 if flown:
                     # 起飛／降落後：只留最終泊位，唔再顯示變動
                     if (not cur or cur == "—") and prev_d and prev_d != "—":
                         fl["stand"] = prev_d
                     fl.pop("stand_old", None)
+                    fl.pop("stand_last", None)
                     continue
                 if not cur or cur == "—":
                     # API 今次冇俾泊位
@@ -392,21 +403,33 @@ def main() -> int:
                                 if ud == date and ut is not None and abs(ut - my_t) <= 90:
                                     bay_taken = True
                                     break
+                    # 記住上一個真實 bay：上一轉有就用佢，否則用之前記低嘅
+                    last_real = prev_d if (prev_d and prev_d != "—") else prev_last_d
                     if bay_taken or miss >= 6:
-                        # 真係冇咗：顯示 —，清 marker
+                        # 真係冇咗：顯示 —，清 marker，但記低舊 bay 橋接下一轉
                         fl["stand"] = "—"
                         fl.pop("stand_old", None)
                         fl["stand_miss"] = miss
+                        if last_real and last_real != "—":
+                            fl["stand_last"] = last_real
+                        else:
+                            fl.pop("stand_last", None)
                     elif prev_d and prev_d != "—":
-                        # 暫時甩：沿用上次已知嘅泊位＋變動標記
+                        # 暫時甩：沿用上次已知嘅泊位＋變動標記（輸出本身係真實 bay，唔使橋接）
                         fl["stand"] = prev_d
                         if prev_old_d and prev_old_d != "—" and prev_old_d != prev_d:
                             fl["stand_old"] = prev_old_d
                         fl["stand_miss"] = miss
+                        fl.pop("stand_last", None)
                     else:
+                        # 上一轉已經係 —：繼續記低舊 bay，等之後出新 bay 嗰陣認得係變動
                         fl["stand_miss"] = miss
+                        if last_real and last_real != "—":
+                            fl["stand_last"] = last_real
+                        else:
+                            fl.pop("stand_last", None)
                     continue
-                # 有泊位：reset miss count
+                # 有泊位：reset miss count，橋接標記用完即清
                 fl.pop("stand_miss", None)
                 if prev_d and prev_d != "—" and prev_d != cur:
                     # 泊位變咗：上次嘅新（prev）變成今次嘅舊
@@ -414,6 +437,11 @@ def main() -> int:
                 elif prev_old_d and prev_old_d != "—" and prev_old_d != cur:
                     # 泊位冇變：上次嘅變動標記繼續留住，直到起飛／降落
                     fl["stand_old"] = prev_old_d
+                elif prev_last_d and prev_last_d != "—" and prev_last_d != cur:
+                    # Option 3 (2026-11-04)：上一轉係 —，但之前記低嘅真實 bay
+                    # 同而家唔同（S11 → — → S41）：一樣算變動，紅色照出
+                    fl["stand_old"] = prev_last_d
+                fl.pop("stand_last", None)
 
     if map_changed:
         tmp_map = prefix_path + ".tmp"
