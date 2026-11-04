@@ -559,11 +559,11 @@
             /* 今格（15 分鐘格包含而家） */
             if(curVal === null || v > curVal){ curVal = v; curT = times[i]; }
           }else if(diffMin > 0 && diffMin <= 60){
-            if(firstT === "" && v >= 0.1){ firstT = times[i]; firstMin = Math.round(diffMin); firstVal = v; }
+            if(firstT === "" && v >= 0.2){ firstT = times[i]; firstMin = Math.round(diffMin); firstVal = v; }
           }
         }
-        if(curVal !== null && curVal >= 0.1){
-          /* 落緊雨：2026-11-03 改——0.1mm 都彈，同一場雨淨彈一次（之前係完全唔彈，輕雨成日走漏）；事件未完唔 reset */
+        if(curVal !== null && curVal >= 0.2){
+          /* 落緊雨：2026-11-04 改返 0.2mm——0.1mm 嗰日彈咗兩次但實際冇落雨，誤報太多；同一場雨淨彈一次；事件未完唔 reset */
           if(!rainWatch.alertedAt){
             rainWatch.alertedAt = curT || "now"; saveRainWatch();
             rainNowAlert(curVal); flushAlerts();
