@@ -159,7 +159,7 @@
       for(var j=0;j<lastItems.length;j++){
         if(itemKey(lastItems[j]) === detailKey){ it2 = lastItems[j]; break; }
       }
-      if(act === "note-save"){ commitNote(); }
+      if(act === "note-save"){ commitNote(actEl); }
       else if(act === "note-cancel" && it2){ deleteNote(it2.typ, it2.f); }
       else if(act === "copy-flight" && it2){ copyFlight(it2.typ, it2.f); }
       else if(act === "flight-follow" && it2){ var fid = opId(it2.f).toUpperCase(); var fwKey = (flightWatches[fid] && fid) || (flightWatches[fid + "|" + it2.typ] && fid + "|" + it2.typ); if(fwKey) disarmFlightWatch(fwKey); else armFlightWatch(fid); render(); }
@@ -173,7 +173,7 @@
     if(!it) return;
     /* 備註編輯緊：點航班 row 就保存兼關閉，唔使下下撳掣 */
     if(noteEditingKey){
-      commitNote();
+      commitNote(row);
       return;
     }
     if(window.getSelection && window.getSelection().toString()) return;
