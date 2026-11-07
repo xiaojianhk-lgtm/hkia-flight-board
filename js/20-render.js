@@ -83,11 +83,13 @@
     }
     $("rows").innerHTML = html;
 
-    var ni = $("noteInput") || $("standInput");
-    if(ni){
-      ni.addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); commitNote(); } });
-      if(noteFocus){ noteFocus = false; try{ ni.focus(); }catch(e){} }
+    /* 同一班機有兩行（延誤跨日）嗰陣會有兩個輸入框：逐個掛 Enter 監聽，撳 Enter 嗰陣傳返嗰個輸入框，等 commitNote 讀啱格 */
+    var nis = document.querySelectorAll("#rows input.noteinput");
+    for(var ni2 = 0; ni2 < nis.length; ni2++){
+      nis[ni2].addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); commitNote(ev.target); } });
     }
+    var ni = $("noteInput") || $("standInput");
+    if(noteFocus){ noteFocus = false; try{ if(ni) ni.focus(); }catch(e){} }
 
     var g = getLists();
     var ac = $("adCount");
@@ -116,9 +118,26 @@
     }
   }
 
-  function commitNote(){
-    var ni = $("noteInput"), si = $("standInput"), k = noteEditingKey;
+  /* 保存備註／手動泊位。srcEl（可選）：觸發保存嗰個元素（保存掣／輸入框／航班行）。
+     同一班機有兩行（延誤跨日）嗰陣會有兩個輸入框（id 重複），唔可以直接用
+     getElementById 攞第一個——要讀返觸發嗰行詳情入面嗰個，否則打咗嘅字會唔見。 */
+  function commitNote(srcEl){
+    var ni = null, si = null, k = noteEditingKey;
     noteEditingKey = null;
+    var wrap = null;
+    if(srcEl && srcEl.closest){
+      wrap = srcEl.closest(".drow");
+      if(!wrap && srcEl.classList && srcEl.classList.contains("rw")){
+        var nx = srcEl.nextElementSibling;
+        if(nx && nx.classList && nx.classList.contains("drow")) wrap = nx;
+      }
+    }
+    if(wrap){
+      var inp = wrap.querySelector("input.noteinput");
+      if(inp){ if(inp.id === "standInput") si = inp; else ni = inp; }
+    }
+    if(!ni) ni = $("noteInput");
+    if(!si) si = $("standInput");
     if(k){
       WATCH[k] = WATCH[k] || {};
       if(ni){ var v = ni.value.trim(); if(v) WATCH[k].note = v; else delete WATCH[k].note; }
