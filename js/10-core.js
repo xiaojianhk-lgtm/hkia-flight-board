@@ -353,11 +353,17 @@ function fetchDataJson(){
     }else if(note){
       h += "<div><span>備註：</span>"+esc(note)+"</div>";
     }
-    /* 延誤 */
+    /* 時間變動（離港）／延誤（到港） */
     if(f.est && f.est !== "—" && f.eta && f.eta !== "—" && f.est !== f.eta){
       var m1 = toMin(f.eta), m2 = toMin(f.est), dd = m2 - m1;
       if(dd > 720) dd -= 1440; else if(dd < -720) dd += 1440;
-      if(dd !== 0) h += "<div><span>時間：</span>"+esc(dd > 0 ? "延誤 "+dd+" 分鐘" : "提早 "+(-dd)+" 分鐘")+"</div>";
+      if(dd !== 0){
+        if(typ === "departure"){
+          h += "<div><span>時間變動：</span>"+esc(f.eta)+" → "+esc(f.est)+"</div>";
+        }else{
+          h += "<div><span>時間：</span>"+esc(dd > 0 ? "延誤 "+dd+" 分鐘" : "提早 "+(-dd)+" 分鐘")+"</div>";
+        }
+      }
     }
     if(typ === "arrival"){
       if(f.baggage && f.baggage !== "—") h += "<div><span>行李帶：</span>"+esc(f.baggage)+"</div>";
