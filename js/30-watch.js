@@ -616,6 +616,8 @@
         var show = [];
         Object.keys(d || {}).forEach(function(k){
           var w = d[k] || {};
+          /* 已取消嘅警告（actionCode CANCEL）唔顯示：天文台取消之後條記錄仲喺清單入面，淨睇 code 會誤報（2026-11-14 黃雨教訓） */
+          if((w.actionCode || "").toUpperCase() === "CANCEL") return;
           var code = (w.code || "").toUpperCase();
           var name = w.name || "";
           /* 打風信號、暴雨警告、雷暴警告先顯示 */
