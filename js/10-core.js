@@ -58,7 +58,10 @@ function fetchDataJson(){
     try{ showToast("已隱藏 " + opId(f)); }catch(e){}
   }
   function watchKey(typ, f){
-    var d = (DB && DB.dates && DB.dates[dateIdx]) ? DB.dates[dateIdx] : ("d"+dateIdx);
+    /* key 用航班自己嘅原定日期（_sdate，getLists 掃嗰陣記低），唔係而家睇緊邊頁：
+       延誤跨日嗰陣，同一航班編號會喺唔同日出現兩行，舊寫法兩行撞同一個 key，
+       長按會一齊開兩個備註，備註亦會共用。_sdate 未有嗰陣（例如關注頁直接讀 DB）跌返頁面日期，行為同舊版一樣 */
+    var d = (f && f._sdate) || (DB && DB.dates && DB.dates[dateIdx]) || ("d"+dateIdx);
     return d + "|" + typ + "|" + opId(f);
   }
   function hasNote(typ, f){
@@ -356,7 +359,16 @@ function fetchDataJson(){
     /* 時間變動（離港）／延誤（到港） */
     if(f.est && f.est !== "—" && f.eta && f.eta !== "—" && f.est !== f.eta){
       var m1 = toMin(f.eta), m2 = toMin(f.est), dd = m2 - m1;
-      if(dd > 720) dd -= 1440; else if(dd < -720) dd += 1440;
+      /* 跨日延誤：用埋日期計（est_date 有就用佢；原定日期用 eta_date，冇就用 _sdate）；
+         冇日期先用返 ±720 分鐘兜圈。唔用日期嗰陣，延超過 12 小時會倒轉計成提早
+         （CX361：11:30 → 翌日 01:02 應為延誤 812 分鐘，舊算法計成提早 628 分鐘） */
+      var etaD = f.eta_date || f._sdate, estD = f.est_date || null;
+      if(etaD && estD && etaD !== estD){
+        var dayDiff = Math.round((new Date(estD+"T00:00:00") - new Date(etaD+"T00:00:00")) / 86400000);
+        dd += dayDiff * 1440;
+      }else{
+        if(dd > 720) dd -= 1440; else if(dd < -720) dd += 1440;
+      }
       if(dd !== 0){
         if(typ === "departure"){
           h += "<div><span>時間變動：</span>"+esc(f.eta)+" → "+esc(f.est)+"</div>";
