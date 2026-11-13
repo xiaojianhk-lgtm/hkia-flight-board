@@ -167,9 +167,20 @@
       if(w.silent) return;  /* @ 靜默加入嘅唔顯示 pill */
       var d = document.createElement("div");
       d.className = "watchpill";
+      /* 顯示原定日期（sdate），唔係 Worker 搵機用嘅實際日期（w.date）：
+         延誤跨日嗰陣兩者唔同（CX361 原定 11/13、實際 11/14），pill 要跟返用戶認嗰班機。
+         舊 watch 未存 sdate 嗰陣即場由 findFlight 攞（bucket 日期）；攞唔到先跌返 w.date */
+      var dispDate = w.sdate || "";
+      if(!dispDate && DB && w.date){
+        try{
+          var _it = findFlight(fid.split("|")[0], w.date, fid.split("|")[1] || undefined);
+          if(_it && _it.sdate) dispDate = _it.sdate;
+        }catch(e){}
+      }
+      if(!dispDate) dispDate = w.date || "";
       var dateLabel = "";
-      if(w.date){
-        var parts = w.date.split("-");
+      if(dispDate){
+        var parts = dispDate.split("-");
         if(parts.length === 3) dateLabel = " " + parts[1] + "/" + parts[2];
       }
       var dispFid = fid.split("|")[0];
@@ -450,7 +461,7 @@
         pair[1].forEach(function(f){
           if(found) return;
           if((effDate(f) || d) !== target) return;
-          if(opId(f).toUpperCase() === fidU) found = {typ:pair[0], f:f};
+          if(opId(f).toUpperCase() === fidU) found = {typ:pair[0], f:f, sdate:d};  /* sdate = 呢班機喺 data 入面屬於邊一日（原定日期） */
         });
       });
     });
@@ -467,7 +478,8 @@
     var it = findFlight(fid, target);
     var bay = it ? flightBay(it.f) : "";
     var key = it ? fid + "|" + it.typ : fid;
-    flightWatches[key] = { seenBay: bay, date: target, silent: !!silent };
+    /* date 係實際日期（Worker 搵機＋跳頁釘位用，唔郁）；sdate 係原定日期（pill／提示顯示用） */
+    flightWatches[key] = { seenBay: bay, date: target, sdate: it ? (it.sdate || "") : "", silent: !!silent };
     saveFlightWatch(); if(!silent) showWatchPill();
     if(!silent) pushWatchAdd("flight", fid, target, bay, it ? it.typ : "");
   }
@@ -509,7 +521,7 @@
       var bay = flightBay(it.f);
       if(bay && bay !== "—" && bay !== w.seenBay){
         /* 新有 Bay（或轉咗 Bay） */
-        fresh.push({fid:fid, typ:it.typ, f:it.f, bay:bay});
+        fresh.push({fid:fid, typ:it.typ, f:it.f, bay:bay, sdate:it.sdate});
         w.seenBay = bay;
       }else if(!bay || bay === "—"){
         w.seenBay = "";
@@ -522,8 +534,9 @@
     var html = list.map(function(it){
       var dateLabel = "";
       var w = flightWatches[it.fid];
-      if(w && w.date){
-        var parts = w.date.split("-");
+      var dispDate = it.sdate || (w && (w.sdate || w.date)) || "";
+      if(dispDate){
+        var parts = dispDate.split("-");
         if(parts.length === 3) dateLabel = " (" + parts[1] + "/" + parts[2] + ")";
       }
       return "<div style='margin-bottom:6px'><b>"+esc(it.fid.split("|")[0])+"</b>"+esc(dateLabel)+" "+(it.typ === "arrival" ? "到港" : "離港")+"</div>"+
