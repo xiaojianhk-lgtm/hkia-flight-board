@@ -1,7 +1,7 @@
 /* HKIA flight board - 30-watch.js */
   /* ---------- 事件 ---------- */
   var q = $("q");
-  q.addEventListener("input", function(){
+  if(q) q.addEventListener("input", function(){
     var v = q.value.trim();
     /* 暗號入夜班頁 */
     if(v === "Cargo3577"){
@@ -68,7 +68,7 @@
       q.blur();
       return;
     }
-    query = q.value;
+    query = v;
     $("qclear").parentElement.classList.toggle("hasq", !!q.value);
     expanded = false;
     render();
@@ -118,11 +118,12 @@
   function armWatch(bay, silent){
     if(window.__T1M_NO_WATCH) return;
     /* arm 即刻拉一次新數據 */
+    if(typeof fetchDataJson !== "function"){ if(!silent) showToast("數據載入緊，稍後再試"); return; }
     fetchDataJson()
       .then(function(d){
         if(d && d.generated_at && d.dates && d.days && (!DB || d.generated_at !== DB.generated_at)){
           DB = d;
-          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
+          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; if(typeof checkStale === "function") checkStale(d.generated_at);
           if(typeof buildDates==="function") buildDates(); render();
         }
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
@@ -144,9 +145,9 @@
       });
   }
   function disarmWatch(bay){
-    if(bay){ delete watchBays[bay]; pushWatchRemove("bay", bay); }
+    if(bay){ var wasSilent = !!(watchBays[bay] && watchBays[bay].silent); delete watchBays[bay]; if(!wasSilent) pushWatchRemove("bay", bay); }
     else{ 
-      Object.keys(watchBays).forEach(function(b){ pushWatchRemove("bay", b); });
+      Object.keys(watchBays).forEach(function(b){ if(!(watchBays[b] && watchBays[b].silent)) pushWatchRemove("bay", b); });
       watchBays = {}; 
     }
     saveBayWatch(); showWatchPill();
@@ -154,6 +155,7 @@
   function showWatchPill(){
     if(window.__T1M_NO_WATCH) return;
     var box = $("watchpills");
+    if(!box) return;
     box.innerHTML = "";
     Object.keys(watchBays).sort().forEach(function(bay){
       if(watchBays[bay].silent) return;  /* @ 靜默加入嘅唔顯示 pill */
@@ -285,7 +287,8 @@
     }).join("");
     queueAlert("🅿️ "+esc(bayNames)+" 有航班到位", html);
   }
-  $("waOk").addEventListener("click", function(){ $("watchalert").hidden = true; });
+  var waOk = $("waOk");
+  if(waOk) waOk.addEventListener("click", function(){ $("watchalert").hidden = true; });
   document.addEventListener("click", function(e){
     var b = e.target.closest && e.target.closest("[data-unwatch]");
     if(b){ disarmWatch(b.getAttribute("data-unwatch")); return; }
@@ -484,9 +487,9 @@
     if(!silent) pushWatchAdd("flight", fid, target, bay, it ? it.typ : "");
   }
   function disarmFlightWatch(fid){
-    if(fid){ var p = (fid || "").split("|"); delete flightWatches[fid]; pushWatchRemove("flight", p[0], p[1] || ""); }
+    if(fid){ var p = (fid || "").split("|"); var wasSilentF = !!(flightWatches[fid] && flightWatches[fid].silent); delete flightWatches[fid]; if(!wasSilentF) pushWatchRemove("flight", p[0], p[1] || ""); }
     else{ 
-      Object.keys(flightWatches).forEach(function(f){ var p = (f || "").split("|"); pushWatchRemove("flight", p[0], p[1] || ""); });
+      Object.keys(flightWatches).forEach(function(f){ if(!(flightWatches[f] && flightWatches[f].silent)){ var p = (f || "").split("|"); pushWatchRemove("flight", p[0], p[1] || ""); } });
       flightWatches = {}; 
     }
     saveFlightWatch(); showWatchPill();
