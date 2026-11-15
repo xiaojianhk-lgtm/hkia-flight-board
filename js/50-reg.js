@@ -1,7 +1,7 @@
 /* HKIA flight board - 50-reg.js (v225) */
 /* 機尾號本地層：只存呢部機 localStorage，唔上傳、唔入 repo、唔入 Worker。
    主頁專用：顯示（APT 欄改為兩行細字）＋搜尋（打機尾號搵到班機）＋匯入（搜尋欄暗號 Callsign3577）。
-   其他頁（關注頁／T1M／nld）就算載入呢個檔，顯示都會被頁面判斷閘住；匯入入口淨主頁先開。
+   淨係 hkiaflight.html 載入呢個檔（其他頁冇載入）；匯入入口淨主頁先開。
    呢個檔載入失敗、本地數據損壞，成個板都會跌返去今日嘅樣（顯示航點），唔會死頁。
    呢個檔載入嗰陣唔掂 DOM，淨係定義函數；所有 DOM 操作都等用戶觸發先做。 */
 var REG_KEY = "hkia-reg-v1";
@@ -17,7 +17,13 @@ function regFmtDate(dt){
   return dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2) + "-" + ("0" + dt.getDate()).slice(-2);
 }
 /* 對位：跟備註同一個慣例，用而家睇緊嗰日 tab 嘅日期＋方向＋航班編號（去空格大寫）。
-   同一日同編號同方向有多班（極少），就用班機顯示時間最近嗰個。 */
+   同一日同編號同方向有多班（極少），就用班機顯示時間最近嗰個。
+   時間只認 HH:MM（00–23:00–59），唔啱格式當無效時間；比對嗰陣用班機全部
+   已知時間（eta／est／ata／atd）取最近距離，唔淨係靠 eff 一個值。 */
+function regToMin(t){
+  var m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(t || "");
+  return m ? (+m[1]) * 60 + (+m[2]) : 99999;
+}
 function regFor(typ, f){
   try{
     if(typeof DB === "undefined" || !DB || !DB.dates || typeof dateIdx === "undefined" || !DB.dates[dateIdx]) return null;
@@ -28,9 +34,12 @@ function regFor(typ, f){
     var arr = data[date] && data[date][key];
     if(!arr || !arr.length) return null;
     if(arr.length === 1) return arr[0];
-    var t = toMin(eff(f)), best = arr[0], bd = 1e9;
+    var cands = [eff(f), f.eta, f.est, f.ata, f.atd].map(regToMin).filter(function(v){ return v !== 99999; });
+    if(!cands.length) return arr[0];
+    var best = arr[0], bd = 1e9;
     for(var i = 0; i < arr.length; i++){
-      var d = Math.abs(toMin(arr[i].time) - t);
+      var it = regToMin(arr[i].time), d = 1e9;
+      for(var j = 0; j < cands.length; j++){ var dd = Math.abs(it - cands[j]); if(dd < d) d = dd; }
       if(d < bd){ bd = d; best = arr[i]; }
     }
     return best;
@@ -64,7 +73,7 @@ function regImportJson(text){
     for(var i = 0; i < j.flights.length; i++){
       var fl = j.flights[i];
       if(!fl || typeof fl !== "object") return {ok: false, error: "第 " + (i + 1) + " 班格式唔啱"};
-      var fn = normReg(fl.f), dir = fl.dir, tm = fl.time, rg = normReg(fl.reg), ty = normReg(fl.type);
+      var fn = normReg(String(fl.f == null ? "" : fl.f).split(" / ")[0]), dir = fl.dir, tm = fl.time, rg = normReg(fl.reg), ty = normReg(fl.type);
       if(!fn || (dir !== "arrival" && dir !== "departure") || !/^\d{1,2}:\d{2}$/.test(tm || "") || !rg || !ty)
         return {ok: false, error: "第 " + (i + 1) + " 班資料唔齊（要 f / dir / time / reg / type）"};
       var k = j.date + "|" + dir + "|" + fn;
@@ -73,8 +82,7 @@ function regImportJson(text){
     }
     var data = regLoadData() || {};
     data[j.date] = map;
-    var today = new Date(); today.setHours(0, 0, 0, 0);
-    var cut = regFmtDate(new Date(today.getTime() - 86400000));
+    var cut = new Date(Date.now() + 8 * 3600 * 1000 - 86400000).toISOString().slice(0, 10); /* HKT 昨日，唔用裝置本地午夜 */
     Object.keys(data).forEach(function(d){ if(d < cut) delete data[d]; });
     localStorage.setItem(REG_KEY, JSON.stringify(data));
     return {ok: true, date: j.date, count: j.flights.length};
@@ -86,10 +94,20 @@ function regClearData(){
 function regStoredSummary(){
   try{
     var d = regLoadData(); if(!d) return "未匯入任何機尾號";
-    return Object.keys(d).sort().map(function(date){
-      var n = 0; Object.keys(d[date]).forEach(function(k){ n += d[date][k].length; });
-      return date + "（" + n + " 班）";
-    }).join("、") || "未匯入任何機尾號";
+    var bad = false, parts = [];
+    Object.keys(d).sort().forEach(function(date){
+      var day = d[date];
+      if(!day || typeof day !== "object" || Array.isArray(day)){ bad = true; return; }
+      var n = 0, okDay = true;
+      Object.keys(day).forEach(function(k){
+        var arr = day[k];
+        if(!Array.isArray(arr)){ bad = true; okDay = false; return; }
+        n += arr.length;
+      });
+      if(okDay) parts.push(date + "（" + n + " 班）");
+    });
+    if(!parts.length) return bad ? "數據損壞" : "未匯入任何機尾號";
+    return parts.join("、") + (bad ? "、部分數據損壞" : "");
   }catch(e){ return "未匯入任何機尾號"; }
 }
 /* 匯入介面：淨主頁先開，其他頁撳暗號只會提示。介面本身唔發任何網絡請求。 */
@@ -100,7 +118,7 @@ function regOpenImport(){
       return;
     }
     var box = document.getElementById("regImportBox");
-    if(box){ box.style.display = ""; var st = document.getElementById("regImportStatus"); if(st) st.textContent = "而家存咗：" + regStoredSummary(); return; }
+    if(box){ box.style.display = ""; var ta0 = document.getElementById("regImportText"); if(ta0) ta0.value = ""; var st = document.getElementById("regImportStatus"); if(st) st.textContent = "而家存咗：" + regStoredSummary(); return; }
     box = document.createElement("div");
     box.id = "regImportBox";
     box.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;";
@@ -120,6 +138,7 @@ function regOpenImport(){
       var msg = document.getElementById("regImportMsg");
       var r = regImportJson(document.getElementById("regImportText").value);
       if(!r.ok){ msg.textContent = "匯入失敗：" + r.error; return; }
+      document.getElementById("regImportText").value = "";
       box.style.display = "none";
       try{ if(typeof render === "function") render(); }catch(e){}
       try{ if(typeof showToast === "function") showToast("已匯入 " + r.date + "，共 " + r.count + " 班"); }catch(e){}
