@@ -40,8 +40,9 @@
     /* FLIGHT@：靜默加入航班關注 */
     var mFlightAt = /^([A-Za-z0-9]{2,}\d+)@$/i.exec(v);
     if(mFlightAt){
-      armFlightWatch(mFlightAt[1].toUpperCase(), true);
-      showToast("已添加 " + mFlightAt[1].toUpperCase(), true);
+      /* M10：arm 失敗（三日都無呢班機）就唔好話「已添加」 */
+      var okF = armFlightWatch(mFlightAt[1].toUpperCase(), true);
+      showToast(okF ? ("已添加 " + mFlightAt[1].toUpperCase()) : "呢三日無呢班機", true);
       q.value = ""; query = "";
       $("qclear").parentElement.classList.remove("hasq");
       expanded = false; render();
@@ -75,6 +76,8 @@
   });
   /* ---------- 泊位到位提醒（隱藏功能：搜尋欄輸入 BAY+） ---------- */
   var watchBays = {};  /* bay -> {seen:{...}}，可同時 watch 多個 */
+  /* M11：bay watch seen key 缺失 grace 計數（bay -> {seenKey: 連續缺失轉數}），淨係放喺記憶體，唔寫入 localStorage */
+  var bayMiss = {};
   var WB_KEY = "hkia-watchbay-v1";
   function saveBayWatch(){
     try{ localStorage.setItem(WB_KEY, JSON.stringify({bays:watchBays})); }catch(e){}
@@ -83,10 +86,28 @@
     if(window.__T1M_NO_WATCH) return;
     try{
       var wb = JSON.parse(localStorage.getItem(WB_KEY) || "null");
-      if(wb){
-        if(wb.bays){ watchBays = wb.bays; }
+      /* M9：載入值唔係純物件就唔接受，免得損壞數據拖垮成個檢查 */
+      if(wb && typeof wb === "object"){
+        if(wb.bays && typeof wb.bays === "object" && !Array.isArray(wb.bays)){ watchBays = wb.bays; }
         else if(wb.bay){ watchBays[wb.bay] = {seen:{}}; }  /* 舊單一格式遷移 */
       }
+      /* M7：清理過期 bay watch——date 早過數據窗口第一日（DB.dates[0]，即係尋日）；
+         DB 未載入嗰陣用 HKT 尋日計，效果一樣。M9：損壞值（唔係物件）一併清走。 */
+      var cutoff = "";
+      if(DB && DB.dates && DB.dates.length){ cutoff = DB.dates[0]; }
+      else{
+        var _t = new Date(Date.now() + 8*3600*1000);
+        _t.setUTCDate(_t.getUTCDate() - 1);
+        cutoff = _t.toISOString().slice(0, 10);
+      }
+      var changed = false;
+      Object.keys(watchBays).forEach(function(bay){
+        var wbv = watchBays[bay];
+        if(!wbv || typeof wbv !== "object"){ delete watchBays[bay]; changed = true; return; }
+        var wd = wbv.date || "";
+        if(wd && wd < cutoff){ delete watchBays[bay]; if(bayMiss[bay]) delete bayMiss[bay]; changed = true; }
+      });
+      if(changed) saveBayWatch();
     }catch(e){}
   }
   function watchCount(){ return Object.keys(watchBays).length; }
@@ -121,34 +142,41 @@
     if(typeof fetchDataJson !== "function"){ if(!silent) showToast("數據載入緊，稍後再試"); return; }
     fetchDataJson()
       .then(function(d){
-        if(d && d.generated_at && d.dates && d.days && (!DB || d.generated_at !== DB.generated_at)){
+        /* M12：淨係新過現有 DB 嗰陣先覆蓋，舊回應唔好倒退數據 */
+        if(d && d.generated_at && d.dates && d.days && (!DB || !DB.generated_at || d.generated_at > DB.generated_at)){
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; if(typeof checkStale === "function") checkStale(d.generated_at);
           if(typeof buildDates==="function") buildDates(); render();
         }
+        /* M7：guard dateIdx 越界，攞唔到有效日期就唔 arm */
+        var armDate = (DB && DB.dates && dateIdx >= 0 && dateIdx < DB.dates.length) ? DB.dates[dateIdx] : "";
+        if(!armDate){ if(!silent) showToast("數據載入緊，稍後再試"); return; }
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
         watchBays[bay].silent = !!silent;
-        watchBays[bay].date = (DB && DB.dates) ? DB.dates[dateIdx] : "";
-        flightsAt(bay, watchBays[bay].date).forEach(function(it){ watchBays[bay].seen[baySeenKey(it, watchBays[bay].date)] = 1; });
+        watchBays[bay].date = armDate;
+        flightsAt(bay, armDate).forEach(function(it){ watchBays[bay].seen[baySeenKey(it, armDate)] = 1; });
         saveBayWatch(); if(!silent) showWatchPill();
         if(!silent) pushWatchAdd("bay", bay);
       })
       .catch(function(){
+        /* M7：guard dateIdx 越界，攞唔到有效日期就唔 arm */
+        var armDate = (DB && DB.dates && dateIdx >= 0 && dateIdx < DB.dates.length) ? DB.dates[dateIdx] : "";
+        if(!armDate){ if(!silent) showToast("數據載入緊，稍後再試"); return; }
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
         watchBays[bay].silent = !!silent;
-        watchBays[bay].date = (DB && DB.dates) ? DB.dates[dateIdx] : "";
-        flightsAt(bay, watchBays[bay].date).forEach(function(it){ watchBays[bay].seen[baySeenKey(it, watchBays[bay].date)] = 1; });
+        watchBays[bay].date = armDate;
+        flightsAt(bay, armDate).forEach(function(it){ watchBays[bay].seen[baySeenKey(it, armDate)] = 1; });
         saveBayWatch(); if(!silent) showWatchPill();
         if(!silent) pushWatchAdd("bay", bay);
       });
   }
   function disarmWatch(bay){
-    if(bay){ var wasSilent = !!(watchBays[bay] && watchBays[bay].silent); delete watchBays[bay]; if(!wasSilent) pushWatchRemove("bay", bay); }
+    if(bay){ var wasSilent = !!(watchBays[bay] && watchBays[bay].silent); delete watchBays[bay]; if(bayMiss[bay]) delete bayMiss[bay]; if(!wasSilent) pushWatchRemove("bay", bay); }
     else{ 
       Object.keys(watchBays).forEach(function(b){ if(!(watchBays[b] && watchBays[b].silent)) pushWatchRemove("bay", b); });
-      watchBays = {}; 
+      watchBays = {}; bayMiss = {};
     }
     saveBayWatch(); showWatchPill();
   }
@@ -239,19 +267,39 @@
     if(window.__T1M_NO_WATCH) return;
     if(!watchCount() || !DB) return;
     var allFresh = [];
+    var changed = false;
     Object.keys(watchBays).forEach(function(bay){
-      var seen = watchBays[bay].seen || (watchBays[bay].seen = {});
+      var wbv = watchBays[bay];
+      /* M9：損壞值唔係物件就刪，唔好中斷成個檢查 */
+      if(!wbv || typeof wbv !== "object"){ delete watchBays[bay]; if(bayMiss[bay]) delete bayMiss[bay]; changed = true; return; }
+      var seen = wbv.seen || (wbv.seen = {});
       var bd = bayWatchDate(bay);
+      /* M7：目標日已跌出數據窗口（早過 DB.dates[0]）就刪 watch，唔好再留 pill */
+      if(bd && DB.dates && DB.dates.length && bd < DB.dates[0]){
+        delete watchBays[bay];
+        if(bayMiss[bay]) delete bayMiss[bay];
+        changed = true;
+        return;
+      }
       var cur = flightsAt(bay, bd), curKeys = {}, fresh = [];
       cur.forEach(function(it){
         var k = baySeenKey(it, bd); curKeys[k] = 1;
         if(!seen[k]) fresh.push({bay:bay, typ:it.typ, f:it.f});
       });
-      Object.keys(seen).forEach(function(k){ if(!curKeys[k]) delete seen[k]; });
+      /* M11：seen key 缺失唔即刻刪，連續 3 轉缺失先刪；重現就清計數 */
+      var miss = bayMiss[bay] || (bayMiss[bay] = {});
+      Object.keys(seen).forEach(function(k){
+        if(curKeys[k]){ if(miss[k]) delete miss[k]; }
+        else{
+          miss[k] = (miss[k] || 0) + 1;
+          if(miss[k] >= 3){ delete seen[k]; delete miss[k]; }
+        }
+      });
       cur.forEach(function(it){ seen[baySeenKey(it, bd)] = 1; });
       if(fresh.length) allFresh = allFresh.concat(fresh);
     });
     saveBayWatch();
+    if(changed) showWatchPill();
     if(allFresh.length) bayAlert(allFresh);
   }
   /* 統一提醒隊列：同一輪檢查有多個觸發，一次過顯示，唔互相覆蓋 */
@@ -390,6 +438,8 @@
 
   /* ---------- 指定航班泊位提醒（隱藏功能：搜尋欄輸入 FLIGHT@） ---------- */
   var flightWatches = {};  /* flightId -> {seenBay:""} */
+  /* M11：flight watch bay 缺失 grace 計數（fid -> 連續缺失轉數），淨係放喺記憶體，唔寫入 localStorage */
+  var flightMiss = {};
 
   var PUSH_WORKER = "https://hkia-push.xiaojian-hk.workers.dev";
   var PUSH_TOKEN = "18d17be5005c63145881b72855c6851e575f68f5f7456d915ce0b22a067cf0aa";
@@ -433,13 +483,15 @@
     if(window.__T1M_NO_WATCH) return;
     try{
       var fw = JSON.parse(localStorage.getItem(FW_KEY) || "null");
-      if(fw && fw.flights) flightWatches = fw.flights;
+      /* M9：載入值唔係純物件就唔接受，免得損壞數據拖垮成個檢查 */
+      if(fw && typeof fw === "object" && fw.flights && typeof fw.flights === "object" && !Array.isArray(fw.flights)) flightWatches = fw.flights;
       // 自動清理：冇日期嘅殭屍 watch 同日期已過（早過今日）嘅 watch 自動刪除
       var todayStr = new Date(Date.now() + 8*3600*1000).toISOString().slice(0, 10); /* HKT 今日（同 Worker todayHKT 一致） */
       var changed = false;
       Object.keys(flightWatches).forEach(function(fid){
         var w = flightWatches[fid];
-        if(w && (!w.date || w.date < todayStr)){
+        /* M9：損壞值（唔係物件／冇 date）一併清走 */
+        if(!w || typeof w !== "object" || !w.date || w.date < todayStr){
           delete flightWatches[fid];
           changed = true;
           try{ var p = (fid || "").split("|"); pushWatchRemove("flight", p[0], p[1] || ""); }catch(e){}
@@ -474,23 +526,36 @@
     return (manualStand("arrival", f) || manualStand("departure", f) || f.stand || "").toUpperCase();
   }
   function armFlightWatch(fid, silent){
-    if(window.__T1M_NO_WATCH) return;
+    if(window.__T1M_NO_WATCH) return false;
     fid = (fid || "").toUpperCase().replace(/\s/g, "");
-    var target = DB && DB.dates ? DB.dates[dateIdx] : "";
-    if(!target){ if(!silent) showToast("數據載入緊，稍後再試"); return; }  /* L2：DB 未載入就唔 arm，免留冇日期嘅殭屍 watch */
+    if(!DB || !DB.dates || !DB.dates.length){ if(!silent) showToast("數據載入緊，稍後再試"); return false; }  /* L2：DB 未載入就唔 arm，免留冇日期嘅殭屍 watch */
+    var target = DB.dates[dateIdx] || "";
+    if(!target){ if(!silent) showToast("數據載入緊，稍後再試"); return false; }
     var it = findFlight(fid, target);
-    var bay = it ? flightBay(it.f) : "";
-    var key = it ? fid + "|" + it.typ : fid;
+    var effTarget = target;
+    if(!it){
+      /* M10：唔喺今日 tab：跨三日掃一次，搵航班實際日期（例如聽日機） */
+      for(var i=0; i<DB.dates.length; i++){
+        if(DB.dates[i] === target) continue;
+        var cand = findFlight(fid, DB.dates[i]);
+        if(cand){ it = cand; effTarget = DB.dates[i]; break; }
+      }
+    }
+    /* M10：三日都搵唔到就唔 arm，唔好留死 watch＋誤導 pill */
+    if(!it){ if(!silent) showToast("呢三日無呢班機"); return false; }
+    var bay = flightBay(it.f);
+    var key = fid + "|" + it.typ;
     /* date 係實際日期（Worker 搵機＋跳頁釘位用，唔郁）；sdate 係原定日期（pill／提示顯示用） */
-    flightWatches[key] = { seenBay: bay, date: target, sdate: it ? (it.sdate || "") : "", silent: !!silent };
+    flightWatches[key] = { seenBay: bay, date: effTarget, sdate: it.sdate || "", silent: !!silent };
     saveFlightWatch(); if(!silent) showWatchPill();
-    if(!silent) pushWatchAdd("flight", fid, target, bay, it ? it.typ : "");
+    if(!silent) pushWatchAdd("flight", fid, effTarget, bay, it.typ);
+    return true;
   }
   function disarmFlightWatch(fid){
-    if(fid){ var p = (fid || "").split("|"); var wasSilentF = !!(flightWatches[fid] && flightWatches[fid].silent); delete flightWatches[fid]; if(!wasSilentF) pushWatchRemove("flight", p[0], p[1] || ""); }
+    if(fid){ var p = (fid || "").split("|"); var wasSilentF = !!(flightWatches[fid] && flightWatches[fid].silent); delete flightWatches[fid]; if(flightMiss[fid]) delete flightMiss[fid]; if(!wasSilentF) pushWatchRemove("flight", p[0], p[1] || ""); }
     else{ 
       Object.keys(flightWatches).forEach(function(f){ if(!(flightWatches[f] && flightWatches[f].silent)){ var p = (f || "").split("|"); pushWatchRemove("flight", p[0], p[1] || ""); } });
-      flightWatches = {}; 
+      flightWatches = {}; flightMiss = {};
     }
     saveFlightWatch(); showWatchPill();
   }
@@ -498,39 +563,68 @@
     if(window.__T1M_NO_WATCH) return;
     if(!flightWatchCount() || !DB) return;
     var fresh = [];
+    var changed = false;
     Object.keys(flightWatches).forEach(function(fid){
-      var w = flightWatches[fid];
-      if(w && !w.date) return;  /* L2：冇日期嘅殭屍 watch 唔觸發，等 loadFlightWatch 清理 */
-      /* 遷移：舊 key（淨 fid）搵到方向就改名做 fid|typ；若新 key 已存在就淨刪舊 key（去重） */
-      if(fid.indexOf("|") < 0 && DB){
-        var mig = findFlight(fid, w.date);
-        if(mig){
-          var nk = fid + "|" + mig.typ;
-          if(flightWatches[nk]){
-            delete flightWatches[fid];
-            try{ pushWatchRemove("flight", fid); }catch(e){}
-            return; /* 去重：新 key 嗰次 iteration 會處理，呢次跳過免重複彈 */
-          }else{
-            flightWatches[nk] = w; delete flightWatches[fid];
-            try{ pushWatchRemove("flight", fid); }catch(e){}
-            try{ pushWatchAdd("flight", fid, w.date, w.seenBay, mig.typ, true); }catch(e){}
-            fid = nk;
+      try{
+        var w = flightWatches[fid];
+        /* M9：損壞值（唔係物件／冇 date）就刪，唔好中斷成個檢查 */
+        if(!w || typeof w !== "object" || typeof w.date !== "string" || !w.date){
+          delete flightWatches[fid];
+          changed = true;
+          if(flightMiss[fid]) delete flightMiss[fid];
+          return;
+        }
+        /* 遷移：舊 key（淨 fid）搵到方向就改名做 fid|typ；若新 key 已存在就淨刪舊 key（去重） */
+        if(fid.indexOf("|") < 0 && DB){
+          var mig = findFlight(fid, w.date);
+          if(mig){
+            var nk = fid + "|" + mig.typ;
+            if(flightWatches[nk]){
+              delete flightWatches[fid];
+              try{ pushWatchRemove("flight", fid); }catch(e){}
+              return; /* 去重：新 key 嗰次 iteration 會處理，呢次跳過免重複彈 */
+            }else{
+              flightWatches[nk] = w; delete flightWatches[fid];
+              try{ pushWatchRemove("flight", fid); }catch(e){}
+              try{ pushWatchAdd("flight", fid, w.date, w.seenBay, mig.typ, true); }catch(e){}
+              fid = nk;
+            }
           }
         }
-      }
-      var parts = fid.split("|");
-      var it = parts.length > 1 ? findFlight(parts[0], w.date, parts[1]) : findFlight(fid, w.date);
-      if(!it) return;
-      var bay = flightBay(it.f);
-      if(bay && bay !== "—" && bay !== w.seenBay){
-        /* 新有 Bay（或轉咗 Bay） */
-        fresh.push({fid:fid, typ:it.typ, f:it.f, bay:bay, sdate:it.sdate});
-        w.seenBay = bay;
-      }else if(!bay || bay === "—"){
-        w.seenBay = "";
+        var parts = fid.split("|");
+        var it = parts.length > 1 ? findFlight(parts[0], w.date, parts[1]) : findFlight(fid, w.date);
+        if(!it) return;
+        /* M8：已飛／已取消就自動刪 watch，唔好留 pill，唔好再誤彈（拖機轉 bay） */
+        var done = !!it.f.cancelled || (it.f.ata && it.f.ata !== "—") || (it.f.atd && it.f.atd !== "—");
+        if(done){
+          delete flightWatches[fid];
+          changed = true;
+          if(flightMiss[fid]) delete flightMiss[fid];
+          try{ pushWatchRemove("flight", parts[0], parts[1] || ""); }catch(e){}
+          return;
+        }
+        var bay = flightBay(it.f);
+        if(bay && bay !== "—" && bay !== w.seenBay){
+          /* 新有 Bay（或轉咗 Bay） */
+          fresh.push({fid:fid, typ:it.typ, f:it.f, bay:bay, sdate:it.sdate});
+          w.seenBay = bay;
+          if(flightMiss[fid]) delete flightMiss[fid];
+        }else if(!bay || bay === "—"){
+          /* M11：bay 閃失唔即刻清 seenBay，連續 3 轉都無先清 */
+          var mc = (flightMiss[fid] || 0) + 1;
+          if(mc >= 3){ w.seenBay = ""; delete flightMiss[fid]; }
+          else{ flightMiss[fid] = mc; }
+        }else{
+          /* bay 無變：清 miss 計數 */
+          if(flightMiss[fid]) delete flightMiss[fid];
+        }
+      }catch(e){
+        /* M9：個別 watch 出錯唔好中斷成個檢查，刪咗佢繼續 */
+        try{ delete flightWatches[fid]; changed = true; if(flightMiss[fid]) delete flightMiss[fid]; }catch(e2){}
       }
     });
     saveFlightWatch();
+    if(changed) showWatchPill();
     if(fresh.length) flightAlert(fresh);
   }
   function flightAlert(list){
