@@ -25,7 +25,8 @@ function fetchDataJson(){
   /* ---------- 備註／手動泊位（localStorage） ---------- */
   var WATCH = (function(){
     try{
-      var w = JSON.parse(localStorage.getItem(WATCH_KEY)) || {};
+      var w = JSON.parse(localStorage.getItem(WATCH_KEY));
+      if(!w || typeof w !== "object" || Array.isArray(w)) w = {};
       Object.keys(w).forEach(function(k){ if(!w[k] || (!w[k].note && !w[k].stand && !w[k].insp)) delete w[k]; });
       return w;
     }catch(e){ return {}; }
@@ -34,7 +35,7 @@ function fetchDataJson(){
   /* ---------- 隱藏已取消航班（localStorage，淨係呢部機；撳詳情「已取消」即隱藏） ---------- */
   var HIDDEN_KEY = WATCH_KEY + "-hidden";
   var HIDDEN = (function(){
-    try{ return JSON.parse(localStorage.getItem(HIDDEN_KEY)) || {}; }catch(e){ return {}; }
+    try{ var h = JSON.parse(localStorage.getItem(HIDDEN_KEY)); return (h && typeof h === "object" && !Array.isArray(h)) ? h : {}; }catch(e){ return {}; }
   })();
   function saveHidden(){ try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify(HIDDEN)); }catch(e){} }
   function pruneHidden(){
@@ -115,10 +116,10 @@ function fetchDataJson(){
   }
   function norm(s){ return (s||"").replace(/\s+/g,"").toUpperCase(); }
   function md(iso){ var p = String(iso).split("-"); return (+p[1]) + "/" + (+p[2]); }
-  function opId(f){ return (f.flight_id || "").split(" / ")[0].replace(/\s/g,""); }
+  function opId(f){ return (f.flight_id || "").split(/\s*\/\s*/)[0].replace(/\s/g,""); }
   function apCode(typ, f){
     /* 到港取最後一個航點，離港取第一個航點 */
-    var parts = (f.via || "").split(" / ").map(function(s){ return s.trim(); }).filter(Boolean);
+    var parts = (f.via || "").split(/\s*\/\s*/).map(function(s){ return s.trim(); }).filter(Boolean);
     if(!parts.length) return "—";
     return typ === "arrival" ? parts[parts.length-1] : parts[0];
   }
@@ -157,7 +158,7 @@ function fetchDataJson(){
     var ageMin = (Date.now() - gen.getTime()) / 60000;
     if(ageMin > 60){
       var h = Math.floor(ageMin / 60);
-      $("staleAge").textContent = h > 0 ? ("約 " + h + " 小時") : ("約 " + Math.floor(ageMin) + " 分鐘");
+      var sa = $("staleAge"); if(sa) sa.textContent = "約 " + h + " 小時";
       el.hidden = false;
     } else {
       el.hidden = true;
@@ -165,7 +166,10 @@ function fetchDataJson(){
   }
   function toMin(t){
     var m = /^(\d{1,2}):(\d{2})/.exec(t || "");
-    return m ? (+m[1])*60 + (+m[2]) : 99999;
+    if(!m) return 99999;
+    var hh = +m[1], mm = +m[2];
+    if(hh > 23 || mm > 59) return 99999;
+    return hh*60 + mm;
   }
   function nowHHMM(){
     var d = new Date();
@@ -234,10 +238,10 @@ function fetchDataJson(){
     var arr = [], dep = [];
     Object.keys(DB.days).forEach(function(d){
       var day = DB.days[d];
-      (day.arrival || []).forEach(function(f){
+      ((day && day.arrival) || []).forEach(function(f){
         if((effDate(f) || d) === target){ f._sdate = d; arr.push(f); }
       });
-      (day.departure || []).forEach(function(f){
+      ((day && day.departure) || []).forEach(function(f){
         if((effDate(f) || d) === target){ f._sdate = d; dep.push(f); }
       });
     });
@@ -276,6 +280,7 @@ function fetchDataJson(){
   }
 
   function merged(){
+    if(!DB || !DB.dates || !DB.days) return [];
     var g = getLists();
     var items = [];
     var fdate = DB.dates[dateIdx];
@@ -310,6 +315,7 @@ function fetchDataJson(){
     var ad = effDate(f);
     if(ad && fdate && ad !== fdate){
       var diff = Math.round((new Date(ad+"T00:00:00") - new Date(fdate+"T00:00:00")) / 86400000);
+      if(isNaN(diff)) diff = 0;
       m += diff * 1440;
     }
     if(!isDep) return m;
@@ -330,7 +336,8 @@ function fetchDataJson(){
     var fdate = DB.dates[dateIdx];
     if(!sd || !fdate || sd === fdate) return "";
     var p = sd.split("-");
-    return "<span class='ddate'>"+p[2]+"</span>";
+    if(p.length !== 3) return "";
+    return "<span class='ddate'>"+esc(p[2])+"</span>";
   }
 
   function itemKey(it){ return watchKey(it.typ, it.f); }
@@ -341,7 +348,7 @@ function fetchDataJson(){
     var wk = watchKey(typ, f), w = WATCH[wk];
     var note = w ? (w.note || "") : "";
     if(noteEditingKey === wk){
-      var fwFid = opId(f).toUpperCase(), fwOn = !!(flightWatches[fwFid] || flightWatches[fwFid + "|" + typ]);
+      var fwFid = opId(f).toUpperCase(), fwOn = !!(typeof flightWatches !== "undefined" && (flightWatches[fwFid] || flightWatches[fwFid + "|" + typ]));
       var followBtn = "";
       if(!window.__T1M_NO_WATCH){
         followBtn = "<button class='nbtn' data-act='flight-follow' style='padding:6px 12px;font-size:13px;" + (fwOn ? "border-color:var(--accent2);color:var(--accent2);" : "") + "'>" + (fwOn ? "已關注" : "關注") + "</button>";
@@ -388,7 +395,7 @@ function fetchDataJson(){
     // FR24 用嘅 flight id：去空格＋去數字前導零（CX091→cx91）
     var frId = opId(f).toLowerCase().replace(/^([a-z]+)0+(\d)/, "$1$2");
     h += "<div style='margin-top:6px;white-space:nowrap;'><button class='nbtn' data-act='copy-flight'>📋 複製航班資料</button> "+
-         "<a class='nbtn' style='text-decoration:none;display:inline-block;font-family:inherit;line-height:normal;vertical-align:baseline;' href='https://www.flightradar24.com/data/flights/"+frId+"' rel='noopener'>✈️ Flightradar24</a>";
+         "<a class='nbtn' style='text-decoration:none;display:inline-block;font-family:inherit;line-height:normal;vertical-align:baseline;' href='https://www.flightradar24.com/data/flights/"+esc(frId)+"' rel='noopener'>✈️ Flightradar24</a>";
     // 到港先有飛行時間（avg_dur 如 "3h30m" → "~03:30"）
     if(typ === "arrival" && f.avg_dur){
       var dm = /(\d+)h(\d+)m/.exec(f.avg_dur) || /(\d+)h/.exec(f.avg_dur);
