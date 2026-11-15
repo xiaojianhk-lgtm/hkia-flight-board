@@ -160,6 +160,25 @@ def parse_flight(f: dict, arrival: bool, cargo: bool) -> dict:
     }
 
 
+def _yday_has_unresolved(yday: dict) -> bool:
+    """True if yesterday still has a flight that hasn't arrived/departed.
+
+    A flight is unresolved when it is not cancelled and has no actual
+    time yet (ata == "—"; parse_flight stores the actual time under
+    "ata" for both arrivals and departures). Such a flight's est, stand
+    or ata can still change, so yesterday must be re-fetched instead of
+    frozen. Returns False when every flight is resolved or cancelled
+    (the normal case after 06:00).
+    """
+    for tk in ("arrival", "departure"):
+        for f in (yday or {}).get(tk, []) or []:
+            if f.get("cancelled"):
+                continue
+            if (f.get("ata") or "—") == "—":
+                return True
+    return False
+
+
 def main() -> int:
     now = datetime.now(HKT)
     # UI 只顯示 3 日（昨天/今天/明天）；後日唔再攞（冇任何消費者）。
@@ -214,14 +233,21 @@ def main() -> int:
     # 尋日沿用決定：06:00 後尋日已成定局，若上一版 data.json 有尋日成段，
     # 就成段沿用唔再打 API（慳 4 次請求，亦少啲 timeout 機會）。
     # 上一版冇尋日（首次運行／爛檔）就照攞，安全性優先，唔會丟失成日。
+    # 2026-11-15 例外：若尋日仲有未解決嘅航班（未取消、未有實際時間，
+    # 例如嚴重延誤跨午夜嘅 CX879D），預計時間／bay／到埗時間仲會變，
+    # 就唔凍結，照攞尋日，等班機解決咗先恢復凍結。
     old_days = (old_payload or {}).get("days") or {}
     carry_yday = None
     if (now.hour >= 6 and dates[0] in old_days
             and isinstance(old_days[dates[0]], dict)
             and old_days[dates[0]].get("arrival") and old_days[dates[0]].get("departure")):
-        carry_yday = old_days[dates[0]]
-        fetch_dates = dates[1:]
-        print(f"  {dates[0]}: carried over from previous data.json (after 06:00)")
+        if _yday_has_unresolved(old_days[dates[0]]):
+            print(f"  {dates[0]}: has unresolved flights, re-fetching (not frozen)")
+            fetch_dates = dates
+        else:
+            carry_yday = old_days[dates[0]]
+            fetch_dates = dates[1:]
+            print(f"  {dates[0]}: carried over from previous data.json (after 06:00)")
     else:
         fetch_dates = dates
 
