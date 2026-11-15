@@ -18,13 +18,15 @@
   /* 右下角浮動搜尋掣：撳=搜尋，長按拖動=搬位（位置存 localStorage） */
   (function(){
     var fab = $("fabSearch");
+    if(!fab) return;
     var KEY = "hkia-fab-pos-v1";
     /* 還原上次位置 */
     try{
       var p = JSON.parse(localStorage.getItem(KEY));
       if(p && typeof p.x === "number" && typeof p.y === "number"){
         fab.style.right = "auto"; fab.style.bottom = "auto";
-        fab.style.left = p.x + "px"; fab.style.top = p.y + "px";
+        fab.style.left = Math.min(Math.max(0, p.x), window.innerWidth - 52) + "px";
+        fab.style.top = Math.min(Math.max(0, p.y), window.innerHeight - 52) + "px";
       }
     }catch(e){}
     var dragging = false, moved = false, sx, sy, ox, oy, pressTimer = null;
@@ -70,8 +72,8 @@
       window.scrollTo({top: 0, behavior: "smooth"});
     });
   })();
-  // 共用同一個 localStorage key 做搜尋框同步（舊版 q/qm）
-  $("qclear").addEventListener("click", function(){
+  var _qclear = $("qclear");
+  if(_qclear) _qclear.addEventListener("click", function(){
     q.value = ""; query = "";
     this.parentElement.classList.remove("hasq");
     expanded = false; render(); q.blur();
@@ -102,9 +104,8 @@
       if(b) setMode(b.getAttribute("data-mode"));
     });
   })();
-  /* （已取消長按入口，改用搜尋暗號 Cargo3577） */
-  $("showHas").addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); });
-  $("hideCX").addEventListener("change", function(){ hideCX = !!this.checked; expanded=false; render(); });
+  var _showHas = $("showHas"); if(_showHas) _showHas.addEventListener("change", function(){ onlyHas = !!this.checked; expanded=false; render(); });
+  var _hideCX = $("hideCX"); if(_hideCX) _hideCX.addEventListener("change", function(){ hideCX = !!this.checked; expanded=false; render(); });
   function toggleExpand(){
     if(!expanded){
       /* 展開前記住「而家」線喺畫面嘅位置，render 後放返同一位置，唔跳 */
@@ -118,8 +119,9 @@
       window.scrollTo({top:0, behavior:"smooth"});
     }
   }
-  $("expandBtn").addEventListener("click", toggleExpand);
-  $("refreshBtn").addEventListener("click", function(){
+  var _expandBtn = $("expandBtn"); if(_expandBtn) _expandBtn.addEventListener("click", toggleExpand);
+  var _refreshBtn = $("refreshBtn");
+  if(_refreshBtn) _refreshBtn.addEventListener("click", function(){
     /* 軟更新：拉 data.json + 溫度，唔 reload 成頁（PWA 下更可靠）；
        2026-10-21 起顯示結果（已更新 ✓／已是最新／更新失敗），唔再撳完唔知發生咩事 */
     var btn = this;
@@ -141,13 +143,14 @@
   });
 
   /* 撳列展開（有備註先有反應） */
-  var pressTimer = null, pressItem = null, suppressClick = false;
+  var pressTimer = null, pressItem = null, suppressUntil = 0;
   function rowFromEvent(e){
     var t = e.target;
     return (t && t.closest) ? t.closest("tr.rw") : null;
   }
-  $("rows").addEventListener("click", function(e){
-    if(suppressClick){ suppressClick = false; return; }
+  var _rows = $("rows");
+  if(_rows) _rows.addEventListener("click", function(e){
+    if(Date.now() < suppressUntil) return;
     var t = e.target;
     if(!t || !t.closest) return;
 
@@ -162,7 +165,7 @@
       if(act === "note-save"){ commitNote(actEl); }
       else if(act === "note-cancel" && it2){ deleteNote(it2.typ, it2.f); }
       else if(act === "copy-flight" && it2){ copyFlight(it2.typ, it2.f); }
-      else if(act === "flight-follow" && it2){ var fid = opId(it2.f).toUpperCase(); var fwKey = (flightWatches[fid] && fid) || (flightWatches[fid + "|" + it2.typ] && fid + "|" + it2.typ); if(fwKey) disarmFlightWatch(fwKey); else armFlightWatch(fid); render(); }
+      else if(act === "flight-follow" && it2){ var fid = opId(it2.f).toUpperCase(); var fwKey = (typeof flightWatches !== "undefined" && flightWatches[fid] && fid) || (typeof flightWatches !== "undefined" && flightWatches[fid + "|" + it2.typ] && fid + "|" + it2.typ); if(fwKey) disarmFlightWatch(fwKey); else armFlightWatch(fid); render(); }
       else if(act === "hide-flight" && it2){ hideFlight(it2.typ, it2.f); render(); }
       return;
     }
@@ -253,8 +256,7 @@
     pressSX = t0.clientX; pressSY = t0.clientY;
     pressTimer = setTimeout(function(){
       pressTimer = null;
-      suppressClick = true;
-      setTimeout(function(){ suppressClick = false; }, 800);
+      suppressUntil = Date.now() + 800;
       if(pressOnBay){
         var area = standArea(pressItem.typ, pressItem.f);
         if(area){ hlArea = (hlArea === area) ? null : area; render(); }
@@ -275,6 +277,7 @@
   }
   var pressSX = 0, pressSY = 0;
   var rowsEl = $("rows");
+  if(!rowsEl) rowsEl = { addEventListener: function(){} }; /* 防禦：冇 #rows 嗰陣下面啲 listener 唔好掟錯，bootLoad 照行 */
   rowsEl.addEventListener("touchstart", pressStart, {passive:true});
   rowsEl.addEventListener("touchend", pressCancel);
   rowsEl.addEventListener("touchcancel", pressCancel);
@@ -310,8 +313,7 @@
         if(fwKeyU && typeof disarmFlightWatch === "function"){
           disarmFlightWatch(fwKeyU);
           showToast("已取消關注 " + fidU, true);
-          suppressClick = true;
-          setTimeout(function(){ suppressClick = false; }, 800);
+          suppressUntil = Date.now() + 800;
           tapTimes.length = 0;
           render();
           return;
@@ -324,11 +326,11 @@
     var want = Math.max(0, Math.min(2, lvl + (dx < 0 ? 1 : -1)));
     if(want === lvl) return;
     setInspLevel(it.typ, it.f, want);
-    suppressClick = true;
-    setTimeout(function(){ suppressClick = false; }, 800);
+    suppressUntil = Date.now() + 800;
     tapTimes.length = 0;
     render();
   });
+  rowsEl.addEventListener("touchcancel", function(){ swRow = null; });
 
   /* 橫向手勢由網頁接管：一起勢就 preventDefault，唔俾瀏覽器搶去做返回／前進 */
   var hSX = 0, hSY = 0, hId = null, hLock = null;
@@ -354,9 +356,10 @@
   document.addEventListener("touchcancel", function(){ hId = null; }, {passive:true});
 
   /* 下拉更新：在頂部向下拉，鬆手更新數據＋跳返時間線 */
-  var ptrEl = $("ptr"), ptrSpin = ptrEl.querySelector(".ptrspin"), ptrLabel = ptrEl.querySelector(".ptrlabel");
+  var ptrEl = $("ptr"), ptrSpin = ptrEl && ptrEl.querySelector(".ptrspin"), ptrLabel = ptrEl && ptrEl.querySelector(".ptrlabel");
   var pId = null, pSX = 0, pSY = 0, pPull = 0, pActive = false, pRefreshing = false, ptrAteTap = false;
   function ptrShow(dy, refreshing){
+    if(!ptrEl) return;
     if(refreshing){
       ptrEl.classList.add("refreshing");
       ptrEl.style.transition = "";
@@ -375,6 +378,7 @@
     ptrLabel.textContent = dy > 70 ? "放開更新" : "下拉更新";
   }
   function ptrHide(){
+    if(!ptrEl) return;
     ptrEl.classList.remove("refreshing");
     ptrEl.style.transition = "";
     ptrEl.style.transform = "translate(-50%,-80px)";
@@ -415,8 +419,7 @@
     if(pulled > 12){
       ptrAteTap = true;
       tapTimes.length = 0; lastTapT = 0;
-      suppressClick = true;
-      setTimeout(function(){ suppressClick = false; }, 800);
+      suppressUntil = Date.now() + 800;
     }
     if(pRefreshing){ ptrHide(); return; }
     if(pulled > 70){
@@ -424,12 +427,14 @@
       ptrShow(0, true);
       doPullRefresh(function(status){
         pRefreshing = false;
-        ptrEl.classList.remove("refreshing");
-        ptrSpin.style.transform = "";
-        ptrLabel.textContent = status === "updated" ? "已更新 ✓" : (status === "failed" ? "更新失敗" : "已是最新");
-        ptrEl.style.transition = "";
-        ptrEl.style.transform = "translate(-50%,0px)";
-        ptrEl.style.opacity = 1;
+        if(ptrEl){
+          ptrEl.classList.remove("refreshing");
+          ptrSpin.style.transform = "";
+          ptrLabel.textContent = status === "updated" ? "已更新 ✓" : (status === "failed" ? "更新失敗" : "已是最新");
+          ptrEl.style.transition = "";
+          ptrEl.style.transform = "translate(-50%,0px)";
+          ptrEl.style.opacity = 1;
+        }
         setTimeout(function(){
           ptrHide();
           jumpToTimeline();
@@ -496,7 +501,6 @@
     if($("aboutOverlay").classList.contains("open")) return;
     if(document.activeElement === q) return;
     if(e.target.closest && e.target.closest("input,button,thead")) return;
-    e.preventDefault();
     jumpToTimeline();
   });
 
@@ -522,8 +526,10 @@
     var rowH = rw ? rw.getBoundingClientRect().height : 34;
     var xr = document.querySelector("tr.xrow");
     var xH = xr ? xr.getBoundingClientRect().height : 0;
-    var thr = document.querySelector("thead th").getBoundingClientRect();
-    var wantTop = thr.top + thr.height + xH + 8 * rowH;
+    var thr = document.querySelector("thead th");
+    if(!thr){ scrollToEightAbove(); return; }
+    var thRect = thr.getBoundingClientRect();
+    var wantTop = thRect.top + thRect.height + xH + 8 * rowH;
     window.scrollTo(0, window.scrollY + (nl.getBoundingClientRect().top - wantTop));
   }
 
@@ -543,15 +549,14 @@
     }
   }
 
-  /* 頂部「展開全部」掣：永遠喺頂，碌上去就見到（唔做顯示／隱藏，避免卡頓） */
 
   /* 主題 */
   var icoSun = $("icoSun"), icoMoon = $("icoMoon");
   function syncThemeUI(){
     var t = document.documentElement.getAttribute("data-theme") || "dark";
     var isLight = (t === "light");
-    icoSun.style.display = isLight ? "none" : "";
-    icoMoon.style.display = isLight ? "" : "none";
+    if(icoSun) icoSun.style.display = isLight ? "none" : "";
+    if(icoMoon) icoMoon.style.display = isLight ? "" : "none";
     var old = document.querySelector('meta[name="theme-color"]');
     if(old) old.parentNode.removeChild(old);
     var mc = document.createElement("meta");
@@ -560,7 +565,8 @@
     document.head.appendChild(mc);
   }
   syncThemeUI();
-  $("themeBtn").addEventListener("click", function(){
+  var _themeBtn = $("themeBtn");
+  if(_themeBtn) _themeBtn.addEventListener("click", function(){
     var cur = document.documentElement.getAttribute("data-theme");
     var next = (cur === "light") ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", next);
@@ -734,6 +740,7 @@
         th.addEventListener("touchstart", start, {passive:true});
         th.addEventListener("touchend", cancel);
         th.addEventListener("touchmove", cancel);
+        th.addEventListener("touchcancel", cancel);
         th.addEventListener("mousedown", start);
         th.addEventListener("mouseup", cancel);
         th.addEventListener("mouseleave", cancel);
