@@ -3,9 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0b1c2c">
 <link rel="apple-touch-icon" href="apple-touch-icon-night.png">
 <link rel="icon" type="image/png" href="apple-touch-icon-night.png">
 <link rel="manifest" href="manifest-night.json">
@@ -43,7 +40,7 @@
     }
     pw.addEventListener("keydown", function(e){ if(e.key==="Enter") go(); });
     // 搵個確認掣
-    var btn = gate.querySelector("button");
+    var btn = document.getElementById("gateGo");
     if(btn) btn.onclick = go;
     setTimeout(function(){ pw.focus(); }, 200);
   });
@@ -68,7 +65,7 @@
     --input-bg:#0a1928; --placeholder:#5b748c;
     --row-line:rgba(31,58,85,.55);
     --badge-bg:#5d4300; --badge-fg:#ffd54f; --badge-bd:#8d6a00;
-    --red:#ef5350; --green:#9ccc65; --green2:#8bc34a; --blue:#4fc3f7;
+    --red:#ef5350; --blue:#4fc3f7;
     --cxgreen:#54c1b3;
     --stN:#ffb74d; --stW:#ab47bc;
     --tab-on-fg:#06283d; --overlay-bg:rgba(4,12,20,.72);
@@ -81,7 +78,7 @@
     --input-bg:#f9f9f9; --placeholder:#aaa;
     --row-line:#eee;
     --badge-bg:#fff8e1; --badge-fg:#8a6100; --badge-bd:#e6c34a;
-    --red:#d32f2f; --green:#2e7d32; --green2:#1b5e20; --blue:#0288d1;
+    --red:#d32f2f; --blue:#0288d1;
     --cxgreen:#006b6e;
     --stN:#e65100; --stW:#8e24aa;
     --tab-on-fg:#ffffff; --overlay-bg:rgba(20,30,40,.45);
@@ -266,7 +263,7 @@
   .cbadge{
     display:inline-block; font-size:.615em; background:var(--badge-bg); color:var(--badge-fg);
     border:1px solid var(--badge-bd); border-radius:3px; padding:0 2px; margin-left:2px;
-    line-height:1.4; vertical-align:2px;
+    line-height:1.4;
     vertical-align:1px; font-weight:400;
   }
   .cbadge.cancel{background:rgba(211,47,47,.14); color:var(--red); border-color:var(--red); font-weight:700;}
@@ -371,7 +368,6 @@
   #gate .gerr{color:var(--red); font-size:13px; min-height:18px; text-align:center;}
   /* nld未ready前隱藏表格，避免閃客機界面 */
   body:not(.nld-ready) table{ visibility:hidden; }
-  body:not(.nld-ready) .stickybar .meta{ visibility:hidden; }
 </style>
 <script data-goatcounter="https://xiaojian.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
@@ -471,7 +467,7 @@ try{(function(){
 <div class="stickybar"><div class="stickyinner">
   <div id="staleWarn" hidden style="background:#fff3e0; color:#e65100; font-size:12px; padding:6px 12px; border-radius:6px; margin-bottom:6px; text-align:center;">⚠️ 數據已超過 <b id="staleAge">—</b> 未更新，自動更新可能已停止</div>
   <div id="hkoWarn" hidden style="background:rgba(211,47,47,.10); color:var(--red); font-size:12px; padding:6px 12px; border-radius:6px; margin-bottom:6px; text-align:center; font-weight:600;"></div>
-  <div class="ts" id="stickyTs"><span>資料擷取時間：<b id="headTs">—</b><b id="headCount" hidden></b>　<span id="hkoTemp" style="color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:3px;vertical-align:middle;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:11px;height:11px;"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span id="hkoTempTx">赤鱲角 —°C</span></span>　<span id="adCount" style="color:var(--muted);white-space:nowrap;vertical-align:middle;">到港 — / 離港 —</span>　<span style="color:var(--muted);white-space:nowrap;vertical-align:middle;">Bay <span id="bayTs">—</span><span id="bayCheckTs" style="color:#7fd4a8;"></span></span></span><span class="tsbtns">
+  <div class="ts" id="stickyTs"><span>資料擷取時間：<b id="headTs">—</b>　<span id="hkoTemp" style="color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:3px;vertical-align:middle;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:11px;height:11px;"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span id="hkoTempTx">赤鱲角 —°C</span></span>　<span id="adCount" style="color:var(--muted);white-space:nowrap;vertical-align:middle;">到港 — / 離港 —</span>　<span style="color:var(--muted);white-space:nowrap;vertical-align:middle;">Bay <span id="bayTs">—</span><span id="bayCheckTs" style="color:#7fd4a8;"></span></span></span><span class="tsbtns">
       <button id="largeBtn" class="tsbtn" title="大字模式" aria-label="切換大字模式" style="font-weight:700; font-size:15px;">大</button>
       <button id="themeBtn" class="tsbtn" title="日／夜模式" aria-label="切換日夜模式">
         <svg id="icoSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/></svg>
@@ -677,4 +673,3 @@ try{(function(){
   </script>
 </body>
 </html>
-<!-- pages rebuild trigger 2026-10-23 (no functional change) -->
