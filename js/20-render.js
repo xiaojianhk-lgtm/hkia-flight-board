@@ -1,6 +1,7 @@
 /* HKIA flight board - 20-render.js */
 
   function render(){
+    if(!$("rows") || !$("expandBar") || !$("expandBtn")) return;  /* L2：必要元素缺失就早退，免 crash */
     var items = merged();
     /* 而家位置（sk 時間軸，同排序一致；時間線同 50 班 window 都用佢） */
     var now2 = nowHHMM(), nowMin = toMin(now2);
