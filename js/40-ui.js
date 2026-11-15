@@ -224,10 +224,12 @@
         var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlToUint8(vapidPub.trim()) });
         var _sj = sub.toJSON();
         try{ _sj.deviceId = localStorage.getItem("hkia-device-id") || ""; }catch(e){}
-        await fetch(WORKER + "/push/subscribe", {
+        /* M14：驗訂閱 POST 回應，伺服器拒收（非 2xx）就唔好顯示「已啟用」 */
+        var subRes = await fetch(WORKER + "/push/subscribe", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify(_sj)
         });
+        if(!subRes.ok) throw new Error("伺服器拒絕訂閱（" + subRes.status + "）");
         setMsg("✅ 已啟用"); btn.textContent = "🔔 推送已啟用";
       }catch(e){ setMsg("失敗：" + (e.message || e)); }
     });
@@ -449,7 +451,8 @@
     if(window.__hkiaCheckTemp) window.__hkiaCheckTemp(); /* 順手更新機場溫度 */
     fetchDataJson()
       .then(function(d){
-        if(d && d.generated_at && d.dates && d.days && d.generated_at !== DB.generated_at){
+        /* M12：淨係新過現有 DB 嗰陣先覆蓋，舊回應唔好倒退數據 */
+        if(d && d.generated_at && d.dates && d.days && (!DB.generated_at || d.generated_at > DB.generated_at)){
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
           if(typeof buildDates==="function") buildDates();
@@ -647,7 +650,8 @@
     if(overlay.classList.contains("open")) return;
     fetchDataJson()
       .then(function(d){
-        if(d && d.generated_at && d.generated_at !== DB.generated_at && d.dates && d.days){
+        /* M12：淨係新過現有 DB 嗰陣先覆蓋，舊回應唔好倒退數據 */
+        if(d && d.generated_at && d.dates && d.days && (!DB.generated_at || d.generated_at > DB.generated_at)){
           var sy = window.scrollY, keepEx = expanded;
           DB = d;
           $("headTs").textContent = d.generated_at;
