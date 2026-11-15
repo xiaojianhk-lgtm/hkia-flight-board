@@ -1,5 +1,5 @@
 /* HKIA Flight Board PWA service worker */
-var CACHE = "hkia-v233";
+var CACHE = "hkia-v234";
 var ASSETS = [
   "./hkiaflight.html",
   "./t1m.html",
@@ -23,7 +23,7 @@ var ASSETS = [
 self.addEventListener("install", function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){
     return Promise.all(ASSETS.map(function(u){
-      return fetch(u).then(function(r){
+      return fetch(u, {cache: "reload"}).then(function(r){
         if(r.ok) return c.put(u, r);
       }).catch(function(){});
     }));
@@ -31,7 +31,7 @@ self.addEventListener("install", function(e){
 });
 self.addEventListener("activate", function(e){
   e.waitUntil(caches.keys().then(function(keys){
-    return Promise.all(keys.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); }));
+    return Promise.all(keys.filter(function(k){ return k !== CACHE && k.indexOf("hkia-v") === 0; }).map(function(k){ return caches.delete(k); }));
   }).then(function(){ return self.clients.claim(); }));
 });
 self.addEventListener("fetch", function(e){
