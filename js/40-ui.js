@@ -82,7 +82,8 @@
   (function(){
     var seg = $("modeSeg");
     if(!seg){
-      // nld.html：冇掣，強制貨運
+      // nld.html：冇掣，強制貨運；T1M 刪咗篩選行（2026-11-18），留喺預設客機，唔好轉貨運
+      if(typeof T1M_AIRLINES !== "undefined" && T1M_AIRLINES) return;
       hideCargo = false; hidePax = true;
       return;
     }
