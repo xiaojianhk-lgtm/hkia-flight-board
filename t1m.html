@@ -630,15 +630,6 @@ try{(function(){
     </span>
   </div>
   <div class="dates" id="datePills"></div>
-  <div class="countrow">
-    <div class="tglgroup">
-      <label class="tglchip"><input type="checkbox" id="showHas" checked> <span>We handle</span></label>
-      <label class="tglchip wide"><input type="checkbox" id="hideCX"> <span>Other airlines</span></label>
-    </div>
-    <div class="modeseg" id="modeSeg">
-      <button data-mode="pax" class="on">客機</button><button data-mode="cargo">貨機</button>
-    </div>
-  </div>
   <div class="searchrow">
     <div class="swrap">
       <input id="q" type="search" placeholder="搜尋 Flight ID／來往地／泊位／備註…" autocomplete="off">
@@ -686,6 +677,7 @@ try{(function(){
 window.__T1M_AIRLINES = ["UO","FD","AK","Z2","QZ"];
 window.__T1M_WATCH_KEY = "hkia-t1m-watch-v1";
 window.__T1M_NO_WATCH = true;
+window.__T1M_DATA_URL = "https://hkia-backup-data.xiaojian-hk.workers.dev/data.json";
 </script>
 <script src="js/10-core.js"></script>
 <script src="js/20-render.js"></script>
