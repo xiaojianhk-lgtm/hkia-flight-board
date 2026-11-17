@@ -181,10 +181,10 @@
     }
     if(window.getSelection && window.getSelection().toString()) return;
     var k = itemKey(it);
-    /* 撳冇備注嘅航班：直接開備註編輯器（做法 1，2026-11-17） */
+    /* 撳冇備注嘅航班：直接開備註編輯器（做法 1，2026-11-17；唔自動彈鍵盤，點輸入框先彈） */
     if(!hasNote(it.typ, it.f)){
       if(!WATCH[k]) WATCH[k] = {};
-      detailKey = k; noteEditingKey = k; noteFocus = true;
+      detailKey = k; noteEditingKey = k; noteFocus = false;
       render();
       return;
     }
