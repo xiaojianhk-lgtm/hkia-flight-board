@@ -5,8 +5,15 @@
 var DATA_URL = "https://raw.githubusercontent.com/xiaojianhk-lgtm/hkia-flight-board/main/data.json";
 var DATA_URL_W = "https://hkia-push.xiaojian-hk.workers.dev/data.json";
 function fetchDataJson(){
-  return fetch(DATA_URL_W+"?_="+Date.now(), {cache:"no-store"})
+  /* T1M 專頁：t1m.html 設咗 window.__T1M_DATA_URL（後備站 Worker，即場打機管局 API），
+     主頁唔設呢個 flag，行返原路，行為零變動 */
+  var primary = (typeof window !== "undefined" && window.__T1M_DATA_URL) ? window.__T1M_DATA_URL : DATA_URL_W;
+  return fetch(primary+"?_="+Date.now(), {cache:"no-store"})
     .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .catch(function(){
+      return fetch(DATA_URL_W+"?_="+Date.now(), {cache:"no-store"})
+        .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); });
+    })
     .catch(function(){
       return fetch(DATA_URL+"?_="+Date.now(), {cache:"no-store"})
         .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); });
