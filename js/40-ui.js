@@ -144,6 +144,9 @@
 
   /* 撳列展開（有備註先有反應） */
   var pressTimer = null, pressItem = null, suppressUntil = 0;
+  /* 點開備註延遲（做法 1 修復雙擊，2026-11-17）：等 400ms 確認唔係雙擊先開編輯器；雙擊／跳轉／長按嗰陣取消 */
+  var noteOpenTimer = null, noteOpenKey = null;
+  function cancelNoteOpen(){ if(noteOpenTimer){ clearTimeout(noteOpenTimer); noteOpenTimer = null; } noteOpenKey = null; }
   function rowFromEvent(e){
     var t = e.target;
     return (t && t.closest) ? t.closest("tr.rw") : null;
@@ -176,16 +179,24 @@
     if(!it) return;
     /* 備註編輯緊：點航班 row 就保存兼關閉，唔使下下撳掣 */
     if(noteEditingKey){
+      cancelNoteOpen();
       commitNote(row);
       return;
     }
     if(window.getSelection && window.getSelection().toString()) return;
     var k = itemKey(it);
-    /* 撳冇備注嘅航班：直接開備註編輯器（做法 1，2026-11-17；唔自動彈鍵盤，點輸入框先彈） */
+    cancelNoteOpen();  /* 新一下 tap，之前排緊嘅開編輯器取消 */
+    /* 撳冇備注嘅航班：等 400ms 確認唔係雙擊先開備註編輯器（做法 1，2026-11-17；唔自動彈鍵盤，點輸入框先彈） */
     if(!hasNote(it.typ, it.f)){
-      if(!WATCH[k]) WATCH[k] = {};
-      detailKey = k; noteEditingKey = k; noteFocus = false;
-      render();
+      noteOpenKey = k;
+      noteOpenTimer = setTimeout(function(){
+        noteOpenTimer = null;
+        var kk = noteOpenKey; noteOpenKey = null;
+        if(!kk || noteEditingKey) return;
+        if(!WATCH[kk]) WATCH[kk] = {};
+        detailKey = kk; noteEditingKey = kk; noteFocus = false;
+        render();
+      }, 400);
       return;
     }
     detailKey = (detailKey === k) ? null : k;
@@ -261,6 +272,7 @@
     pressTimer = setTimeout(function(){
       pressTimer = null;
       suppressUntil = Date.now() + 800;
+      cancelNoteOpen();  /* 長按開編輯器：取消排緊嘅點開 */
       if(pressOnBay){
         var area = standArea(pressItem.typ, pressItem.f);
         if(area){ hlArea = (hlArea === area) ? null : area; render(); }
@@ -490,6 +502,8 @@
     lastTapT = now; lastTapX = x; lastTapY = y;
     if(isDbl){
       e.preventDefault();  /* 禁雙擊放大：所有雙擊都食咗，瀏覽器唔會再放大；已放大嗰陣上面 isZoomed 已放行還原 */
+      cancelNoteOpen();  /* 雙擊：取消排緊嘅開編輯器（第一下 tap 排咗） */
+      suppressUntil = Date.now() + 600;  /* 擋埋第二下嘅 click，唔好再排過 */
       if(!noteEditingKey &&
          !$("aboutOverlay").classList.contains("open") &&
          document.activeElement !== q &&
@@ -511,6 +525,7 @@
 
   /* 雙擊跳返時間線：未展開就返頂；展開緊就唔收起，淨係將 nowline 捲返時間線位置附近 */
   function jumpToTimeline(){
+    cancelNoteOpen();  /* 跳轉嗰陣取消排緊嘅開編輯器 */
     if($("aboutOverlay").classList.contains("open")) return;
     if(document.activeElement === q || noteEditingKey) return;
     if(query){ window.scrollTo({top:0, behavior:"smooth"}); return; }
