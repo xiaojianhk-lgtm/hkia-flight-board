@@ -243,13 +243,21 @@ function fetchDataJson(){
     /* 按實際日期分頁：掃全部日期，取有效日期等於目標日期嘅航班 */
     var target = DB.dates[dateIdx];
     var arr = [], dep = [];
+    /* H1：effDate 可以跌出 3 日窗口（例如原定 11-17、實際 11-16 到達；或原定 11-19、預計 11-20），
+       未 clamp 嗰陣三個 tab 全部搵唔到。出窗口就當佢留喺原定嗰日（bucket d），淨係影響顯示邊日；
+       effDate 本身唔郁，所以排序（skDate 嘅跨日 offset）同 dateTag 唔受影響 */
+    var effClamped = function(f, d){
+      var ed = effDate(f);
+      if(ed && DB.dates.indexOf(ed) === -1) return d;
+      return ed || d;
+    };
     Object.keys(DB.days).forEach(function(d){
       var day = DB.days[d];
       ((day && day.arrival) || []).forEach(function(f){
-        if((effDate(f) || d) === target){ f._sdate = d; arr.push(f); }
+        if(effClamped(f, d) === target){ f._sdate = d; arr.push(f); }
       });
       ((day && day.departure) || []).forEach(function(f){
-        if((effDate(f) || d) === target){ f._sdate = d; dep.push(f); }
+        if(effClamped(f, d) === target){ f._sdate = d; dep.push(f); }
       });
     });
     /* 隱藏咗嘅已取消航班：呢度剔走（主頁＋關注頁一齊生效） */
