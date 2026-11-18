@@ -29,8 +29,15 @@
     /* BAY@：靜默加入 bay 關注（唔顯示 pill，淨係去關注頁睇） */
     var mBayAt = /^([A-Za-z]?\d+)@$/.exec(v);
     if(mBayAt){
-      armWatch(mBayAt[1].toUpperCase(), true);
-      showToast("已添加 " + mBayAt[1].toUpperCase(), true);
+      /* H8：armWatch 係異步，等佢回傳結果先 toast——DB 未載入／arm 失敗嗰陣唔好假話「已添加」 */
+      var bayAt = mBayAt[1].toUpperCase();
+      var pBay = armWatch(bayAt, true);
+      if(pBay && typeof pBay.then === "function"){
+        pBay.then(function(ok){ showToast(ok ? ("已添加 " + bayAt) : ("未能添加 " + bayAt), true); },
+                  function(){ showToast("未能添加 " + bayAt, true); });
+      }else{
+        showToast(pBay ? ("已添加 " + bayAt) : ("未能添加 " + bayAt), true);
+      }
       q.value = ""; query = "";
       $("qclear").parentElement.classList.remove("hasq");
       expanded = false; render();
@@ -40,9 +47,16 @@
     /* FLIGHT@：靜默加入航班關注 */
     var mFlightAt = /^([A-Za-z0-9]{2,}\d+)@$/i.exec(v);
     if(mFlightAt){
-      /* M10：arm 失敗（三日都無呢班機）就唔好話「已添加」 */
-      var okF = armFlightWatch(mFlightAt[1].toUpperCase(), true);
-      showToast(okF ? ("已添加 " + mFlightAt[1].toUpperCase()) : "呢三日無呢班機", true);
+      /* M10＋H7/H8：armFlightWatch 而家係異步（先 fetch 新數據），等結果返嚟先 toast；
+         arm 失敗（三日都無呢班機／數據載入唔到）就唔好話「已添加」 */
+      var fidAt = mFlightAt[1].toUpperCase();
+      var pF = armFlightWatch(fidAt, true);
+      if(pF && typeof pF.then === "function"){
+        pF.then(function(okF){ showToast(okF ? ("已添加 " + fidAt) : "呢三日無呢班機", true); },
+                function(){ showToast("未能添加 " + fidAt, true); });
+      }else{
+        showToast(pF ? ("已添加 " + fidAt) : "呢三日無呢班機", true);
+      }
       q.value = ""; query = "";
       $("qclear").parentElement.classList.remove("hasq");
       expanded = false; render();
@@ -92,7 +106,9 @@
         else if(wb.bay){ watchBays[wb.bay] = {seen:{}}; }  /* 舊單一格式遷移 */
       }
       /* M7：清理過期 bay watch——date 早過數據窗口第一日（DB.dates[0]，即係尋日）；
-         DB 未載入嗰陣用 HKT 尋日計，效果一樣。M9：損壞值（唔係物件）一併清走。 */
+         DB 未載入嗰陣用 HKT 尋日計，效果一樣。M9：損壞值（唔係物件）一併清走。
+         H6：留一日 grace——班機延誤轆去下一日嗰陣，armDate 本身已跌出窗口但班機仲喺窗口內
+         （armDate+1），唔好喺 load 嗰陣刪咗佢；checkBayWatch 會喺覆蓋範圍全部跌出先刪。 */
       var cutoff = "";
       if(DB && DB.dates && DB.dates.length){ cutoff = DB.dates[0]; }
       else{
@@ -105,7 +121,8 @@
         var wbv = watchBays[bay];
         if(!wbv || typeof wbv !== "object"){ delete watchBays[bay]; changed = true; return; }
         var wd = wbv.date || "";
-        if(wd && wd < cutoff){ delete watchBays[bay]; if(bayMiss[bay]) delete bayMiss[bay]; changed = true; }
+        var wdNext = wd ? (addDaysStr(wd, 1) || wd) : "";
+        if(wd && wdNext < cutoff){ delete watchBays[bay]; if(bayMiss[bay]) delete bayMiss[bay]; changed = true; }
       });
       if(changed) saveBayWatch();
     }catch(e){}
@@ -126,21 +143,46 @@
       (day.arrival || []).forEach(function(f){
         if((effDate(f) || d) !== target) return;
         var st = (manualStand("arrival", f) || f.stand || "").toUpperCase();
-        if(st === b || (f.stand_old || "").toUpperCase() === b) out.push({typ:"arrival", f:f});
+        /* H6：記低每班機嘅實際日期（date＝effDate＝target）同原定日期（sdate＝bucket），
+           checkBayWatch 嘅 seen key 要跟實際日期走，唔係跟 armDate */
+        if(st === b || (f.stand_old || "").toUpperCase() === b) out.push({typ:"arrival", f:f, date:target, sdate:d});
       });
       (day.departure || []).forEach(function(f){
         if((effDate(f) || d) !== target) return;
         var st = (manualStand("departure", f) || f.stand || "").toUpperCase();
-        if(st === b || (f.stand_old || "").toUpperCase() === b) out.push({typ:"departure", f:f});
+        if(st === b || (f.stand_old || "").toUpperCase() === b) out.push({typ:"departure", f:f, date:target, sdate:d});
       });
     });
     return out;
   }
+  /* H6：日期加減（ISO 日期字串，唔合格式回傳 ""） */
+  function addDaysStr(dateStr, n){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || "");
+    if(!m) return "";
+    var t = Date.UTC(+m[1], +m[2]-1, +m[3]) + n * 86400000;
+    return new Date(t).toISOString().slice(0, 10);
+  }
+  /* H6：bay watch 檢查／快照範圍——armDate 前後一日，夾返 3 日數據窗口。
+     armDate 唔知（舊 watch 冇 .date）就成個窗口都掃。 */
+  function bayWatchDates(armDate){
+    if(!DB || !DB.dates || !DB.dates.length) return [];
+    if(!armDate) return DB.dates.slice();
+    var lo = addDaysStr(armDate, -1), hi = addDaysStr(armDate, 1);
+    return DB.dates.filter(function(d){ return d >= lo && d <= hi; });
+  }
+  /* H6：跨幾日掃 flightsAt（每班機淨喺佢 effDate 嗰日出現一次，各日結果唔會重疊） */
+  function flightsAtRange(bay, dates){
+    var out = [];
+    (dates || []).forEach(function(d){ out = out.concat(flightsAt(bay, d)); });
+    return out;
+  }
   function armWatch(bay, silent){
-    if(window.__T1M_NO_WATCH) return;
+    if(window.__T1M_NO_WATCH) return Promise.resolve(false);
     /* arm 即刻拉一次新數據 */
-    if(typeof fetchDataJson !== "function"){ if(!silent) showToast("數據載入緊，稍後再試"); return; }
-    fetchDataJson()
+    if(typeof fetchDataJson !== "function"){ if(!silent) showToast("數據載入緊，稍後再試"); return Promise.resolve(false); }
+    /* H8：回傳 Promise<boolean>——arm 成先 true，失敗就 false；silent 嗰陣入面唔出 toast，
+       靠回傳值話畀 handler 知，等佢先至 toast「已添加」／「未能添加」。唔用返回值嘅舊調用（BAY+）唔受影響。 */
+    return fetchDataJson()
       .then(function(d){
         /* M12：淨係新過現有 DB 嗰陣先覆蓋，舊回應唔好倒退數據 */
         if(d && d.generated_at && d.dates && d.days && (!DB || !DB.generated_at || d.generated_at > DB.generated_at)){
@@ -150,26 +192,31 @@
         }
         /* M7：guard dateIdx 越界，攞唔到有效日期就唔 arm */
         var armDate = (DB && DB.dates && dateIdx >= 0 && dateIdx < DB.dates.length) ? DB.dates[dateIdx] : "";
-        if(!armDate){ if(!silent) showToast("數據載入緊，稍後再試"); return; }
+        if(!armDate){ if(!silent) showToast("數據載入緊，稍後再試"); return false; }
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
         watchBays[bay].silent = !!silent;
         watchBays[bay].date = armDate;
-        flightsAt(bay, armDate).forEach(function(it){ watchBays[bay].seen[baySeenKey(it, armDate)] = 1; });
+        /* H6：快照覆蓋同檢查一樣嘅範圍（armDate ±1 日），唔係淨係 armDate 嗰日——
+           跨午夜航班 arm 嗰刻已經喺 bay，但 effDate 係隔籬日，唔 snapshot 就會即刻誤報 */
+        flightsAtRange(bay, bayWatchDates(armDate)).forEach(function(it){ watchBays[bay].seen[baySeenKey(it, it.date || armDate)] = 1; });
         saveBayWatch(); if(!silent) showWatchPill();
         if(!silent) pushWatchAdd("bay", bay);
+        return true;
       })
       .catch(function(){
         /* M7：guard dateIdx 越界，攞唔到有效日期就唔 arm */
         var armDate = (DB && DB.dates && dateIdx >= 0 && dateIdx < DB.dates.length) ? DB.dates[dateIdx] : "";
-        if(!armDate){ if(!silent) showToast("數據載入緊，稍後再試"); return; }
+        if(!armDate){ if(!silent) showToast("數據載入緊，稍後再試"); return false; }
         if(!watchBays[bay]) watchBays[bay] = {seen:{}};
         watchBays[bay].seen = {};
         watchBays[bay].silent = !!silent;
         watchBays[bay].date = armDate;
-        flightsAt(bay, armDate).forEach(function(it){ watchBays[bay].seen[baySeenKey(it, armDate)] = 1; });
+        /* H6：快照覆蓋同檢查一樣嘅範圍（armDate ±1 日），見上面 */
+        flightsAtRange(bay, bayWatchDates(armDate)).forEach(function(it){ watchBays[bay].seen[baySeenKey(it, it.date || armDate)] = 1; });
         saveBayWatch(); if(!silent) showWatchPill();
         if(!silent) pushWatchAdd("bay", bay);
+        return true;
       });
   }
   function disarmWatch(bay){
@@ -203,8 +250,9 @@
       var dispDate = w.sdate || "";
       if(!dispDate && DB && w.date){
         try{
-          var _it = findFlight(fid.split("|")[0], w.date, fid.split("|")[1] || undefined);
-          if(_it && _it.sdate) dispDate = _it.sdate;
+          /* H5：跨三日搵，班機轆去另一日都搵到原定日期 */
+          var _found = findFlightAnyDay(fid.split("|")[0], fid.split("|")[1] || undefined, w.date);
+          if(_found && _found.it.sdate) dispDate = _found.it.sdate;
         }catch(e){}
       }
       if(!dispDate) dispDate = w.date || "";
@@ -274,16 +322,21 @@
       if(!wbv || typeof wbv !== "object"){ delete watchBays[bay]; if(bayMiss[bay]) delete bayMiss[bay]; changed = true; return; }
       var seen = wbv.seen || (wbv.seen = {});
       var bd = bayWatchDate(bay);
-      /* M7：目標日已跌出數據窗口（早過 DB.dates[0]）就刪 watch，唔好再留 pill */
-      if(bd && DB.dates && DB.dates.length && bd < DB.dates[0]){
+      /* H6：檢查覆蓋 armDate 前後一日（bayWatchDates），唔再釘死單一日。
+         M7：成個覆蓋範圍都跌出數據窗口先刪 watch——淨係 armDate 跌出唔刪，
+         班機可能延誤轆去下一日，仲喺窗口內。 */
+      var covered = bayWatchDates(bd);
+      if(bd && DB.dates && DB.dates.length && !covered.length){
         delete watchBays[bay];
         if(bayMiss[bay]) delete bayMiss[bay];
         changed = true;
         return;
       }
-      var cur = flightsAt(bay, bd), curKeys = {}, fresh = [];
+      /* H6：seen key 用每班機自己嘅實際日期（it.date＝effDate），唔係用 armDate——
+         同掃描範圍一致，班機轆日之後新 key 先認到，舊 key 就由 M11 正常老化刪走，唔會誤刪 watch */
+      var cur = flightsAtRange(bay, covered), curKeys = {}, fresh = [];
       cur.forEach(function(it){
-        var k = baySeenKey(it, bd); curKeys[k] = 1;
+        var k = baySeenKey(it, it.date || bd); curKeys[k] = 1;
         if(!seen[k]) fresh.push({bay:bay, typ:it.typ, f:it.f});
       });
       /* M11：seen key 缺失唔即刻刪，連續 3 轉缺失先刪；重現就清計數 */
@@ -295,7 +348,7 @@
           if(miss[k] >= 3){ delete seen[k]; delete miss[k]; }
         }
       });
-      cur.forEach(function(it){ seen[baySeenKey(it, bd)] = 1; });
+      cur.forEach(function(it){ seen[baySeenKey(it, it.date || bd)] = 1; });
       if(fresh.length) allFresh = allFresh.concat(fresh);
     });
     saveBayWatch();
@@ -522,27 +575,62 @@
     });
     return found;
   }
+  /* H5/H7：跨三日搵航班——preferDate 先試，之後掃晒 DB.dates；搵到回傳 {it, date}（date＝實際日期，即傳入 findFlight 嗰個 target），搵唔到回傳 null */
+  function findFlightAnyDay(fid, typ, preferDate){
+    if(!DB || !DB.dates || !DB.dates.length) return null;
+    var order = [];
+    if(preferDate) order.push(preferDate);
+    DB.dates.forEach(function(d){ if(order.indexOf(d) < 0) order.push(d); });
+    for(var i = 0; i < order.length; i++){
+      var it = findFlight(fid, order[i], typ);
+      if(it) return {it: it, date: order[i]};
+    }
+    return null;
+  }
   function flightBay(f){
     return (manualStand("arrival", f) || manualStand("departure", f) || f.stand || "").toUpperCase();
   }
+  /* H7：armFlightWatch 而家係異步，回傳 Promise<boolean>——先 fetchDataJson() 拉新數據再 snapshot
+     （跟 armWatch 一樣，M12 guard 防止舊數據倒退），唔再用最舊可達 3 分鐘嘅 DB 做 seenBay 快照，
+     免得 arm 嗰刻已有 bay 都誤報「新有泊位」。唔用返回值嘅舊調用（FLIGHT+、40-ui.js 詳情「關注」掣）唔受影響；
+     要用結果嘅 FLIGHT@ handler 已改做等 Promise（見 H8）。 */
   function armFlightWatch(fid, silent){
+    if(window.__T1M_NO_WATCH) return Promise.resolve(false);
+    fid = (fid || "").toUpperCase().replace(/\s/g, "");
+    if(typeof fetchDataJson !== "function"){ if(!silent) showToast("數據載入緊，稍後再試"); return Promise.resolve(false); }
+    var p;
+    try{
+      p = fetchDataJson();
+    }catch(e){
+      return Promise.resolve(armFlightWatchFromDB(fid, silent));
+    }
+    return p
+      .then(function(d){
+        /* M12：淨係新過現有 DB 嗰陣先覆蓋，舊回應唔好倒退數據 */
+        if(d && d.generated_at && d.dates && d.days && (!DB || !DB.generated_at || d.generated_at > DB.generated_at)){
+          DB = d;
+          var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; if(typeof checkStale === "function") checkStale(d.generated_at);
+          if(typeof buildDates==="function") buildDates(); render();
+        }
+        return armFlightWatchFromDB(fid, silent);
+      })
+      .catch(function(){
+        /* fetch 失敗：用現有 DB 照試（跟 armWatch 一樣）；DB 完全冇嗰陣 FromDB 會回傳 false */
+        return armFlightWatchFromDB(fid, silent);
+      });
+  }
+  /* H7：真正 arm 嘅同步核心（對而家嘅 DB 做 M10 跨三日掃＋snapshot），由上面嘅異步殼調用 */
+  function armFlightWatchFromDB(fid, silent){
     if(window.__T1M_NO_WATCH) return false;
     fid = (fid || "").toUpperCase().replace(/\s/g, "");
     if(!DB || !DB.dates || !DB.dates.length){ if(!silent) showToast("數據載入緊，稍後再試"); return false; }  /* L2：DB 未載入就唔 arm，免留冇日期嘅殭屍 watch */
     var target = DB.dates[dateIdx] || "";
     if(!target){ if(!silent) showToast("數據載入緊，稍後再試"); return false; }
-    var it = findFlight(fid, target);
-    var effTarget = target;
-    if(!it){
-      /* M10：唔喺今日 tab：跨三日掃一次，搵航班實際日期（例如聽日機） */
-      for(var i=0; i<DB.dates.length; i++){
-        if(DB.dates[i] === target) continue;
-        var cand = findFlight(fid, DB.dates[i]);
-        if(cand){ it = cand; effTarget = DB.dates[i]; break; }
-      }
-    }
+    /* M10：唔喺今日 tab：跨三日掃一次，搵航班實際日期（例如聽日機） */
+    var found = findFlightAnyDay(fid, undefined, target);
     /* M10：三日都搵唔到就唔 arm，唔好留死 watch＋誤導 pill */
-    if(!it){ if(!silent) showToast("呢三日無呢班機"); return false; }
+    if(!found){ if(!silent) showToast("呢三日無呢班機"); return false; }
+    var it = found.it, effTarget = found.date;
     var bay = flightBay(it.f);
     var key = fid + "|" + it.typ;
     /* date 係實際日期（Worker 搵機＋跳頁釘位用，唔郁）；sdate 係原定日期（pill／提示顯示用） */
@@ -576,24 +664,33 @@
         }
         /* 遷移：舊 key（淨 fid）搵到方向就改名做 fid|typ；若新 key 已存在就淨刪舊 key（去重） */
         if(fid.indexOf("|") < 0 && DB){
-          var mig = findFlight(fid, w.date);
+          /* H5：跨三日搵，班機轆去另一日都遷移到啱嘅方向，順手跟埋新實際日期；
+             遷移語義唔變——搵唔到就唔改名，留返下面統一處理 */
+          var mig = findFlightAnyDay(fid, undefined, w.date);
           if(mig){
-            var nk = fid + "|" + mig.typ;
+            var nk = fid + "|" + mig.it.typ;
             if(flightWatches[nk]){
               delete flightWatches[fid];
               try{ pushWatchRemove("flight", fid); }catch(e){}
               return; /* 去重：新 key 嗰次 iteration 會處理，呢次跳過免重複彈 */
             }else{
               flightWatches[nk] = w; delete flightWatches[fid];
+              w.date = mig.date;
+              if(!w.sdate && mig.it.sdate) w.sdate = mig.it.sdate;
               try{ pushWatchRemove("flight", fid); }catch(e){}
-              try{ pushWatchAdd("flight", fid, w.date, w.seenBay, mig.typ, true); }catch(e){}
+              try{ pushWatchAdd("flight", fid, w.date, w.seenBay, mig.it.typ, true); }catch(e){}
               fid = nk;
             }
           }
         }
         var parts = fid.split("|");
-        var it = parts.length > 1 ? findFlight(parts[0], w.date, parts[1]) : findFlight(fid, w.date);
-        if(!it) return;
+        /* H5：跨三日掃，唔再淨係搵 w.date 嗰日——班機 arm 咗之後先延誤跨日，effDate 會轆去下一日 */
+        var found = findFlightAnyDay(parts[0], parts.length > 1 ? parts[1] : undefined, w.date);
+        if(!found) return;
+        var it = found.it;
+        /* 班機轆去另一日：跟住更新 w.date（pill 顯示繼續用 sdate，唔受影響）；sdate 缺失嗰陣補返 */
+        if(found.date !== w.date) w.date = found.date;
+        if(!w.sdate && found.it.sdate){ w.sdate = found.it.sdate; changed = true; }
         /* M8：已飛／已取消就自動刪 watch，唔好留 pill，唔好再誤彈（拖機轉 bay） */
         var done = !!it.f.cancelled || (it.f.ata && it.f.ata !== "—") || (it.f.atd && it.f.atd !== "—");
         if(done){
