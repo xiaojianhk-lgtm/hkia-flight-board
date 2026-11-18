@@ -258,6 +258,7 @@ def main() -> int:
 
     days = {}
     missing = {}
+    skipped_bad = 0
     try:
         for date in fetch_dates:
             day = {}
@@ -277,7 +278,12 @@ def main() -> int:
                         missing[(date, key)] = missing.get((date, key), 0) + 1
                         continue
                     for f in grp.get("list", []):
-                        fl = parse_flight(f, arrival, cargo)
+                        try:
+                            fl = parse_flight(f, arrival, cargo)
+                        except Exception as exc:
+                            print(f"WARN: skipping bad flight record for {date} {key} cargo={cargo}: {exc}", file=sys.stderr)
+                            skipped_bad += 1
+                            continue
                         # 保留上次已知嘅預計時間（要喺排序之前做，等排序用啱時間）：
                         # status 由 "Est at XX:XX" 轉做 Final Call/Boarding 等之後，
                         # API 唔再俾預計時間，但舊嘅仍然有效（未有實際時間先保留）。
