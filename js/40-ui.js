@@ -461,21 +461,46 @@
       ptrHide();
     }
   }, {passive:true});
+  /* H2：fetchDataJson() 唔支援 signal／timeout（10-core.js 唔改得），用 Promise.race 做逾時；
+     逾時只係唔再等，底層 fetch 之後完成亦唔會寫 DB，唔會倒退數據 */
+  var BOOT_LOAD_TIMEOUT_MS = 15000;
+  function fetchDataJsonTimeout(ms){
+    var timeoutMs = ms || BOOT_LOAD_TIMEOUT_MS;
+    return Promise.race([
+      fetchDataJson(),
+      new Promise(function(_, reject){
+        setTimeout(function(){ reject(new Error("載入逾時（" + Math.round(timeoutMs / 1000) + " 秒）")); }, timeoutMs);
+      })
+    ]);
+  }
   function doPullRefresh(done){
-    if(!DB){ done("failed"); return; }
+    /* H2：唔好因 !DB 早退——DB 係 null 嗰陣呢度就係首次載入嘅救生路（下拉／撳掣重試） */
     if(window.__hkiaCheckTemp) window.__hkiaCheckTemp(); /* 順手更新機場溫度 */
-    fetchDataJson()
+    var hadDB = !!DB;
+    fetchDataJsonTimeout()
       .then(function(d){
-        /* M12：淨係新過現有 DB 嗰陣先覆蓋，舊回應唔好倒退數據 */
-        if(d && d.generated_at && d.dates && d.days && (!DB.generated_at || d.generated_at > DB.generated_at)){
+        /* M12：淨係新過現有 DB 嗰陣先覆蓋，舊回應唔好倒退數據；DB 係 null 嗰陣任何有效數據都接受 */
+        if(d && d.generated_at && d.dates && d.days && (!DB || !DB.generated_at || d.generated_at > DB.generated_at)){
           DB = d;
           var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—"; checkStale(d.generated_at);
           if(typeof buildDates==="function") buildDates();
           if(typeof window.applyNldFilter==="function") window.applyNldFilter(); /* SEV-5：nld 先過濾＋注入 bay 再 render；主頁冇呢個 function，完全唔影響 */
-          checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
+          if(!hadDB){
+            /* 首次載入成功：畫出嚟＋停返時間線（同 bootLoad 成功嗰套一樣） */
+            render();
+            if(typeof scrollToEightAbove === "function") scrollToEightAbove();
+            if(watchCount() || flightWatchCount()){
+              checkBayWatch(); checkFlightWatch();
+              if(typeof showWatchPill === "function") showWatchPill();
+            }
+            checkRainWatch(); flushAlerts();
+          }else{
+            checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
+          }
           done("updated");
         }else{
-          done("latest");
+          /* DB 仲係 null（數據無效／唔新）：依然未載入，唔好話「已是最新」 */
+          done(!DB ? "failed" : "latest");
         }
       })
       .catch(function(){ done("failed"); });
@@ -622,7 +647,7 @@
     }
   /* loading 狀態：落緊 data.json 嗰陣顯示 */
   $("rows").innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--muted);padding:32px;border-right:1px solid var(--row-line);'><div><img src='plane-icon.png' style='height:48px;width:auto;margin-bottom:10px;' alt=''></div>正在載入航班數據中…</td></tr>";
-  fetchDataJson()
+  fetchDataJsonTimeout()
     .then(function(d){
       DB = d;
       if(!DB.dates || !DB.days) throw new Error("bad data");
@@ -651,7 +676,10 @@
         location.href = BACKUP + "/" + page + location.search + location.hash;
         return;
       }
-      $("rows").innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--red);padding:24px;'>載入失敗："+esc(e.message)+"</td></tr>";
+      /* H2：加「撳一下重試」掣，撳一下再跑 bootLoad，唔使 reload 成頁（已試過跳後備站／已喺後備站先見到呢個掣） */
+      $("rows").innerHTML = "<tr><td colspan='6' style='text-align:center;color:var(--red);padding:24px;'>載入失敗："+esc(e.message)+"<br><button id='retryLoadBtn' class='nbtn' style='margin-top:12px;padding:8px 16px;font-size:14px;'>撳一下重試</button></td></tr>";
+      var rb = $("retryLoadBtn");
+      if(rb) rb.addEventListener("click", function(){ bootLoad(); });
     });
   }
   bootLoad();
@@ -662,11 +690,32 @@
     window.addEventListener(ev, function(){ lastActive = Date.now(); }, {passive:true});
   });
   function checkFlightUpdate(){
-    if(!DB || document.visibilityState !== "visible") return;
+    if(document.visibilityState !== "visible") return;
+    if(!DB){
+      /* H2：DB 未載入（開頁失敗），靜默試一次首次載入；detail／note guard 唔擋首次載入，
+         但 render 嗰陣要尊重用戶正在打備註／開緊詳情／搜尋緊嘅狀態，唔好打斷佢哋 */
+      fetchDataJsonTimeout()
+        .then(function(d){
+          if(d && d.generated_at && d.dates && d.days){
+            DB = d;
+            var hts = $("headTs"); if(hts) hts.textContent = d.generated_at || "—";
+            checkStale(d.generated_at);
+            if(typeof buildDates==="function") buildDates();
+            if(typeof window.applyNldFilter==="function") window.applyNldFilter(); /* SEV-5：見 doPullRefresh */
+            if(!detailKey && !noteEditingKey && document.activeElement !== q && !overlay.classList.contains("open")){
+              render();
+              if(typeof scrollToEightAbove === "function") scrollToEightAbove();
+            }
+            checkBayWatch(); checkRainWatch(); checkFlightWatch(); flushAlerts();
+          }
+        })
+        .catch(function(){});
+      return;
+    }
     if(detailKey || noteEditingKey) return;
     if(document.activeElement === q) return;
     if(overlay.classList.contains("open")) return;
-    fetchDataJson()
+    fetchDataJsonTimeout()
       .then(function(d){
         /* M12：淨係新過現有 DB 嗰陣先覆蓋，舊回應唔好倒退數據 */
         if(d && d.generated_at && d.dates && d.days && (!DB.generated_at || d.generated_at > DB.generated_at)){
@@ -691,7 +740,8 @@
     checkFlightUpdate();
   }, 3*60*1000);
   document.addEventListener("visibilitychange", function(){
-    if(document.visibilityState === "visible" && DB){
+    /* H2：唔好因 !DB 擋住——切返嚟都要試一次首次載入，唔係 DB 係 null 就永遠死 */
+    if(document.visibilityState === "visible"){
       checkFlightUpdate();
       if(window.__hkiaCheckTemp) window.__hkiaCheckTemp();
     }
