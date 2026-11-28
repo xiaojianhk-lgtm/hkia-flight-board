@@ -382,13 +382,17 @@ function fetchDataJson(){
     if(f.est && f.est !== "—" && f.eta && f.eta !== "—" && f.est !== f.eta){
       var m1 = toMin(f.eta), m2 = toMin(f.est), dd = m2 - m1;
       /* 跨日延誤：用埋日期計（est_date 有就用佢；原定日期用 eta_date，冇就用 _sdate）；
-         冇日期先用返 ±720 分鐘兜圈。唔用日期嗰陣，延超過 12 小時會倒轉計成提早
-         （CX361：11:30 → 翌日 01:02 應為延誤 812 分鐘，舊算法計成提早 628 分鐘） */
-      var etaD = f.eta_date || f._sdate, estD = f.est_date || null;
+         est_date 空 = API 冇寫日期 = 同日（API 只會喺跨日嗰陣寫日期，例如 "Est at 05:00 (29/11/2026)"），
+         所以 estD 預設用 etaD，唔兜圈。完全冇日期資料（_sdate 都冇）先用返 ±720 分鐘兜圈。
+         舊寫法 est_date 空就兜圈，同日延超過 12 小時會倒轉計成提早
+         （DL087：07:40 → 同日 21:30 應為延誤 830 分鐘，舊算法計成提早 610 分鐘；
+          CX361：11:30 → 翌日 01:02 應為延誤 812 分鐘，舊算法計成提早 628 分鐘） */
+      var etaD = f.eta_date || f._sdate, estD = f.est_date || etaD;
       if(etaD && estD && etaD !== estD){
         var dayDiff = Math.round((new Date(estD+"T00:00:00") - new Date(etaD+"T00:00:00")) / 86400000);
         dd += dayDiff * 1440;
-      }else{
+      }else if(!etaD){
+        // 完全冇日期資料先用 ±720 兜圈
         if(dd > 720) dd -= 1440; else if(dd < -720) dd += 1440;
       }
       if(dd !== 0){
